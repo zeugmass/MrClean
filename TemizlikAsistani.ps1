@@ -277,6 +277,108 @@ public class ProcessMonitor {
         return -1; // Process kapandıysa veya okunamıyorsa -1 döner
     }
 }
+
+// v1.2.9: Timer Resolution kontrolu (NtSetTimerResolution + MeasureSleep tarzi olcum)
+// Windows API public — herhangi bir process 0.5ms (5000 hns) gonderebilir; sistem global
+// olarak en dusuk requested degeri tutar. Lucas Hale Pro veya valleyofdoom clone'larina
+// gerek yok, inline implementation.
+public class TimerRes {
+    [DllImport("ntdll.dll", SetLastError = true)]
+    public static extern int NtSetTimerResolution(uint DesiredResolution, bool SetResolution, out uint CurrentResolution);
+
+    [DllImport("ntdll.dll", SetLastError = true)]
+    public static extern int NtQueryTimerResolution(out uint MinimumResolution, out uint MaximumResolution, out uint CurrentResolution);
+
+    [DllImport("kernel32.dll")]
+    public static extern bool QueryPerformanceCounter(out long lpPerformanceCount);
+
+    [DllImport("kernel32.dll")]
+    public static extern bool QueryPerformanceFrequency(out long lpFrequency);
+
+    [DllImport("kernel32.dll")]
+    public static extern void Sleep(uint dwMilliseconds);
+
+    // valleyofdoom MeasureSleep birebir: REALTIME priority class ile Sleep olcumu hassas olur.
+    // Win11 default NORMAL priority Sleep'i throttle eder (EcoQoS uzerinden), bu yuzden test
+    // oncesi REALTIME, test sonrasi NORMAL'a don.
+    [DllImport("kernel32.dll")]
+    public static extern bool SetPriorityClass(IntPtr hProcess, uint dwPriorityClass);
+
+    [DllImport("kernel32.dll")]
+    public static extern IntPtr GetCurrentProcess();
+
+    public const uint REALTIME_PRIORITY_CLASS = 0x00000100;
+    public const uint HIGH_PRIORITY_CLASS     = 0x00000080;
+    public const uint NORMAL_PRIORITY_CLASS   = 0x00000020;
+
+    public static bool SetRealtimePriority() {
+        return SetPriorityClass(GetCurrentProcess(), REALTIME_PRIORITY_CLASS);
+    }
+
+    public static bool SetHighPriority() {
+        // Stress Benchmark icin guvenli yuksek priority — REALTIME + stress thread'leri
+        // sistemi kilitleyebilir, HIGH iyi orta yol (sample hassasiyet + sistem responsive).
+        return SetPriorityClass(GetCurrentProcess(), HIGH_PRIORITY_CLASS);
+    }
+
+    public static bool SetNormalPriority() {
+        return SetPriorityClass(GetCurrentProcess(), NORMAL_PRIORITY_CLASS);
+    }
+
+    // Hedef ms (0.5, 1.0). 100ns birime cevrilir (1ms = 10000 hns). Donus: gercek set edilen ms.
+    public static double Set(double ms) {
+        uint hns = (uint)(ms * 10000);
+        uint current;
+        NtSetTimerResolution(hns, true, out current);
+        return current / 10000.0;
+    }
+
+    // Bu process'in tuttugu timer'i release et (SetResolution=false). Sistem default'a doner
+    // (eger baska bir process daha dusuk resolution hold etmiyorsa).
+    public static void Release() {
+        uint current;
+        NtSetTimerResolution(5000, false, out current);
+    }
+
+    // Mevcut sistem timer resolution (ms cinsinden)
+    public static double QueryMs() {
+        uint min, max, current;
+        NtQueryTimerResolution(out min, out max, out current);
+        return current / 10000.0;
+    }
+
+    // Tek Sleep(1) cagrisi yap, QueryPerformanceCounter ile gercek olcum (ms) dondur.
+    // MeasureSleep.exe tarzi delta hesabi icin temel ozellik.
+    public static double MeasureOnce() {
+        long freq, t1, t2;
+        QueryPerformanceFrequency(out freq);
+        QueryPerformanceCounter(out t1);
+        Sleep(1);
+        QueryPerformanceCounter(out t2);
+        return ((t2 - t1) * 1000.0) / freq;
+    }
+}
+
+// v1.2.9: Native CPU stress generator — PowerShell scriptblock stress yetersiz (%42 CPU max).
+// Tight long*long loop, branch prediction friendly, native compile = %100 core yuk.
+// Static volatile flag ile tum runspace thread'leri kontrollu durdurulur (Stop cagrisi sonrasi).
+public class CpuStress {
+    public static volatile bool ShouldStop = false;
+
+    public static void Run() {
+        long sum = 0;
+        while (!ShouldStop) {
+            for (long j = 0; j < 10000000 && !ShouldStop; j++) {
+                sum += j * j;
+            }
+        }
+        // sum'i kullan ki compiler optimize edip atmasin
+        if (sum == long.MinValue) { System.Console.Write(""); }
+    }
+
+    public static void Start() { ShouldStop = false; }
+    public static void Stop()  { ShouldStop = true; }
+}
 "@
 # Derleyici sadece 1 kez çalışır
 Add-Type -TypeDefinition $nativeCode -Language CSharp
@@ -440,7 +542,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.8"
+$global:AppVersion = "1.2.9"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -1776,6 +1878,112 @@ function Get-Default-Tweaks {
                     }
                 '
             },
+            @{
+                Name="Timer Resolution 0.5ms (Espor)";
+                SubCategory="Giriş ve İşlemci";
+                Description="Windows sistem timer cozunurlugunu 0.5ms a sabitler (varsayilan 15.6ms). Sleep / timing API cagrilari 30 kat daha hassas olur — input lag azalir, frame pacing duzelir, ses jitter iyilesir. Lucas Hale TimerResolution Pro / valleyofdoom / SwiftyPop / ISLC ile ayni etki — ntdll NtSetTimerResolution Windows API public.`n`n🔧 DORT PARCALI YAPI (Win11 modern davranisina karsi tam etki icin hepsi sart):`n  1) %APPDATA%\MrClean\TimerResHelper.ps1 + scheduled task — her kullanici girisinde 0.5ms hold (kalici)`n  2) HKLM Session Manager\kernel\GlobalTimerResolutionRequests=1 — Win10 v2004 sonrasi per-process davranisi yerine sistem-genel`n  3) powercfg /powerthrottling disable (MrClean.exe + powershell.exe) — Win11 EcoQoS bypass`n  4) bcdedit /set disabledynamictick yes — kernel dynamic tick (tickless idle) devre disi, sabit tick rate. Test kaniti: bu olmadan Sleep delta 5-7ms, bu eklenince 1-2ms (0.5ms hassasiyet aktif).`n`n⚠️ REBOOT GEREKLI: hem GlobalTimerResolutionRequests hem disabledynamictick reboot ister.`n`nℹ️ ISLC (Intelligent Standby List Cleaner) kullaniyorsan: ISLC parca 1+2 yi yapar (helper + GlobalTimerRes) ama parca 3+4 yapmaz. Bizim tweak 4 parcayi tam yapar — ISLC ile birlikte kullanilabilir, gerek yok ama zararsiz.`n`n💡 Onarim sekmesindeki Timer Resolution Test ile dogrulayabilirsin — Sleep(1) gercek delta olcumu (valleyofdoom MeasureSleep birebir: REALTIME priority + warmup atla).`n`n✅ Anti-cheat uyumlu`n⚠️ CPU power kullanimi minimal artar (laptop pilinde 1-2%)`n⚠️ disabledynamictick laptop pilini biraz daha cabuk tuketir (tickless idle olmadigi icin)";
+                Risk="Low"; RestartExplorer=$false;
+                DetectScript='
+                    # 5 kosul: task + helper + GlobalTimerResolutionRequests=1 + disabledynamictick yes + ~0.5ms
+                    $taskName = "MrClean-TimerRes"
+                    $task = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+                    if (-not $task) { return $false }
+                    $helperPath = Join-Path $env:APPDATA "MrClean\TimerResHelper.ps1"
+                    if (-not (Test-Path $helperPath)) { return $false }
+                    # GlobalTimerResolutionRequests=1 kontrol
+                    try {
+                        $kernelPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel"
+                        $val = (Get-ItemProperty -Path $kernelPath -Name "GlobalTimerResolutionRequests" -ErrorAction SilentlyContinue).GlobalTimerResolutionRequests
+                        if ($val -ne 1) { return $false }
+                    } catch { return $false }
+                    # bcdedit disabledynamictick yes kontrol (Refresh-BcdEdit-Cache uzerinden)
+                    if (-not ($script:BcdEditEnumOutput -match "disabledynamictick\s+Yes")) { return $false }
+                    # mevcut timer ~0.5ms mi?
+                    try {
+                        $res = [TimerRes]::QueryMs()
+                        if ($res -lt 0.6) { return $true }
+                    } catch {}
+                    return $false
+                ';
+                Command='
+                    # 1) GlobalTimerResolutionRequests=1 — sistem-genel timer davranisi (eski Win10 oncesi gibi)
+                    # Microsoft documented: Win11 + Server 2022+ icin gecerli. Reboot sonra etki yapar.
+                    # Kaynak: learn.microsoft.com/en-us/answers (Setting System-wide Timer Resolution)
+                    $kernelPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel"
+                    Set-ItemProperty -Path $kernelPath -Name "GlobalTimerResolutionRequests" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+
+                    # 2) PowerThrottling/EcoQoS bypass — Microsoft kanit: Win11 EcoQoS,
+                    # timer resolution istegine ragmen Sleep hassasiyetini dusurebilir
+                    # (PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION). MrClean.exe yi muaf tut
+                    # ki test modal Sleep(1) gercek 0.5ms olarak olcsun.
+                    # powershell.exe yi de muaf tut — helper script powershell instance icinde calisir.
+                    # Invoke-HiddenCommand ile cagir — terminal flash YOK (ProcessStartInfo + CreateNoWindow).
+                    try {
+                        $exePath = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
+                        if ($exePath) {
+                            $null = Invoke-HiddenCommand "powercfg.exe" "/powerthrottling disable /path `"$exePath`""
+                        }
+                    } catch {}
+                    try {
+                        $psPath = (Get-Command powershell.exe -ErrorAction SilentlyContinue).Path
+                        if ($psPath) {
+                            $null = Invoke-HiddenCommand "powercfg.exe" "/powerthrottling disable /path `"$psPath`""
+                        }
+                    } catch {}
+
+                    # 3) bcdedit /set disabledynamictick yes — kernel dynamic tick devre disi.
+                    # Kullanici test kaniti: bu olmadan Win11 NtSetTimerResolution + GlobalTimerRes
+                    # yetmiyor, Sleep delta 5-7ms. Bu eklenince kernel sabit tick atar, Sleep
+                    # gercek 0.5ms hassasiyetli (1-2ms range). Reboot sonrasi etki yapar.
+                    try {
+                        $null = Invoke-HiddenCommand "bcdedit.exe" "/set disabledynamictick yes"
+                    } catch {}
+
+                    # 3b) DEFANSIF TEMIZLIK: useplatformclock + useplatformtick deletevalue.
+                    # Eger sistemde "Platform Tick Zorla" tweak veya baska bir tool bu degerleri
+                    # yes set ettiyse, kernel RTC clock source kullanir → Sleep hassasiyeti bozulur.
+                    # Topluluk kaniti (Overclock.net + Blur Busters): useplatformtick yes input lag
+                    # yaratir. Bizim Timer Resolution tweak aktifken bu degerler default kalmali.
+                    # Kullanici test kaniti: bu olmadan Sleep delta 5-6ms, bu ile 1ms.
+                    try {
+                        $null = Invoke-HiddenCommand "bcdedit.exe" "/deletevalue useplatformclock"
+                    } catch {}
+                    try {
+                        $null = Invoke-HiddenCommand "bcdedit.exe" "/deletevalue useplatformtick"
+                    } catch {}
+
+                    # 4) Helper kurulum + scheduled task + immediate start (reboot oncesi de calisir)
+                    Invoke-TimerResHelperSetup -TargetMs 0.5
+                ';
+                UndoCommand='
+                    # 1) Helper task + process + script temizle
+                    Remove-TimerResHelper
+
+                    # 2) PowerThrottling exception kaldir (sistem default davranisa don)
+                    # Invoke-HiddenCommand ile cagir — terminal flash YOK.
+                    try {
+                        $exePath = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
+                        if ($exePath) {
+                            $null = Invoke-HiddenCommand "powercfg.exe" "/powerthrottling reset /path `"$exePath`""
+                        }
+                    } catch {}
+                    try {
+                        $psPath = (Get-Command powershell.exe -ErrorAction SilentlyContinue).Path
+                        if ($psPath) {
+                            $null = Invoke-HiddenCommand "powercfg.exe" "/powerthrottling reset /path `"$psPath`""
+                        }
+                    } catch {}
+
+                    # 3) bcdedit disabledynamictick sil — default dynamic tick davranisina don
+                    try {
+                        $null = Invoke-HiddenCommand "bcdedit.exe" "/deletevalue disabledynamictick"
+                    } catch {}
+
+                    # 4) GlobalTimerResolutionRequests sil — default per-process davranisa don
+                    $kernelPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\kernel"
+                    Remove-ItemProperty -Path $kernelPath -Name "GlobalTimerResolutionRequests" -Force -ErrorAction SilentlyContinue
+                '
+            },
 
             # --- B: AĞ VE PİNG (NETWORK) ---
             @{
@@ -1883,20 +2091,15 @@ function Get-Default-Tweaks {
             },
 
             # --- C: ZAMANLAYICI (TIMER & BCDEDIT) ---
-            # ⚠️ UYARI: Bu üç ayar birbirini etkiler. Grup mantığı ile sadece biri aktif olabilir.
-            # Valorant/Ricochet oynuyorsanız SADECE "Dinamik Tık Kapat" kullanın.
-            # "HPET Kapat" + "Platform Tick Zorla" kombinasyonu Ricochet'te sorun çıkarabilir.
-            # NOT (v1.2.7): Group="TimerMode" kaldirildi — 3 timer tweak'i mutual exclusive yapan grup
-            # davranisi vardi (birini secince digerleri kapaniyordu). Kullanici 3 unu birden secebilir,
+            # NOT (v1.2.9): "Dinamik Tık Kapat" + "Platform Tick Zorla" tweak'leri kaldirildi.
+            # "Timer Resolution 0.5ms (Espor)" tweak'i ayni ayarlari iceriyor:
+            #   - disabledynamictick yes (eski "Dinamik Tık Kapat")
+            #   - useplatformtick deletevalue + useplatformclock deletevalue (Platform Tick Zorla'nin
+            #     tersi — topluluk kaniti useplatformtick yes Sleep hassasiyetini bozar / input lag).
+            # Boylece "HPET Kapat" tek timer tweak olarak kaldi (modern Ryzen/Core icin DPC fix).
+            # NOT (v1.2.7): Group="TimerMode" kaldirildi — timer tweak'leri mutual exclusive yapan grup
+            # davranisi vardi (birini secince digerleri kapaniyordu). Kullanici hepsini birden secebilir,
             # acikma kullanici karari (description'larda anti-cheat uyarisi var).
-            @{
-                Name="Dinamik Tık (Dynamic Tick) Kapat";
-                SubCategory="Zamanlayıcı (Timer)";
-				Description="İşlemcinin güç tasarrufu için zamanlayıcıyı durdurmasını engeller. CPU'nun sürekli uyanık kalmasını sağlayarak oyun içi anlık takılmaları (stutter) önler. ✅ Tüm anti-cheat sistemleriyle uyumludur.";
-                Command='bcdedit /set disabledynamictick yes';
-                UndoCommand='bcdedit /deletevalue disabledynamictick';
-                RestartExplorer=$false
-            },
             @{
                 Name="HPET (Platform Clock) Kapat";
                 SubCategory="Zamanlayıcı (Timer)";
@@ -1904,15 +2107,11 @@ function Get-Default-Tweaks {
                 Command='bcdedit /deletevalue useplatformclock';
                 UndoCommand='bcdedit /set useplatformclock yes';
                 RestartExplorer=$false
-            },
-            @{
-                Name="Platform Tick Zorla (Stabilite)";
-				Description="Tüm sistem zamanlayıcılarını tek bir kaynakta (Platform) eşitler. Zamanlayıcılar arası kaymaları önleyerek oyunlarda daha akıcı bir görüntü sunar. ⚠️ Valorant/Ricochet ile 'HPET Kapat' ayarıyla BİRLİKTE kullanmayın — timer manipulation olarak işaretlenebilir.";
-                SubCategory="Zamanlayıcı (Timer)";
-                Command='bcdedit /set useplatformtick yes';
-                UndoCommand='bcdedit /deletevalue useplatformtick';
-                RestartExplorer=$false 
             }
+            # NOT (v1.2.9): "Platform Tick Zorla" tweak'i kaldirildi — Topluluk kaniti
+            # (Overclock.net + Blur Busters): useplatformtick yes input lag yaratir + Sleep
+            # hassasiyetini bozar. Timer Resolution 0.5ms (Espor) tweak'i zaten useplatformtick
+            # deletevalue cagirip default davranisa donduruyor. Bu tweak zararliydi, silindi.
         )
 		# --- 11. BUFFERBLOAT VE AĞ PROFİLLERİ ---
 		"🌐 Bufferbloat ve Ağ Profilleri" = @(
@@ -2794,10 +2993,11 @@ $xaml = @"
                             <!-- Alt Butonlar -->
                             <Border Grid.Row="1" Background="#222" CornerRadius="5" Padding="5" Margin="0,10,0,0">
                                 <UniformGrid Rows="1">
-                                    <Button x:Name="btnFixUpdate" Content="🛠️ Windows Update Onar" Background="#E68A00" Foreground="White" Height="35" Margin="0,0,5,0" FontWeight="Bold"/>
-                                    <Button x:Name="btnResetNet" Content="🌐 Ağ Ayarlarını Sıfırla" Background="#333" Foreground="White" Height="35" Margin="0,0,5,0"/>
-                                    <Button x:Name="btnResetWinHttpProxy" Content="📡 WinHTTP Proxy Sıfırla" Background="#333" Foreground="White" Height="35" Margin="0,0,5,0"/>
-                                    <Button x:Name="btnSfcScan" Content="🔍 SFC / Scannow" Background="#006600" Foreground="White" Height="35" FontWeight="Bold"/>
+                                    <Button x:Name="btnFixUpdate" Content="🛠️ Update Onar" Background="#E68A00" Foreground="White" Height="35" Margin="0,0,5,0" FontWeight="Bold" ToolTip="Windows Update servisini sıfırla ve yeniden başlat"/>
+                                    <Button x:Name="btnResetNet" Content="🌐 Ağ Sıfırla" Background="#333" Foreground="White" Height="35" Margin="0,0,5,0" ToolTip="Ağ ayarlarını (DNS, IP, WinSock) sıfırla — 5 adımlı DHCP DNS fix dahil"/>
+                                    <Button x:Name="btnResetWinHttpProxy" Content="📡 WinHTTP Sıfırla" Background="#333" Foreground="White" Height="35" Margin="0,0,5,0" ToolTip="WinHTTP sistem proxy ayarlarını sıfırla (Windows Update, Defender, Store)"/>
+                                    <Button x:Name="btnTimerResTest" Content="⏱️ Timer Test" Background="#333" Foreground="White" Height="35" Margin="0,0,5,0" ToolTip="Timer Resolution canlı test + Otomatik İnce Ayar Benchmark (valleyofdoom/SwiftyPop algoritması)"/>
+                                    <Button x:Name="btnSfcScan" Content="🔍 SFC Scan" Background="#006600" Foreground="White" Height="35" FontWeight="Bold" ToolTip="System File Checker ile sistem dosyalarını onar (sfc /scannow)"/>
                                 </UniformGrid>
                             </Border>
                         </Grid>
@@ -4108,6 +4308,7 @@ $tvRepair = $Win.FindName('tvRepair'); $tvApps = $Win.FindName('tvApps')
 $btnFixUpdate = $Win.FindName('btnFixUpdate')
 $btnResetNet = $Win.FindName('btnResetNet')
 $btnResetWinHttpProxy = $Win.FindName('btnResetWinHttpProxy')
+$btnTimerResTest = $Win.FindName('btnTimerResTest')
 $btnSfcScan = $Win.FindName('btnSfcScan')
 $tvShellBags = $Win.FindName('tvShellBags'); $tvWinget = $Win.FindName('tvWinget')
 
@@ -5583,6 +5784,164 @@ function Invoke-HiddenCommand {
     }
 }
 
+# === TIMER RESOLUTION ALTYAPISI (v1.2.9) ===
+# Lucas Hale TimerResolution / valleyofdoom clone'larini inline implement etmek icin.
+# NtSetTimerResolution Win10 1803+ ve Win11'de "per-process hold" davranisi gosterir —
+# helper process yasadigi surece sistem global olarak en dusuk requested resolution tutar.
+# Apply: helper script + scheduled task (user logon) + immediate start. Undo: hepsini sil.
+
+$global:TimerResTaskName    = "MrClean-TimerRes"
+$global:TimerResHelperPath  = Join-Path $env:APPDATA "MrClean\TimerResHelper.ps1"
+$global:TimerResVbsPath     = Join-Path $env:APPDATA "MrClean\TimerResHelperLauncher.vbs"
+$global:TRTSettingsPath     = Join-Path $env:APPDATA "MrClean\trt_settings.json"
+
+# Timer Resolution Test ayarlarini JSON'dan oku. Yoksa veya bozuksa default'lar (SwiftyPop appsettings.json
+# fine-tune profili: 0.5-0.51 ms, 0.002 step, 20 sample, + 50 sn stress duration).
+function Get-TRTSettings {
+    $defaults = @{
+        AutoTuneStartMs     = 0.500
+        AutoTuneEndMs       = 0.510
+        AutoTuneIncrementMs = 0.002
+        AutoTuneSampleCount = 20
+        StressDurationSec   = 50
+    }
+    if (-not (Test-Path $global:TRTSettingsPath)) { return $defaults }
+    try {
+        $json = Get-Content $global:TRTSettingsPath -Raw -ErrorAction Stop | ConvertFrom-Json
+        return @{
+            AutoTuneStartMs     = [double]$json.AutoTuneStartMs
+            AutoTuneEndMs       = [double]$json.AutoTuneEndMs
+            AutoTuneIncrementMs = [double]$json.AutoTuneIncrementMs
+            AutoTuneSampleCount = [int]$json.AutoTuneSampleCount
+            StressDurationSec   = [int]$json.StressDurationSec
+        }
+    } catch {
+        return $defaults
+    }
+}
+
+# Validate + JSON yaz. Donus: $true basari, $false hata.
+function Save-TRTSettings {
+    param([hashtable]$Settings)
+    try {
+        $dir = Split-Path $global:TRTSettingsPath -Parent
+        if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+        $Settings | ConvertTo-Json | Out-File -FilePath $global:TRTSettingsPath -Encoding UTF8 -Force
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+function Get-CurrentTimerResolutionMs {
+    try { return [TimerRes]::QueryMs() } catch { return -1 }
+}
+
+function Invoke-TimerResHelperSetup {
+    param([double]$TargetMs = 0.5)
+
+    # 1) Helper script yaz — sonsuz uyku ile timer hold eder
+    $hnsValue = [int]($TargetMs * 10000)
+    $helperContent = @"
+# MrClean Timer Resolution Helper — otomatik olusturuldu, elle duzenleme
+# Bu script PowerShell process icinde 0.5ms timer resolution hold eder.
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public class TimerResHold {
+    [DllImport("ntdll.dll")]
+    public static extern int NtSetTimerResolution(uint Desired, bool Set, out uint Current);
+}
+'@ -Language CSharp
+`$cur = 0
+[TimerResHold]::NtSetTimerResolution($hnsValue, `$true, [ref]`$cur) | Out-Null
+# Sonsuz uyku — process yasadigi surece timer hold edilir
+while (`$true) { Start-Sleep -Seconds 3600 }
+"@
+
+    $dir = Split-Path $global:TimerResHelperPath -Parent
+    if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+    $helperContent | Out-File -FilePath $global:TimerResHelperPath -Encoding UTF8 -Force
+
+    # 1b) VBS launcher yaz — wscript ile sessiz spawn (powershell.exe -WindowStyle Hidden bazen
+    # yine de pencere flash yapiyor; VBS WScript.Shell.Run 0 parametresi tam silent spawn saglar.
+    # Hem scheduled task hem instant start bu VBS uzerinden cagrilir, terminal flash YOK.)
+    $vbsContent = @"
+Set objShell = CreateObject("WScript.Shell")
+objShell.Run "powershell.exe -NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File ""$global:TimerResHelperPath""", 0, False
+"@
+    $vbsContent | Out-File -FilePath $global:TimerResVbsPath -Encoding ASCII -Force
+
+    # 2) Mevcut helper process'leri temizle — duplicate spawn'lari onler (gorev yoneticisinde
+    # birden fazla powershell.exe gorulmemesi icin). Sonra TEK instance baslatilir.
+    try {
+        Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue |
+            Where-Object { $_.CommandLine -like "*TimerResHelper.ps1*" } |
+            ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+    } catch {}
+
+    # 3) Scheduled task yarat: action wscript.exe -> VBS -> powershell.exe (hepsi hidden, flash YOK)
+    $taskName = $global:TimerResTaskName
+    Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
+
+    $action    = New-ScheduledTaskAction -Execute "wscript.exe" -Argument "`"$global:TimerResVbsPath`""
+    $trigger   = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME
+    $settings  = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 0) -RestartCount 3 -RestartInterval (New-TimeSpan -Minutes 1)
+    $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Limited
+
+    Register-ScheduledTask -TaskName $taskName -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
+
+    # 4) Scheduled task'i hemen baslat — logon trigger sadece gelecek logon icin
+    Start-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+
+    # 4b) Helper gercekten basladi mi 1.5 sn icinde verify et. Eger scheduled task helper
+    # spawn etmediyse (UAC/policy/timing nedeniyle), direkt VBS launcher ile fallback.
+    # Bu sekilde tek instance garanti — duplicate yok.
+    Start-Sleep -Milliseconds 1500
+    $helperRunning = $false
+    try {
+        $found = Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue |
+                 Where-Object { $_.CommandLine -like "*TimerResHelper.ps1*" }
+        if ($found) { $helperRunning = $true }
+    } catch {}
+    if (-not $helperRunning) {
+        try {
+            Start-Process -FilePath "wscript.exe" `
+                          -ArgumentList "`"$global:TimerResVbsPath`"" `
+                          -WindowStyle Hidden -ErrorAction SilentlyContinue | Out-Null
+        } catch {}
+    }
+
+    # 5) Ek garanti — ana program da timer'i hold etsin (helper spin-up sirasinda fallback;
+    # ayrica modal kapanmasi durumunda da hold etmeye devam eder, helper guvencesi yedek olur).
+    try { [TimerRes]::Set($TargetMs) | Out-Null } catch {}
+}
+
+function Remove-TimerResHelper {
+    $taskName = $global:TimerResTaskName
+
+    # 1) Helper process(ler)i kill — TimerResHelper.ps1 calistiran tum powershell.exe instance'lari
+    try {
+        Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue |
+            Where-Object { $_.CommandLine -like "*TimerResHelper.ps1*" } |
+            ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+    } catch {}
+
+    # 2) Scheduled task sil
+    Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction SilentlyContinue
+
+    # 3) Helper script + VBS launcher sil
+    if (Test-Path $global:TimerResHelperPath) {
+        Remove-Item -Path $global:TimerResHelperPath -Force -ErrorAction SilentlyContinue
+    }
+    if (Test-Path $global:TimerResVbsPath) {
+        Remove-Item -Path $global:TimerResVbsPath -Force -ErrorAction SilentlyContinue
+    }
+
+    # 4) Ana programdaki hold'u release et — sistem default'a doner (baska process tutmuyorsa)
+    try { [TimerRes]::Release() } catch {}
+}
+
 # Cache'ler: Check-Tweak-Status icindeki tarama 60+ tweak icin tetikleniyor. Her tweak'te
 # bcdedit/netsh/powercfg cagrilirsa 60+ child process spawn olur (ve console flash). Bunlar
 # uygulama acilmasi suresince sabit, yarin cache'le, tum tweak'ler ayni cache'ten okusun.
@@ -6164,14 +6523,17 @@ function Apply-System-Tweaks {
         if     ($rpAction -eq "Hard") { $script:needsRestart    = $true }
         elseif ($rpAction -eq "Soft") { $script:needsSoftRefresh = $true }
         
-        if ($tweakItem.Group -eq "NetProfile" -or 
-            $tweakItem.SubCategory -match "Giriş ve İşlemci" -or 
-            $tweakItem.SubCategory -match "Ağ ve Ping" -or 
+        # Reboot warning gerektiren tweak kategorileri — ancak tweak'in SkipRebootDialog=$true
+        # flag'i varsa bypass et (ornek: Timer Resolution helper instant aktif olur, reboot gereksiz).
+        if ((-not $tweakItem.SkipRebootDialog) -and (
+            $tweakItem.Group -eq "NetProfile" -or
+            $tweakItem.SubCategory -match "Giriş ve İşlemci" -or
+            $tweakItem.SubCategory -match "Ağ ve Ping" -or
             $tweakItem.SubCategory -match "Zamanlayıcı" -or
-            $tweakItem.Name -match "TCP" -or 
+            $tweakItem.Name -match "TCP" -or
             $tweakItem.Name -match "Win32" -or
-            $tweakItem.Name -match "HPET") {
-            
+            $tweakItem.Name -match "HPET")) {
+
             $script:latencyChanged = $true
         }
         
@@ -9083,9 +9445,8 @@ $script:RecommendedProfiles = @{
             "MSI Mode (GPU Interrupt) Aç",
             "Network Throttling Kapat (Ağ Kısıtlamasını Kaldır)",
             "TCP NoDelay ve AckFrequency (Nagle Algoritmasını Kapat)",
-            "Dinamik Tık (Dynamic Tick) Kapat",
+            "Timer Resolution 0.5ms (Espor)",
             "HPET (Platform Clock) Kapat",
-            "Platform Tick Zorla (Stabilite)",
             "Görsel Efektler: Özel (Yazı Tipi + Küçük Resimler Açık)",
             "Xbox Game DVR Kapat"
         )
@@ -11489,6 +11850,832 @@ function Load-DashboardData {
 $script:DashTimer.Start()
 }
 
+# ---- Show-TimerResolutionSettings (Auto-Tune + Stress Bench parametreleri — v1.2.9) ----
+# Kullanici Test modal'daki "⚙️ Ayarlar" butonunu tikladiginda acilir. 5 parametre TextBox:
+# Start/End/Increment/Sample (Auto-Tune) + StressDurationSec. Default'lar SwiftyPop appsettings.json
+# fine-tune profili. Validation: Start<End, Increment>0, Sample>=5, Stress>=10. JSON'a persist.
+function Show-TimerResolutionSettings {
+    $xamlTRS = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="⚙️ Timer Resolution Test Ayarları" Height="540" Width="640"
+        Background="#181818" WindowStartupLocation="CenterOwner" WindowStyle="ToolWindow" ResizeMode="NoResize">
+    <Window.Resources>
+        <Style x:Key="ReadableBtn" TargetType="Button">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="3" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.65"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.88"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="🔬 Otomatik İnce Ayar Parametreleri" Foreground="#4CC2FF" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
+
+        <Grid Grid.Row="1" Margin="0,0,0,4">
+            <Grid.RowDefinitions>
+                <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="160"/>
+                <ColumnDefinition Width="120"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Row="0" Grid.Column="0" Text="İlk test değeri (ms):" Foreground="White" VerticalAlignment="Center" Margin="0,4,0,4" ToolTip="Auto-Tune'un test etmeye baslayacagi en dusuk timer resolution degeri (ms cinsinden)"/>
+            <TextBox  Grid.Row="0" Grid.Column="1" x:Name="txtStart" Background="#222" Foreground="White" BorderBrush="#555" Padding="4" Margin="0,4,0,4" FontFamily="Consolas"/>
+            <TextBlock Grid.Row="0" Grid.Column="2" Text="(varsayılan: 0.5000  •  aralık: 0.4 - 1.5 ms)" Foreground="#888" VerticalAlignment="Center" Margin="8,4,0,4"/>
+
+            <TextBlock Grid.Row="1" Grid.Column="0" Text="Son test değeri (ms):" Foreground="White" VerticalAlignment="Center" Margin="0,4,0,4" ToolTip="Auto-Tune'un test edecegi EN YUKSEK timer resolution degeri. Bu deger dahildir."/>
+            <TextBox  Grid.Row="1" Grid.Column="1" x:Name="txtEnd" Background="#222" Foreground="White" BorderBrush="#555" Padding="4" Margin="0,4,0,4" FontFamily="Consolas"/>
+            <TextBlock Grid.Row="1" Grid.Column="2" Text="(varsayılan: 0.5100  •  aralık: 0.4 - 1.5 ms)" Foreground="#888" VerticalAlignment="Center" Margin="8,4,0,4"/>
+
+            <TextBlock Grid.Row="2" Grid.Column="0" Text="Değerler arası fark (ms):" Foreground="White" VerticalAlignment="Center" Margin="0,4,0,4" ToolTip="Iki test degeri arasindaki fark. Ornek: 0.5000 + 0.002 = 0.5020"/>
+            <TextBox  Grid.Row="2" Grid.Column="1" x:Name="txtIncrement" Background="#222" Foreground="White" BorderBrush="#555" Padding="4" Margin="0,4,0,4" FontFamily="Consolas"/>
+            <TextBlock Grid.Row="2" Grid.Column="2" Text="(varsayılan: 0.0020  •  aralık: 0.0005 - 0.1 ms)" Foreground="#888" VerticalAlignment="Center" Margin="8,4,0,4"/>
+
+            <TextBlock Grid.Row="3" Grid.Column="0" Text="Her değer için ölçüm:" Foreground="White" VerticalAlignment="Center" Margin="0,4,0,4" ToolTip="Her timer resolution degeri icin kac Sleep(1) olcumu yapilacak. Fazla = daha guvenilir ama uzun. 20 hizli bir baslangic icin yeterli."/>
+            <TextBox  Grid.Row="3" Grid.Column="1" x:Name="txtSample" Background="#222" Foreground="White" BorderBrush="#555" Padding="4" Margin="0,4,0,4" FontFamily="Consolas"/>
+            <TextBlock Grid.Row="3" Grid.Column="2" Text="(varsayılan: 20  •  aralık: 5 - 1000)" Foreground="#888" VerticalAlignment="Center" Margin="8,4,0,4"/>
+        </Grid>
+
+        <Border Grid.Row="2" Background="#0a3a0a" CornerRadius="4" Padding="8" Margin="0,8,0,12">
+            <TextBlock x:Name="lblPreview" Text="..." Foreground="White" FontSize="12" TextWrapping="Wrap"/>
+        </Border>
+
+        <TextBlock Grid.Row="3" Text="🔥 Stress Benchmark Parametreleri" Foreground="#E68A00" FontSize="14" FontWeight="Bold" Margin="0,8,0,8"/>
+
+        <Grid Grid.Row="4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="160"/>
+                <ColumnDefinition Width="120"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Text="Her değer için süre (sn):" Foreground="White" VerticalAlignment="Center" Margin="0,4,0,4" ToolTip="Stress Bench'te her timer resolution degeri kac saniye boyunca CPU yuk altinda olcecek. 50 sn ile her deger 30000+ sample alir."/>
+            <TextBox  Grid.Column="1" x:Name="txtStressDuration" Background="#222" Foreground="White" BorderBrush="#555" Padding="4" Margin="0,4,0,4" FontFamily="Consolas"/>
+            <TextBlock Grid.Column="2" x:Name="lblStressPreview" Text="(varsayılan: 50 sn  •  aralık: 10 - 600 sn)" Foreground="#888" VerticalAlignment="Center" Margin="8,4,0,4"/>
+        </Grid>
+
+        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <Button x:Name="btnDefaults" Style="{StaticResource ReadableBtn}" Content="↺ Varsayılan" Background="#555" Foreground="White" Width="130" Height="32" Margin="0,0,8,0"/>
+            <Button x:Name="btnCancel" Style="{StaticResource ReadableBtn}" Content="Vazgeç" Background="#444" Foreground="White" Width="80" Height="32" Margin="0,0,8,0"/>
+            <Button x:Name="btnSave" Style="{StaticResource ReadableBtn}" Content="✓ Kaydet" Background="#006600" Foreground="White" Width="100" Height="32"/>
+        </StackPanel>
+    </Grid>
+</Window>
+"@
+    $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlTRS)
+    $win = [Windows.Markup.XamlReader]::Load($reader)
+    $txtStart          = $win.FindName('txtStart')
+    $txtEnd            = $win.FindName('txtEnd')
+    $txtIncrement      = $win.FindName('txtIncrement')
+    $txtSample         = $win.FindName('txtSample')
+    $txtStressDuration = $win.FindName('txtStressDuration')
+    $lblPreview        = $win.FindName('lblPreview')
+    $lblStressPreview  = $win.FindName('lblStressPreview')
+    $btnDefaults       = $win.FindName('btnDefaults')
+    $btnCancel         = $win.FindName('btnCancel')
+    $btnSave           = $win.FindName('btnSave')
+
+    # Mevcut settings'leri yukle ve TextBox'lara koy — 4 decimal (Auto-Tune log ile tutarli)
+    $current = Get-TRTSettings
+    $txtStart.Text          = ("{0:N4}" -f $current.AutoTuneStartMs)
+    $txtEnd.Text            = ("{0:N4}" -f $current.AutoTuneEndMs)
+    $txtIncrement.Text      = ("{0:N4}" -f $current.AutoTuneIncrementMs)
+    $txtSample.Text         = "$($current.AutoTuneSampleCount)"
+    $txtStressDuration.Text = "$($current.StressDurationSec)"
+
+    # Anlik onizleme: TextBox degisince hesaplama yenilenir. Test edilecek GERCEK degerler de listeli.
+    $updatePreview = {
+        try {
+            $s = [double](($txtStart.Text -replace ',', '.').Trim())
+            $e = [double](($txtEnd.Text -replace ',', '.').Trim())
+            $i = [double](($txtIncrement.Text -replace ',', '.').Trim())
+            $n = [int]$txtSample.Text.Trim()
+            if ($s -ge $e -or $i -le 0 -or $n -lt 5) { throw "invalid" }
+            $count = [int]([Math]::Floor(($e - $s) / $i) + 1)
+            $totalSamples = $count * $n
+            $estimatedSec = [Math]::Round($count * (0.5 + ($n * 0.001) + 0.05), 1)
+
+            # Gercek test edilecek degerleri olustur (kullanici tam ne goreceğini bilsin)
+            $vals = @()
+            $cur = $s
+            for ($k = 0; $k -lt $count; $k++) {
+                $vals += ("{0:N4}" -f $cur)
+                $cur = [Math]::Round($cur + $i, 4)
+            }
+            $valsStr = $vals -join ", "
+
+            $lblPreview.Text = "= $count deger x $n olcum = $totalSamples toplam (~$estimatedSec sn)`nTest edilecek degerler: $valsStr"
+            $lblPreview.Foreground = [System.Windows.Media.Brushes]::LimeGreen
+        } catch {
+            $lblPreview.Text = "Gecersiz deger — Bitis > Baslangic, Adim > 0, Olcum >= 5 olmali"
+            $lblPreview.Foreground = [System.Windows.Media.Brushes]::OrangeRed
+        }
+    }
+    $txtStart.Add_TextChanged($updatePreview)
+    $txtEnd.Add_TextChanged($updatePreview)
+    $txtIncrement.Add_TextChanged($updatePreview)
+    $txtSample.Add_TextChanged($updatePreview)
+    & $updatePreview
+
+    $updateStressPreview = {
+        try {
+            $sec = [int]$txtStressDuration.Text.Trim()
+            $s = [double](($txtStart.Text -replace ',', '.').Trim())
+            $e = [double](($txtEnd.Text -replace ',', '.').Trim())
+            $i = [double](($txtIncrement.Text -replace ',', '.').Trim())
+            $count = [Math]::Floor(($e - $s) / $i) + 1
+            $totalSec = $count * $sec
+            $totalMin = [Math]::Round($totalSec / 60.0, 1)
+            $lblStressPreview.Text = "(toplam ~$totalMin dakika — $count deger x $sec sn)"
+            $lblStressPreview.Foreground = [System.Windows.Media.Brushes]::LightGray
+        } catch {
+            $lblStressPreview.Text = "(gecersiz deger)"
+            $lblStressPreview.Foreground = [System.Windows.Media.Brushes]::OrangeRed
+        }
+    }
+    $txtStressDuration.Add_TextChanged($updateStressPreview)
+    & $updateStressPreview
+
+    # Varsayilan butonu — TextBox'lari SwiftyPop default'larina cevirir (4 decimal)
+    $btnDefaults.Add_Click({
+        $txtStart.Text          = "0.5000"
+        $txtEnd.Text            = "0.5100"
+        $txtIncrement.Text      = "0.0020"
+        $txtSample.Text         = "20"
+        $txtStressDuration.Text = "50"
+    })
+
+    $btnCancel.Add_Click({ $win.Close() })
+
+    $btnSave.Add_Click({
+        try {
+            $newSettings = @{
+                AutoTuneStartMs     = [double](($txtStart.Text -replace ',', '.').Trim())
+                AutoTuneEndMs       = [double](($txtEnd.Text -replace ',', '.').Trim())
+                AutoTuneIncrementMs = [double](($txtIncrement.Text -replace ',', '.').Trim())
+                AutoTuneSampleCount = [int]$txtSample.Text.Trim()
+                StressDurationSec   = [int]$txtStressDuration.Text.Trim()
+            }
+
+            # --- RANGE VALIDATION (min/max sinirlari — kullanici hatasi onleme) ---
+            # Sinirlari etiketlerde belirttik, dialog kapanmadan once bir kez daha kontrol.
+            if ($newSettings.AutoTuneStartMs -lt 0.4 -or $newSettings.AutoTuneStartMs -gt 1.5) {
+                [System.Windows.MessageBox]::Show("Ilk test degeri 0.4 - 1.5 ms araliginda olmali.", "Aralik Disi Deger", "OK", "Error") | Out-Null
+                return
+            }
+            if ($newSettings.AutoTuneEndMs -lt 0.4 -or $newSettings.AutoTuneEndMs -gt 1.5) {
+                [System.Windows.MessageBox]::Show("Son test degeri 0.4 - 1.5 ms araliginda olmali.", "Aralik Disi Deger", "OK", "Error") | Out-Null
+                return
+            }
+            if ($newSettings.AutoTuneIncrementMs -lt 0.0005 -or $newSettings.AutoTuneIncrementMs -gt 0.1) {
+                [System.Windows.MessageBox]::Show("Degerler arasi fark 0.0005 - 0.1 ms araliginda olmali.", "Aralik Disi Deger", "OK", "Error") | Out-Null
+                return
+            }
+            if ($newSettings.AutoTuneStartMs -ge $newSettings.AutoTuneEndMs) {
+                [System.Windows.MessageBox]::Show("Ilk test degeri Son test degerinden kucuk olmali.", "Mantik Hatasi", "OK", "Error") | Out-Null
+                return
+            }
+            if ($newSettings.AutoTuneSampleCount -lt 5 -or $newSettings.AutoTuneSampleCount -gt 1000) {
+                [System.Windows.MessageBox]::Show("Her deger icin olcum sayisi 5 - 1000 araliginda olmali.", "Aralik Disi Deger", "OK", "Error") | Out-Null
+                return
+            }
+            if ($newSettings.StressDurationSec -lt 10 -or $newSettings.StressDurationSec -gt 600) {
+                [System.Windows.MessageBox]::Show("Stress suresi 10 - 600 sn araliginda olmali.", "Aralik Disi Deger", "OK", "Error") | Out-Null
+                return
+            }
+
+            # --- AKILLI TOPLAM SURE KONTROLU ---
+            # Stress total 1 saatten uzunsa kullanicidan ek onay al — yanlislikla cok uzun
+            # ayar girmis olabilir.
+            $countV = [int]([Math]::Floor(($newSettings.AutoTuneEndMs - $newSettings.AutoTuneStartMs) / $newSettings.AutoTuneIncrementMs) + 1)
+            $stressTotalSec = $countV * $newSettings.StressDurationSec
+            if ($stressTotalSec -gt 3600) {
+                $totalMin = [Math]::Round($stressTotalSec / 60.0, 1)
+                $confirm = [System.Windows.MessageBox]::Show(
+                    ("Stress Bench toplam suresi {0} dakika olacak ({1} deger x {2} sn).`n`n1 saatten uzun sure — emin misiniz?" -f $totalMin, $countV, $newSettings.StressDurationSec),
+                    "Uzun Sure Onayi",
+                    "YesNo",
+                    "Warning")
+                if ($confirm -ne 'Yes') { return }
+            }
+
+            if (Save-TRTSettings -Settings $newSettings) {
+                $win.Close()
+            } else {
+                [System.Windows.MessageBox]::Show("Ayarlar kaydedilemedi (dosya yazma hatasi).", "Hata", "OK", "Error") | Out-Null
+            }
+        } catch {
+            [System.Windows.MessageBox]::Show("Gecersiz deger formati: $($_.Exception.Message)", "Hata", "OK", "Error") | Out-Null
+        }
+    })
+
+    $win.ShowDialog() | Out-Null
+}
+
+# ---- Show-TimerResolutionTest (MeasureSleep tarzi modal — v1.2.9) ----
+function Show-TimerResolutionTest {
+    # Algoritma kaynagi: valleyofdoom/TimerResolution (orijinal PowerShell micro-adjust-benchmark.ps1)
+    # + SwiftyPop/TimerResBenchmark (Rust rewrite) + haseduu/timerres (alternatif).
+    # 3 bagimsiz kaynak ayni metodolojide hemfikir: Set + settle + N ornek Sleep(1)/QPC + avg/stddev,
+    # optimal=min avg (tie: min stddev). Default'lar SwiftyPop appsettings.json'dan birebir.
+
+    # KRITIK: Eger helper aktifse, MrClean ana program da kendi Set'ini yapsin. Win11 per-process
+    # davranisi: helper kendi process'inde 0.5ms hold ediyor ama MrClean process kendi Set yapmadiysa
+    # Sleep ölcumu throttled (PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION). Reboot sonrasi
+    # MrClean acilirken Apply-System-Tweaks cagrilmadigi icin ana program Set yapmiyor → modal'da
+    # bunu telafi ediyoruz.
+    try {
+        if (Get-ScheduledTask -TaskName $global:TimerResTaskName -ErrorAction SilentlyContinue) {
+            [void][TimerRes]::Set(0.5)
+        }
+    } catch {}
+    $xamlTRT = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="⏱️ Timer Resolution Test + Benchmark" Height="620" Width="880"
+        Background="#181818" WindowStartupLocation="CenterScreen" WindowStyle="ToolWindow" ResizeMode="NoResize">
+    <Window.Resources>
+        <!-- ReadableBtn: WPF default Button stilini bypass eder. Disabled state'te sistem
+             GrayText override etmek yerine, sadece Border opacity'sini 0.65'e dusurur.
+             Background/Foreground ezilmedigi icin metin disabled'da da okunur kalir. -->
+        <Style x:Key="ReadableBtn" TargetType="Button">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="3" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.65"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.88"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.75"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock Text="Mevcut Sistem Timer Resolution" Foreground="#888" FontSize="12" Margin="0,0,0,2"/>
+        <TextBlock x:Name="lblCurrent" Grid.Row="1" Text="-- ms" Foreground="#4CC2FF" FontSize="26" FontWeight="Bold" Margin="0,0,0,10"/>
+        <ListBox x:Name="lstLog" Grid.Row="2" Background="#0a0a0a" Foreground="#C8FFC8" FontFamily="Consolas" FontSize="12" BorderBrush="#333"/>
+        <TextBlock x:Name="lblSummary" Grid.Row="3" Text="Hızlı Test: 15 örnek Sleep(1) ölçümü → avg + stddev.&#xa;Otomatik İnce Ayar: 0.500-0.510 sweep (0.002 step, 6 değer × 20 örnek), optimal seçilir (valleyofdoom/SwiftyPop algoritması)." Foreground="#E68A00" Margin="0,8,0,4" TextWrapping="Wrap" FontSize="11"/>
+        <Border x:Name="brdOptimal" Grid.Row="4" Background="#063" CornerRadius="4" Padding="10" Margin="0,6,0,0" Visibility="Collapsed">
+            <TextBlock x:Name="lblOptimal" Text="" Foreground="White" FontSize="13" FontWeight="Bold" TextWrapping="Wrap"/>
+        </Border>
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button x:Name="btnRunTest" Style="{StaticResource ReadableBtn}" Content="▶ Hızlı Test (15 örnek)" Background="#006600" Foreground="White" Width="160" Height="32" Margin="0,0,6,0"/>
+            <Button x:Name="btnAutoTune" Style="{StaticResource ReadableBtn}" Content="🔬 Otomatik İnce Ayar" Background="#0066AA" Foreground="White" Width="170" Height="32" Margin="0,0,6,0"/>
+            <Button x:Name="btnStressBench" Style="{StaticResource ReadableBtn}" Content="🔥 Stress Bench" Background="#cc4400" Foreground="White" Width="140" Height="32" Margin="0,0,6,0" ToolTip="CPU yuk altinda gercek-dunya benchmark (sure ⚙️ Ayarlar'dan)"/>
+            <Button x:Name="btnApplyOptimal" Style="{StaticResource ReadableBtn}" Content="🔧 Optimal ile Başlat" Background="#222" Foreground="White" Width="170" Height="32" Margin="0,0,6,0" IsEnabled="False"/>
+            <Button x:Name="btnSettings" Style="{StaticResource ReadableBtn}" Content="⚙️" Background="#444" Foreground="White" Width="40" Height="32" Margin="0,0,6,0" ToolTip="Ayarlar — Auto-Tune ve Stress Bench parametreleri"/>
+            <Button x:Name="btnCloseTRT" Style="{StaticResource ReadableBtn}" Content="Kapat" Background="#444" Foreground="White" Width="80" Height="32"/>
+        </StackPanel>
+    </Grid>
+</Window>
+"@
+    $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlTRT)
+    $win = [Windows.Markup.XamlReader]::Load($reader)
+    $lblCurrent      = $win.FindName('lblCurrent')
+    $lstLog          = $win.FindName('lstLog')
+    $lblSummary      = $win.FindName('lblSummary')
+    $brdOptimal      = $win.FindName('brdOptimal')
+    $lblOptimal      = $win.FindName('lblOptimal')
+    $btnRunTest      = $win.FindName('btnRunTest')
+    $btnAutoTune     = $win.FindName('btnAutoTune')
+    $btnStressBench  = $win.FindName('btnStressBench')
+    $btnApplyOptimal = $win.FindName('btnApplyOptimal')
+    $btnSettings     = $win.FindName('btnSettings')
+    $btnCloseTRT     = $win.FindName('btnCloseTRT')
+
+    # Ayarlar butonu — Auto-Tune + Stress Bench parametre dialog'u
+    $btnSettings.Add_Click({
+        $timer.Stop()
+        Show-TimerResolutionSettings
+        $timer.Start()
+    })
+
+    # Optimal deger Auto-Tune sonrasi set edilir, btnApplyOptimal kullanir
+    $script:TRTOptimalMs = $null
+
+    # --- Canli refresh: 500ms DispatcherTimer ile lblCurrent guncellenir ---
+    $timer = New-Object System.Windows.Threading.DispatcherTimer
+    $timer.Interval = [TimeSpan]::FromMilliseconds(500)
+    $timer.Add_Tick({
+        try {
+            $ms = [TimerRes]::QueryMs()
+            $lblCurrent.Text = ("{0:N4} ms" -f $ms)
+            if ($ms -lt 0.6) {
+                $lblCurrent.Foreground = [System.Windows.Media.Brushes]::LimeGreen
+            } elseif ($ms -lt 1.2) {
+                $lblCurrent.Foreground = [System.Windows.Media.Brushes]::Gold
+            } else {
+                $lblCurrent.Foreground = [System.Windows.Media.Brushes]::OrangeRed
+            }
+        } catch {
+            $lblCurrent.Text = "okuma hatasi"
+        }
+    })
+    $timer.Start()
+
+    # --- Stddev helper (PS 5.1 Measure-Object -StandardDeviation yok, PS 7+ ozelligi) ---
+    # Formula: sqrt(sum((x - mean)^2) / n) — population stddev
+    $script:GetStddev = {
+        param([double[]]$Values)
+        if ($Values.Count -lt 2) { return 0.0 }
+        $mean = ($Values | Measure-Object -Average).Average
+        $sumSq = 0.0
+        foreach ($v in $Values) { $sumSq += [Math]::Pow($v - $mean, 2) }
+        return [Math]::Sqrt($sumSq / $Values.Count)
+    }
+
+    # --- Hizli Test (15 ornek, mevcut resolution sabit) — avg + stddev gosterir ---
+    # KRITIK: Sample loop sirasinda Do-Events ve DispatcherTimer Tick KESINLIKLE olmamali —
+    # UI thread interferansi Sleep delta sini 5-6ms e cikariyordu (ilk ornek 1.06ms hassas,
+    # sonrakiler 6ms yanıltıcı paterni). Timer.Stop + sample sirasinda UI dokunma yok.
+    $btnRunTest.Add_Click({
+        $timer.Stop()
+        $lstLog.Items.Clear()
+        $brdOptimal.Visibility = "Collapsed"
+        $btnApplyOptimal.IsEnabled = $false
+        $btnApplyOptimal.Background = [System.Windows.Media.Brushes]::Black
+        $lblSummary.Text = "Olcum aliniyor..."
+        Do-Events  # UI temizlik mesaji icin tek pump (loop oncesi)
+
+        # valleyofdoom MeasureSleep birebir: REALTIME priority sample loop sirasinda
+        # — Win11 throttling devre disi, Sleep hassasiyetli olcum
+        [void][TimerRes]::SetRealtimePriority()
+
+        # Warmup: ilk sample'i at (valleyofdoom yorumu: "first sleep call mid-tick")
+        [void][TimerRes]::MeasureOnce()
+
+        # 15 ornegi hizli topla — sample arasi UI dokunma YOK
+        $deltas = New-Object System.Collections.Generic.List[double]
+        $slepts = New-Object System.Collections.Generic.List[double]
+        $resMs = [TimerRes]::QueryMs()
+        for ($i = 0; $i -lt 15; $i++) {
+            $sleptMs = [TimerRes]::MeasureOnce()
+            $delta   = [Math]::Max(0, $sleptMs - 1.0)
+            $slepts.Add($sleptMs) | Out-Null
+            $deltas.Add($delta) | Out-Null
+        }
+
+        # Olcum bitti — priority'i NORMAL'a geri al (sistem stutterlanmasin)
+        [void][TimerRes]::SetNormalPriority()
+
+        # Tum ornekler bittikten sonra UI'a batch yaz
+        for ($i = 0; $i -lt 15; $i++) {
+            $line = ("Resolution: {0:N4}ms, Sleep(1) slept {1:N4}ms (delta: {2:N4})" -f $resMs, $slepts[$i], $deltas[$i])
+            $lstLog.Items.Add($line) | Out-Null
+        }
+
+        $avg = ($deltas | Measure-Object -Average).Average
+        $stddev = & $script:GetStddev -Values $deltas.ToArray()
+        $resNow = [TimerRes]::QueryMs()
+        if ($resNow -lt 0.6 -and $avg -lt 0.3) {
+            $lblSummary.Foreground = [System.Windows.Media.Brushes]::LimeGreen
+            $lblSummary.Text = ("✅ Timer 0.5ms aktif — ortalama delta {0:N4}ms, stddev {1:N4}ms (mukemmel)" -f $avg, $stddev)
+        } elseif ($resNow -lt 1.2 -and $avg -lt 0.6) {
+            $lblSummary.Foreground = [System.Windows.Media.Brushes]::Gold
+            $lblSummary.Text = ("⚠️ Timer ~1ms — ortalama delta {0:N4}ms, stddev {1:N4}ms. 0.5ms tweak aktif degil veya hold cikis yapmis." -f $avg, $stddev)
+        } else {
+            $lblSummary.Foreground = [System.Windows.Media.Brushes]::OrangeRed
+            $lblSummary.Text = ("❌ Timer yuksek (sistem varsayilanina yakin) — ortalama delta {0:N4}ms, stddev {1:N4}ms. Tweaks > Espor > Timer Resolution 0.5ms tweak ini aktif et." -f $avg, $stddev)
+        }
+        $timer.Start()
+    })
+
+    # --- Otomatik Ince Ayar (valleyofdoom/SwiftyPop benchmark — birebir algoritma) ---
+    # 3 bagimsiz kaynak ayni metodolojide hemfikir. Parametre default'lari SwiftyPop fine-tune profili.
+    $btnAutoTune.Add_Click({
+        # Settings'ten parametreleri ONCE oku — UI mesajlari ve sample loop tutarli kullansin diye
+        $trtCfg   = Get-TRTSettings
+        $startV   = $trtCfg.AutoTuneStartMs
+        $endV     = $trtCfg.AutoTuneEndMs
+        $incV     = $trtCfg.AutoTuneIncrementMs
+        $sampleN  = $trtCfg.AutoTuneSampleCount
+        $countV   = [int]([Math]::Floor(($endV - $startV) / $incV) + 1)
+        $totalSamples = $countV * $sampleN
+        $estimatedSec = [Math]::Round($countV * (0.5 + ($sampleN * 0.001) + 0.05), 1)
+
+        # Helper var mi tespit et — uyari icin
+        $taskName = $global:TimerResTaskName
+        $hasHelper = $false
+        try {
+            if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) { $hasHelper = $true }
+        } catch {}
+
+        $msg = "Otomatik İnce Ayar Benchmark çalıştırılacak.`n`n" +
+               ("• Tarama aralığı: {0:N4} - {1:N4} ms ({2:N4} step = {3} değer)`n" -f $startV, $endV, $incV, $countV) +
+               ("• Her değer için {0} örnek Sleep(1) ölçümü (toplam {1} örnek)`n" -f $sampleN, $totalSamples) +
+               ("• Tahmini süre: ~{0} saniye`n" -f $estimatedSec) +
+               "• Algoritma: en düşük ortalama delta, eşitse en düşük standart sapma`n" +
+               "  (Kaynak: valleyofdoom/TimerResolution + SwiftyPop/TimerResBenchmark)`n`n"
+        if ($hasHelper) {
+            $msg += "⚠️ Mevcut Timer Resolution helper'i tespit edildi. Test sırasında geçici durdurulacak — sonra otomatik geri yüklenmez. Benchmark bittiğinde 'Optimal ile Başlat' butonu ile yeni değerle helper'ı yeniden kuracaksın.`n`n"
+        }
+        $msg += "Devam edilsin mi?"
+        if ([System.Windows.MessageBox]::Show($msg, "Otomatik İnce Ayar", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question) -ne 'Yes') { return }
+
+        # Helper'i gecici durdur (varsa) — temiz olcum icin sart
+        if ($hasHelper) {
+            try {
+                Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+                Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue |
+                    Where-Object { $_.CommandLine -like "*TimerResHelper.ps1*" } |
+                    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+                Start-Sleep -Milliseconds 800
+                [TimerRes]::Release()
+                Start-Sleep -Milliseconds 200
+            } catch {}
+        }
+
+        $btnRunTest.IsEnabled       = $false
+        $btnAutoTune.IsEnabled      = $false
+        $btnStressBench.IsEnabled   = $false
+        $btnApplyOptimal.IsEnabled  = $false
+        $btnCloseTRT.IsEnabled      = $false
+
+        # Canli refresh timer gecici durdur — sample loop sirasinda DispatcherTimer Tick
+        # UI thread'i bloklayip Sleep delta'sini bozuyor (5-6ms yanıltıcı paterni).
+        $timer.Stop()
+
+        $lstLog.Items.Clear()
+        $brdOptimal.Visibility = "Collapsed"
+        $lblSummary.Foreground = [System.Windows.Media.Brushes]::Gold
+        $lblSummary.Text = ("🔬 Benchmark çalışıyor — {0} değer × {1} örnek (~{2} sn), lütfen bekle..." -f $countV, $sampleN, $estimatedSec)
+        $lstLog.Items.Add("ResolutionMs       Avg(delta)         Stddev") | Out-Null
+        $lstLog.Items.Add("-----------------------------------------------") | Out-Null
+
+        # Parametreler yukarida $trtCfg ile zaten okundu. Sabit: settle delay (500ms).
+        $settleMs = 500   # valleyofdoom orijinal 1000ms — biz 500ms (yeterli stabilizasyon, sabit)
+
+        # valleyofdoom MeasureSleep birebir: REALTIME priority test sirasinda
+        [void][TimerRes]::SetRealtimePriority()
+
+        $results = New-Object System.Collections.Generic.List[object]
+        $current = $startV
+        while ($current -le ($endV + 0.0001)) {
+            # 1) Bu resolution'u set et + settle
+            [TimerRes]::Set($current) | Out-Null
+            Start-Sleep -Milliseconds $settleMs
+            Do-Events  # settle sonrasi UI refresh OK (sample loop oncesi)
+
+            # 2a) Warmup: ilk sample'i at (mid-tick problemi — valleyofdoom yorumu)
+            [void][TimerRes]::MeasureOnce()
+
+            # 2b) N kez ornek al — sample arasi UI dokunma YOK (kritik: UI interferansi
+            # Sleep delta'sini bozar)
+            $deltas = New-Object System.Collections.Generic.List[double]
+            for ($s = 0; $s -lt $sampleN; $s++) {
+                $sleptMs = [TimerRes]::MeasureOnce()
+                $delta = [Math]::Max(0, $sleptMs - 1.0)
+                $deltas.Add($delta) | Out-Null
+            }
+
+            # 3) Avg + Stddev hesapla
+            $avg = ($deltas | Measure-Object -Average).Average
+            $stddev = & $script:GetStddev -Values $deltas.ToArray()
+
+            $results.Add([PSCustomObject]@{ Resolution = $current; Avg = $avg; Stddev = $stddev }) | Out-Null
+            $line = ("{0,8:N4} ms     {1,8:N4}        {2,8:N4}" -f $current, $avg, $stddev)
+            $lstLog.Items.Add($line) | Out-Null
+            if ($lstLog.Items.Count -gt 0) {
+                $lstLog.ScrollIntoView($lstLog.Items[$lstLog.Items.Count - 1])
+            }
+            Do-Events
+
+            $current = [Math]::Round($current + $incV, 4)
+        }
+
+        # 4) Bizim olcum sirasinda set'lediklerini release et + priority'i normal'a al
+        [TimerRes]::Release()
+        [void][TimerRes]::SetNormalPriority()
+
+        # 4b) Helper Auto-Tune basinda durdurulduysa, 0.5ms ile yeniden baslat — sistem
+        # 15.6ms'e dusmesin (kullanici "Optimal ile Baslat" ile sonra override edebilir).
+        if ($hasHelper) {
+            try { Invoke-TimerResHelperSetup -TargetMs 0.5 } catch {}
+        }
+
+        # 5) Optimal sec: min avg, tie -> min stddev (SwiftyPop main.rs birebir mantik)
+        $optimal = $null
+        $minAvg  = [double]::MaxValue
+        $minStd  = [double]::MaxValue
+        foreach ($r in $results) {
+            if ($r.Avg -lt $minAvg -or ($r.Avg -eq $minAvg -and $r.Stddev -lt $minStd)) {
+                $optimal = $r
+                $minAvg = $r.Avg
+                $minStd = $r.Stddev
+            }
+        }
+
+        if ($optimal) {
+            $script:TRTOptimalMs = $optimal.Resolution
+            $lblOptimal.Text = ("✅ OPTIMAL: {0:N4} ms   (avg {1:N4} ms, stddev {2:N4} ms)`nBu değer test edilen 6 değer arasında en düşük delta + en stabil ölçümü verdi." -f $optimal.Resolution, $optimal.Avg, $optimal.Stddev)
+            $brdOptimal.Visibility = "Visible"
+            $lblSummary.Foreground = [System.Windows.Media.Brushes]::LimeGreen
+            $lblSummary.Text = "Benchmark tamamlandı. Aktif etmek için 'Optimal ile Başlat' butonuna bas (helper scheduled task yaratır/günceller, user logon trigger'lı)."
+            $btnApplyOptimal.IsEnabled = $true
+            $btnApplyOptimal.Background = [System.Windows.Media.Brushes]::DarkGreen
+        } else {
+            $lblSummary.Foreground = [System.Windows.Media.Brushes]::OrangeRed
+            $lblSummary.Text = "❌ Benchmark sonucu boş — beklenmedik hata."
+        }
+
+        $btnRunTest.IsEnabled       = $true
+        $btnAutoTune.IsEnabled      = $true
+        $btnStressBench.IsEnabled   = $true
+        $btnCloseTRT.IsEnabled      = $true
+
+        # Canli refresh timer tekrar baslat
+        $timer.Start()
+    })
+
+    # --- Stress Benchmark (5 dk, CPU yuk altinda) — gercek-dunya benchmark ---
+    # Auto-Tune ile ayni algoritma (en dusuk avg, tie min stddev) ama:
+    # • Background CPU stress thread'leri (CPU %80-100 yuk — gercek oyun scenario)
+    # • Her resolution icin 50 sn sample (5000+ sample/value vs 20 sample/value Auto-Tune)
+    # • HIGH priority (REALTIME + stress thread'leri sistemi kilitler — HIGH iyi orta yol)
+    $btnStressBench.Add_Click({
+        $taskName = $global:TimerResTaskName
+        $hasHelper = $false
+        try {
+            if (Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue) { $hasHelper = $true }
+        } catch {}
+
+        $cpuCount = [System.Environment]::ProcessorCount
+        # Modern CPU'lar 16+ logical thread (HT/SMT). Eski 8-sinir CPU%50'de takiliyordu.
+        # Artik tum mantiksal thread'leri (-1 ana program icin reserve) kullaniyoruz → CPU%80-100.
+        $stressThreadCount = [Math]::Max(2, $cpuCount - 1)
+
+        $msg = "Stress Benchmark calistirilacak.`n`n" +
+               "• $stressThreadCount background thread'de yogun CPU yuku (~%80-100 CPU)`n" +
+               "• 6 resolution degeri test edilecek (0.500 - 0.510)`n" +
+               "• Her resolution icin 50 saniye sample alinacak`n" +
+               "• Toplam sure: ~5-6 dakika`n" +
+               "• Sistem stress sirasinda yavaslayacak — bu normal`n" +
+               "• Algoritma: en dusuk ortalama delta, esitse en dusuk stddev (valleyofdoom)`n`n"
+        if ($hasHelper) {
+            $msg += "⚠️ Mevcut helper gecici durdurulacak — sonra otomatik geri yuklenmez,`n" +
+                    "  'Optimal ile Baslat' butonu ile yeni deger uygulayabilirsin.`n`n"
+        }
+        $msg += "Devam edilsin mi?"
+        if ([System.Windows.MessageBox]::Show($msg, "Stress Benchmark", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning) -ne 'Yes') { return }
+
+        # Helper gecici durdur
+        if ($hasHelper) {
+            try {
+                Stop-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+                Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue |
+                    Where-Object { $_.CommandLine -like "*TimerResHelper.ps1*" } |
+                    ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+                Start-Sleep -Milliseconds 800
+                [TimerRes]::Release()
+                Start-Sleep -Milliseconds 200
+            } catch {}
+        }
+
+        $btnRunTest.IsEnabled       = $false
+        $btnAutoTune.IsEnabled      = $false
+        $btnStressBench.IsEnabled   = $false
+        $btnApplyOptimal.IsEnabled  = $false
+        $btnCloseTRT.IsEnabled      = $false
+        $timer.Stop()
+
+        $lstLog.Items.Clear()
+        $brdOptimal.Visibility = "Collapsed"
+        $lblSummary.Foreground = [System.Windows.Media.Brushes]::Gold
+        $lblSummary.Text = "🔥 Stress thread'leri baslatiliyor..."
+        Do-Events
+
+        # Background CPU stress runspace'leri — C# native CpuStress (PowerShell scriptblock %42 max,
+        # native long*long loop = %100 core yuk). CpuStress.Start() ShouldStop=false set eder,
+        # tum runspace thread'leri loop'a girer. Stop() ile kontrollu cikis.
+        [CpuStress]::Start()
+        $stressShells = @()
+        try {
+            for ($t = 0; $t -lt $stressThreadCount; $t++) {
+                $rs = [runspacefactory]::CreateRunspace()
+                $rs.Open()
+                $ps = [powershell]::Create()
+                $ps.Runspace = $rs
+                [void]$ps.AddScript({ [CpuStress]::Run() })
+                [void]$ps.BeginInvoke()
+                $stressShells += @{Shell = $ps; Runspace = $rs}
+            }
+        } catch {
+            $lblSummary.Text = "❌ Stress thread baslatilamadi: $($_.Exception.Message)"
+        }
+
+        # Stress isinma
+        Start-Sleep -Seconds 2
+        Do-Events
+
+        # HIGH priority sample loop icin (REALTIME stress thread'leri ile birlikte sistem kilitler)
+        [void][TimerRes]::SetHighPriority()
+
+        # Parametreler: trt_settings.json'dan oku — kullanici "⚙️ Ayarlar"'dan degistirebilir.
+        $trtCfg           = Get-TRTSettings
+        $startV           = $trtCfg.AutoTuneStartMs
+        $endV             = $trtCfg.AutoTuneEndMs
+        $incV             = $trtCfg.AutoTuneIncrementMs
+        $durationPerResMs = $trtCfg.StressDurationSec * 1000
+        $totalCount       = [int]([Math]::Floor(($endV - $startV) / $incV) + 1)
+
+        $lstLog.Items.Add(("Stress Benchmark — {0} thread CPU yuku, her resolution {1} sn" -f $stressThreadCount, $trtCfg.StressDurationSec)) | Out-Null
+        $lstLog.Items.Add("ResolutionMs    Avg(delta)      Stddev       SampleCount") | Out-Null
+        $lstLog.Items.Add("------------------------------------------------------------") | Out-Null
+
+        $results = New-Object System.Collections.Generic.List[object]
+        $current = $startV
+        $idx = 0
+        while ($current -le ($endV + 0.0001)) {
+            $idx++
+            $lblSummary.Text = ("🔥 Test ediliyor: {0:N4} ms ({1}/{2}) — stress aktif, ~{3} sn..." -f $current, $idx, $totalCount, $trtCfg.StressDurationSec)
+            Do-Events
+
+            [TimerRes]::Set($current) | Out-Null
+            Start-Sleep -Milliseconds 500
+            [void][TimerRes]::MeasureOnce()  # warmup
+
+            $deltas = New-Object System.Collections.Generic.List[double]
+            $sw = [System.Diagnostics.Stopwatch]::StartNew()
+            $lastUiTick = 0
+            while ($sw.ElapsedMilliseconds -lt $durationPerResMs) {
+                $sleptMs = [TimerRes]::MeasureOnce()
+                $delta = [Math]::Max(0.0, $sleptMs - 1.0)
+                $deltas.Add($delta) | Out-Null
+                # Her ~1 saniyede UI thread'i bir kez serbest birak (pencere "yanit vermiyor"
+                # gozukmesin). 1 sn arasi 1 Do-Events Sleep delta sini bozmaz.
+                if ($sw.ElapsedMilliseconds - $lastUiTick -gt 1000) {
+                    Do-Events
+                    $lastUiTick = $sw.ElapsedMilliseconds
+                }
+            }
+            $sw.Stop()
+
+            $avg = ($deltas | Measure-Object -Average).Average
+            $stddev = & $script:GetStddev -Values $deltas.ToArray()
+            $count = $deltas.Count
+
+            $results.Add([PSCustomObject]@{ Resolution = $current; Avg = $avg; Stddev = $stddev; SampleCount = $count }) | Out-Null
+            $line = ("{0,8:N4} ms    {1,8:N4}       {2,8:N4}      {3,8}" -f $current, $avg, $stddev, $count)
+            $lstLog.Items.Add($line) | Out-Null
+            $lstLog.ScrollIntoView($lstLog.Items[$lstLog.Items.Count - 1])
+            Do-Events
+
+            $current = [Math]::Round($current + $incV, 4)
+        }
+
+        # Cleanup priority + release
+        [TimerRes]::Release()
+        [void][TimerRes]::SetNormalPriority()
+
+        # Stress thread'leri KONTROLLU durdur — CpuStress.Stop() flag set eder, loop'tan cikar
+        [CpuStress]::Stop()
+        Start-Sleep -Milliseconds 500  # thread'lerin loop'tan cikma zamani
+
+        # Runspace'leri dispose
+        foreach ($s in $stressShells) {
+            try { $s.Shell.Stop() } catch {}
+            try { $s.Shell.Dispose() } catch {}
+            try { $s.Runspace.Close() } catch {}
+            try { $s.Runspace.Dispose() } catch {}
+        }
+
+        # Helper bench basinda durdurulduysa, 0.5ms varsayilan ile yeniden baslat —
+        # kullanici sonra "Optimal ile Baslat" ile farkli deger uygulayabilir.
+        # Bu UX iyilesmesi: sistem 15.6ms'e dusmesin, kullanici manuel restart yapmasin.
+        if ($hasHelper) {
+            try { Invoke-TimerResHelperSetup -TargetMs 0.5 } catch {}
+        }
+
+        # Optimal sec (SwiftyPop algoritmasi birebir)
+        $optimal = $null
+        $minAvg = [double]::MaxValue
+        $minStd = [double]::MaxValue
+        foreach ($r in $results) {
+            if ($r.Avg -lt $minAvg -or ($r.Avg -eq $minAvg -and $r.Stddev -lt $minStd)) {
+                $optimal = $r
+                $minAvg = $r.Avg
+                $minStd = $r.Stddev
+            }
+        }
+
+        if ($optimal) {
+            $script:TRTOptimalMs = $optimal.Resolution
+            $lblOptimal.Text = ("✅ STRESS BENCHMARK OPTIMAL: {0:N4} ms   (avg {1:N4} ms, stddev {2:N4} ms, {3} sample / value)`nCPU yuk altinda olculmus — gercek oyun senaryosu icin en gercekci sonuc." -f $optimal.Resolution, $optimal.Avg, $optimal.Stddev, $optimal.SampleCount)
+            $brdOptimal.Visibility = "Visible"
+            $lblSummary.Foreground = [System.Windows.Media.Brushes]::LimeGreen
+            $lblSummary.Text = "Stress benchmark tamamlandi. Optimal'i uygulamak icin 'Optimal ile Baslat' butonu."
+            $btnApplyOptimal.IsEnabled = $true
+            $btnApplyOptimal.Background = [System.Windows.Media.Brushes]::DarkGreen
+        } else {
+            $lblSummary.Foreground = [System.Windows.Media.Brushes]::OrangeRed
+            $lblSummary.Text = "❌ Stress benchmark sonucu boş — beklenmedik hata."
+        }
+
+        $btnRunTest.IsEnabled       = $true
+        $btnAutoTune.IsEnabled      = $true
+        $btnStressBench.IsEnabled   = $true
+        $btnCloseTRT.IsEnabled      = $true
+        $timer.Start()
+    })
+
+    # --- Optimal ile Baslat (helper'i optimal deger ile yeniden kurar) ---
+    $btnApplyOptimal.Add_Click({
+        if (-not $script:TRTOptimalMs) { return }
+        try {
+            Invoke-TimerResHelperSetup -TargetMs $script:TRTOptimalMs
+            Start-Sleep -Milliseconds 500
+            $newRes = [TimerRes]::QueryMs()
+            [System.Windows.MessageBox]::Show(
+                ("✅ Helper {0:N4} ms ile başlatıldı.`n`nMevcut sistem timer resolution: {1:N4} ms`n`nUser logon trigger'lı scheduled task ile her oturum açılışında otomatik aktif olacak." -f $script:TRTOptimalMs, $newRes),
+                "Optimal Uygulandı",
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Information
+            ) | Out-Null
+        } catch {
+            [System.Windows.MessageBox]::Show(
+                ("Helper başlatılamadı: $($_.Exception.Message)"),
+                "Hata",
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Error
+            ) | Out-Null
+        }
+    })
+
+    $btnCloseTRT.Add_Click({
+        $timer.Stop()
+        $win.Close()
+    })
+
+    # Modal kapanirken: dispatcher timer durdur + olasi Release.
+    # KRITIK: Eger tweak aktif (helper scheduled task var) ise Release CAGIRMA — ana programdaki
+    # hold tweak'in fallback'i, Release etmek tweak'i bozar ve test sirasinda 5ms+ delta gorulur.
+    # Sadece helper YOK ise (Auto-Tune yarida kesildi gibi durumlar) Release et.
+    $win.Add_Closed({
+        try { $timer.Stop() } catch {}
+        $hasHelper = $false
+        try {
+            if (Get-ScheduledTask -TaskName $global:TimerResTaskName -ErrorAction SilentlyContinue) {
+                $hasHelper = $true
+            }
+        } catch {}
+        if (-not $hasHelper) {
+            try { [TimerRes]::Release() } catch {}
+        }
+    })
+
+    $win.ShowDialog() | Out-Null
+}
+
 # ---- Show-BloatwareManager ----
 function Show-BloatwareManager {
     try {
@@ -12154,14 +13341,31 @@ $script:EditDescriptionBlock = {
 
     $chk = Get-CheckFromItem $treeItem
     if (-not $chk) { return }
-    
+
     # StackPanel/string content uyumlu shim ile gercek goruntulenen ad'i al
     $itemName = Get-TweakDisplayName $treeItem
     if ([string]::IsNullOrEmpty($itemName)) { $itemName = "$($chk.Content)" }
     $cleanName = $itemName -replace " \(Aktif\)$", "" -replace " \(Yüklü\)$", ""
 
+    # Tag'den dogrudan tweak objesini al — Create-Tweak-Item 6024 satirinda
+    # ItemDescriptions key olarak tweak.Name kullaniliyor; ayni anahtari burada da
+    # kullanmaliyiz, aksi halde display name ile arama bulamaz.
+    $tweakTag = $null
+    try { $tweakTag = $treeItem.Tag } catch {}
+    $lookupName = if ($tweakTag -and $tweakTag.Name) { "$($tweakTag.Name)" } else { $cleanName }
+
+    # Mevcut aciklamayi cek: kullanici override (ItemDescriptions) > hardcoded Description
     $currentDesc = ""
-    if ($global:ItemDescriptions.ContainsKey($cleanName)) { $currentDesc = $global:ItemDescriptions[$cleanName] }
+    if ($global:ItemDescriptions -and $global:ItemDescriptions.ContainsKey($lookupName)) {
+        $currentDesc = "$($global:ItemDescriptions[$lookupName])"
+    } elseif ($global:ItemDescriptions -and $lookupName -ne $cleanName -and $global:ItemDescriptions.ContainsKey($cleanName)) {
+        # geriye uyumluluk: eski surumlerde display name ile yazilmis olabilir
+        $currentDesc = "$($global:ItemDescriptions[$cleanName])"
+    }
+    if ([string]::IsNullOrEmpty($currentDesc) -and $tweakTag -and $tweakTag.Description) {
+        # hardcoded Description ile prefill — kullanici uzerine yazip ozellestirebilir
+        $currentDesc = "$($tweakTag.Description)"
+    }
 
     $xamlDesc = @"
     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -12195,18 +13399,22 @@ $script:EditDescriptionBlock = {
     $btnS.Add_Click({
         $newTxt = $txtD.Text.Trim()
         if ([string]::IsNullOrWhiteSpace($newTxt)) {
-            $global:ItemDescriptions.Remove($cleanName)
-            Attach-ToolTip $chk "" 
+            $global:ItemDescriptions.Remove($lookupName)
+            if ($lookupName -ne $cleanName) { $global:ItemDescriptions.Remove($cleanName) }
+            Attach-ToolTip $chk ""
         } else {
-            $global:ItemDescriptions[$cleanName] = $newTxt
-            Attach-ToolTip $chk $newTxt 
+            $global:ItemDescriptions[$lookupName] = $newTxt
+            # eski cleanName key'i varsa migrate olarak temizle (tek key kalsin)
+            if ($lookupName -ne $cleanName) { $global:ItemDescriptions.Remove($cleanName) }
+            Attach-ToolTip $chk $newTxt
         }
         Mark-ConfigDirty
         $winDesc.Close()
     })
-    
+
     $btnDel.Add_Click({
-        $global:ItemDescriptions.Remove($cleanName)
+        $global:ItemDescriptions.Remove($lookupName)
+        if ($lookupName -ne $cleanName) { $global:ItemDescriptions.Remove($cleanName) }
         Attach-ToolTip $chk ""
         Mark-ConfigDirty
         $winDesc.Close()
@@ -13119,6 +14327,11 @@ $btnResetWinHttpProxy.Add_Click({
             WpfLog "❌ HATA: $($_.Exception.Message)"
         }
     }
+})
+
+# v1.2.9: Timer Resolution Test butonu — MeasureSleep tarzi olcum modal
+$btnTimerResTest.Add_Click({
+    Show-TimerResolutionTest
 })
 
 $btnSfcScan.Add_Click({
