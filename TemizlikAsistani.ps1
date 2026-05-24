@@ -545,7 +545,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.16"
+$global:AppVersion = "1.2.17"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -2123,34 +2123,51 @@ function Get-Default-Tweaks {
                         @{ Key = "*UDPChecksumOffloadIPv6"; Value = 0 },
                         @{ Key = "*IPChecksumOffloadIPv4";  Value = 0 }
                     )
-                    $adapters = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq "Up" -and $_.InterfaceAlias -notmatch "Loopback|VPN|Virtual|Tunnel" }
+                    # v1.2.17 KRITIK FIX: Status=Up filter KALDIRILDI (Apply Command icinde de). v1.2.12 sadece
+                    # DetectScript te kaldirmistik, Apply Command da hala filter vardi — Wi-Fi laptop ta
+                    # "Disconnected" durumdayken filter 0 NIC dondurup Apply NO-OP oluyordu (registry yazilmiyor,
+                    # Restart-NetAdapter cagrilmiyor, wait loop 0 sn). Kullanici log gosterdi: 1 sn de Apply
+                    # tamamlandi -> DetectScript false -> switch kapaniyor. PhysicalMediaType ile fiziksel NIC
+                    # filtreliyoruz (Bluetooth/Virtual/VPN hariç).
+                    $adapters = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object {
+                        $_.InterfaceType -in @(6, 71) -and
+                        $_.PhysicalMediaType -ne "Unspecified" -and
+                        $_.InterfaceDescription -notmatch "(?i)VPN|Virtual|Tunnel|Loopback|TAP|WAN Miniport|Hyper-V|Bluetooth"
+                    }
                     $count = 0
-                    $adapterInfo = @($adapters | Select-Object Name, InterfaceType, MediaConnectionState)
+                    $adapterInfo = @($adapters | Select-Object Name, InterfaceType, Status)
                     $adapterNames = @($adapterInfo | Select-Object -ExpandProperty Name)
-                    # InterfaceType 71 = Wi-Fi (IEEE 802.11), 6 = Ethernet. WLAN authentication + DHCP
-                    # ile Wi-Fi restart 5-30 sn surer, Ethernet 1-3 sn yeter.
                     $hasWiFi = @($adapterInfo | Where-Object { $_.InterfaceType -eq 71 }).Count -gt 0
+                    # WpfLog kullan — Write-Host PS2EXE de UI panel e gormez, kullanici log da yok oluyor
+                    try { WpfLog ("[NetAdapter] Apply basliyor: " + $adapterNames.Count + " NIC bulundu (Wi-Fi var mi: " + $hasWiFi + ")") } catch {}
+                    if ($adapterNames.Count -eq 0) {
+                        try { WpfLog "[NetAdapter] ⚠️ HIC fiziksel NIC bulunamadi! Internete bagli misin? Wi-Fi acik mi?" } catch {}
+                    }
                     foreach ($a in $adapters) {
-                        $appliedThis = 0
+                        $appliedThis = 0; $failedThis = 0
                         foreach ($o in $offloads) {
                             try {
                                 Set-NetAdapterAdvancedProperty -Name $a.Name -RegistryKeyword $o.Key -RegistryValue $o.Value -NoRestart -ErrorAction Stop
                                 $appliedThis++
                             } catch {
-                                # Bu keyword bu NIC sofor tarafindan desteklenmiyor olabilir, sessiz gec
+                                $failedThis++
                             }
                         }
-                        Write-Host "[NetAdapter] $($a.Name): $appliedThis offload property Disabled."
+                        try { WpfLog ("[NetAdapter] " + $a.Name + " (Status=" + $a.Status + "): " + $appliedThis + " property yazildi, " + $failedThis + " desteklenmedi") } catch {}
                         $count++
                     }
                     # Tek seferde restart — paket islem yolu degisikligi icin
-                    try { $adapterNames | ForEach-Object { Restart-NetAdapter -Name $_ -Confirm:$false -ErrorAction SilentlyContinue } } catch {}
+                    if ($adapterNames.Count -gt 0) {
+                        try {
+                            $adapterNames | ForEach-Object { Restart-NetAdapter -Name $_ -Confirm:$false -ErrorAction SilentlyContinue }
+                            try { WpfLog ("[NetAdapter] Restart-NetAdapter cagrildi (" + $adapterNames.Count + " NIC), bekleme basliyor") } catch {}
+                        } catch {
+                            try { WpfLog ("[NetAdapter] Restart hata: " + $_.Exception.Message) } catch {}
+                        }
+                    }
                     # Restart-NetAdapter NIC i 2-3 sn disable/enable yapar (Wi-Fi 5-30 sn cunku WLAN auth + DHCP).
-                    # Check-Tweak-Status hemen ardindan tetiklenirse NIC Status="Disconnected" ise sorun
-                    # olabilirdi — v1.2.11 te DetectScript Status filter kaldirildi, registry-based check yapar.
-                    # Yine de UX icin restart tamamlanmasini bekle (Wi-Fi 30 sn, Ethernet 12 sn).
+                    # DetectScript registry-based oldugu icin Status filter sorun degil, ama yine de UX icin bekle.
                     $timeoutSec = if ($hasWiFi) { 30 } else { 12 }
-                    Write-Host "[NetAdapter] NIC restart, $timeoutSec sn beklenecek (Wi-Fi var mi: $hasWiFi)..."
                     $deadline = (Get-Date).AddSeconds($timeoutSec)
                     while ((Get-Date) -lt $deadline) {
                         $allReady = $true
@@ -2163,7 +2180,7 @@ function Get-Default-Tweaks {
                         if ($allReady) { break }
                         Start-Sleep -Milliseconds 500
                     }
-                    Write-Host "[NetAdapter] Tamamlandi: $count adapter, RSS/LSO/Checksum offloadlari Disabled."
+                    try { WpfLog ("[NetAdapter] Tamamlandi: " + $count + " adapter Apply edildi, RSS/LSO/Checksum offloadlari Disabled.") } catch {}
                 ';
                 UndoCommand='
                     # Reset-NetAdapterAdvancedProperty -RegistryKeyword parameter set i YOK (sadece -DisplayName var).
@@ -2179,18 +2196,29 @@ function Get-Default-Tweaks {
                         @{ Key = "*UDPChecksumOffloadIPv6"; Value = 3 },
                         @{ Key = "*IPChecksumOffloadIPv4";  Value = 3 }
                     )
-                    $adapters = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq "Up" -and $_.InterfaceAlias -notmatch "Loopback|VPN|Virtual|Tunnel" }
-                    $adapterInfo = @($adapters | Select-Object Name, InterfaceType)
+                    # v1.2.17 KRITIK FIX: Status=Up filter KALDIRILDI (Apply Command ile ayni mantik).
+                    $adapters = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object {
+                        $_.InterfaceType -in @(6, 71) -and
+                        $_.PhysicalMediaType -ne "Unspecified" -and
+                        $_.InterfaceDescription -notmatch "(?i)VPN|Virtual|Tunnel|Loopback|TAP|WAN Miniport|Hyper-V|Bluetooth"
+                    }
+                    $adapterInfo = @($adapters | Select-Object Name, InterfaceType, Status)
                     $adapterNames = @($adapterInfo | Select-Object -ExpandProperty Name)
                     $hasWiFi = @($adapterInfo | Where-Object { $_.InterfaceType -eq 71 }).Count -gt 0
+                    try { WpfLog ("[NetAdapter Undo] " + $adapterNames.Count + " NIC default degerine donduruluyor (Wi-Fi var mi: " + $hasWiFi + ")") } catch {}
                     foreach ($a in $adapters) {
+                        $okCnt = 0
                         foreach ($d in $defaults) {
                             try {
                                 Set-NetAdapterAdvancedProperty -Name $a.Name -RegistryKeyword $d.Key -RegistryValue $d.Value -NoRestart -ErrorAction Stop
+                                $okCnt++
                             } catch {}
                         }
+                        try { WpfLog ("[NetAdapter Undo] " + $a.Name + " (Status=" + $a.Status + "): " + $okCnt + " property default degerine donduruldu") } catch {}
                     }
-                    try { $adapterNames | ForEach-Object { Restart-NetAdapter -Name $_ -Confirm:$false -ErrorAction SilentlyContinue } } catch {}
+                    if ($adapterNames.Count -gt 0) {
+                        try { $adapterNames | ForEach-Object { Restart-NetAdapter -Name $_ -Confirm:$false -ErrorAction SilentlyContinue } } catch {}
+                    }
                     # Apply ile ayni mantik: Wi-Fi 30 sn, Ethernet 12 sn. Up veya Disconnected kabul.
                     $timeoutSec = if ($hasWiFi) { 30 } else { 12 }
                     $deadline = (Get-Date).AddSeconds($timeoutSec)
