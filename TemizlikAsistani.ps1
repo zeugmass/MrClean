@@ -545,7 +545,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.17"
+$global:AppVersion = "1.2.18"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -2095,18 +2095,22 @@ function Get-Default-Tweaks {
                 Risk="Low"; RestartExplorer=$false; SkipRebootDialog=$true;
                 Description="Aktif ağ kartlarındaki donanım offload özelliklerini kapatır:`n  • Receive Side Scaling (RSS) — CPU çekirdek dağıtımı`n  • Large Send Offload v2 (IPv4/IPv6) — TCP segmentation hardware offload`n  • TCP/UDP/IPv4 Checksum Offload — paket doğrulama hardware offload`n`nDPC latency azalır, CPU paket işlemeyi tek thread'de hızlı yapar (espor için tercih). valleyofdoom + Battle(non)sense önerileri.`n`n⚠️ VPN, güvenlik yazılımı (Kaspersky/ESET), Hyper-V veya server-class iş yükleriyle çatışabilir. Anti-cheat uyumlu.`n`nv1.2.10: RegistryKeyword tabanli yazim (NDIS standart, TR Windows lokalization fix).`nv1.2.11: Wi-Fi laptop fix — DetectScript Status filter kaldirildi (WLAN auth + DHCP suresince Disconnected'da bile registry okunur), Restart wait Wi-Fi icin 30 sn / Ethernet icin 12 sn dinamik.";
                 DetectScript='
-                    # v1.2.11 fix: Status=Up filter kaldirildi — Wi-Fi NIC Restart-NetAdapter sonrasi
-                    # 5-30 sn boyunca Status=Disconnected durumunda kalir (WLAN authentication + DHCP).
-                    # Bu sirada Check-Tweak-Status calistirsa "0 adapter" gorup false donerdi.
-                    # Cozum: Status filter cikar + PhysicalMediaType ile fiziksel NIC sec (Loopback/VPN/Virtual hariç).
-                    # Registry zaten yazili olur, NIC up olmasa bile okunabilir.
+                    # v1.2.18 fix: Sadece *RSS check YETERSIZ. Laptop Wi-Fi driverlari (Intel/Realtek/Killer)
+                    # genelde *RSS keyword desteklemez (sadece TX/RX queue tweaks var). Ethernet uzerinde bile
+                    # bazi ucuz kartlarda RSS yoktur. Kullanici log: "Ethernet 7/8 yazildi, 1 desteklenmedi" -
+                    # o 1 tam olarak *RSS olabilir, DetectScript false dondurup switch kapaniyordu.
+                    # Cozum: 8 keyword listesinden HERHANGI BIRI 0 ise tweak aktif say (driver hangisini destekliyorsa).
+                    # Plus v1.2.11: Status filter kaldirildi (Wi-Fi Disconnected durumda da registry okunabilir).
                     $adapters = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object {
                         $_.InterfaceAlias -notmatch "Loopback|VPN|Virtual|Tunnel" -and
                         $_.PhysicalMediaType -ne "Unspecified"
                     }
+                    $keywords = @("*RSS","*LsoV2IPv4","*LsoV2IPv6","*TCPChecksumOffloadIPv4","*TCPChecksumOffloadIPv6","*UDPChecksumOffloadIPv4","*UDPChecksumOffloadIPv6","*IPChecksumOffloadIPv4")
                     foreach ($a in $adapters) {
-                        $rss = Get-NetAdapterAdvancedProperty -Name $a.Name -RegistryKeyword "*RSS" -ErrorAction SilentlyContinue
-                        if ($rss -and "$($rss.RegistryValue)" -eq "0") { return $true }
+                        foreach ($kw in $keywords) {
+                            $p = Get-NetAdapterAdvancedProperty -Name $a.Name -RegistryKeyword $kw -ErrorAction SilentlyContinue
+                            if ($p -and "$($p.RegistryValue)" -eq "0") { return $true }
+                        }
                     }
                     return $false
                 ';
@@ -2145,15 +2149,20 @@ function Get-Default-Tweaks {
                     }
                     foreach ($a in $adapters) {
                         $appliedThis = 0; $failedThis = 0
+                        $failedKeys = New-Object System.Collections.Generic.List[string]
                         foreach ($o in $offloads) {
                             try {
                                 Set-NetAdapterAdvancedProperty -Name $a.Name -RegistryKeyword $o.Key -RegistryValue $o.Value -NoRestart -ErrorAction Stop
                                 $appliedThis++
                             } catch {
                                 $failedThis++
+                                [void]$failedKeys.Add($o.Key)
                             }
                         }
                         try { WpfLog ("[NetAdapter] " + $a.Name + " (Status=" + $a.Status + "): " + $appliedThis + " property yazildi, " + $failedThis + " desteklenmedi") } catch {}
+                        if ($failedKeys.Count -gt 0) {
+                            try { WpfLog ("[NetAdapter]   Desteklenmeyen keywordler: " + ($failedKeys -join ", ") + " (driver bunlari tanimiyor — normal)") } catch {}
+                        }
                         $count++
                     }
                     # Tek seferde restart — paket islem yolu degisikligi icin
