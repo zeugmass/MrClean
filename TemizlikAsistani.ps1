@@ -545,7 +545,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.12"
+$global:AppVersion = "1.2.13"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -9142,24 +9142,63 @@ function Start-Worker-Process($ScriptContent, $activeBtn, $type, $TimeoutSeconds
     $workerTimer.Start()
 }
 
+# v1.2.13: Registry-based installed app detection. Winget list parse problemi nedeniyle eklendi.
+# Modern winget Microsoft Store source kendini guncellerken progress bar dump'i yazar (CR refresh
+# frame'leri Out-String ile birikir, 200+ satir garbage). Eski regex bu garbage icinde boguluyor,
+# 0 detected donuyordu. Registry uninstall key tarama: hizli (~400ms), garanti, encoding/progress
+# bar/online dependency yok.
+function Get-InstalledAppRegistry {
+    # 3 uninstall registry yolu: HKLM (sistem), WOW6432Node (32-bit), HKCU (kullanici)
+    $regPaths = @(
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*",
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*",
+        "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*"
+    )
+    $apps = New-Object System.Collections.Generic.List[object]
+    foreach ($p in $regPaths) {
+        try {
+            Get-ItemProperty $p -ErrorAction SilentlyContinue | Where-Object {
+                $_.DisplayName -and $_.DisplayName.Trim() -ne ""
+            } | ForEach-Object {
+                $apps.Add([PSCustomObject]@{
+                    Name      = $_.DisplayName.Trim()
+                    Publisher = $_.Publisher
+                    Version   = $_.DisplayVersion
+                }) | Out-Null
+            }
+        } catch {}
+    }
+    return $apps
+}
+
 function Refresh-Winget-Status {
-    # NOT (v1.2.2): async refactor (DispatcherTimer + runspace pool) denendi ama detected list bos donuyordu
-    # (muhtemelen runspace'e hashtable geçişi veya WingetApps scope sorunu). Sync versiyona geri dönüldü.
-    # UI 3-5 sn donar (Do-Events ile yumuşatılır) ama çalışıyor. Async iyileştirmesi v1.2.3'e bırakıldı.
+    # v1.2.13: winget list yerine registry-based detection. Sebepler:
+    #   1) winget list cikti CR-refresh progress bar dump'i ile dolu (256+ satir garbage) — modern
+    #      winget Microsoft Store source self-update sirasinda progress yaziyor, regex bogular.
+    #   2) PS2EXE icinde winget cagrisi encoding/codepage farkli, parse kirilgan.
+    #   3) Registry tarama 400ms (winget list bekleme ~5-10 sn), garanti, offline, encoding-bagimsiz.
+    # Match: hem appName wildcard (DisplayName contains) hem ID son segment (Brave.Brave -> Brave).
     param([bool]$Silent = $false)
 
     if ($btnRefreshWinget) { $btnRefreshWinget.IsEnabled = $false; $btnRefreshWinget.Content = "Taranıyor..." }
     Do-Events
 
     try {
-        $installedOutput = & winget list --disable-interactivity 2>&1 | Out-String
+        $installed = Get-InstalledAppRegistry
+        $installedNames = @($installed | Select-Object -ExpandProperty Name)
         $detectedIDs = @()
 
         foreach ($appName in $global:WingetApps.Keys) {
             $wingetID = $global:WingetApps[$appName]
-            $safeID   = [regex]::Escape($wingetID)
-            $safeName = [regex]::Escape($appName)
-            if ($installedOutput -match "(?i)$safeID" -or $installedOutput -match "(?im)^$safeName\s+") {
+            # Match 1: appName (display name) wildcard contains
+            $m1 = $installedNames | Where-Object { $_ -like "*$appName*" } | Select-Object -First 1
+            # Match 2: ID son segment ("Brave.Brave" -> "Brave", "Microsoft.VisualStudioCode" -> "VisualStudioCode")
+            $idLastSeg = ($wingetID -split '\.')[-1]
+            $m2 = $null
+            if ($idLastSeg -and $idLastSeg.Length -ge 3) {
+                $m2 = $installedNames | Where-Object { $_ -like "*$idLastSeg*" } | Select-Object -First 1
+            }
+            if ($m1 -or $m2) {
                 $detectedIDs += $wingetID
             }
         }
@@ -9167,7 +9206,12 @@ function Refresh-Winget-Status {
         Update-Cache -Type "Winget" -Data $detectedIDs
         Load-Winget-Tree -MemoryList $detectedIDs
 
-        if (-not $Silent) { [System.Windows.MessageBox]::Show("Tarama tamamlandı.", "Bilgi") | Out-Null }
+        WpfLog ("[Winget] Tarama: {0} kurulu program / {1} tanimli paket — {2} eslesme." -f $installedNames.Count, $global:WingetApps.Count, $detectedIDs.Count)
+        if (-not $Silent) {
+            [System.Windows.MessageBox]::Show(
+                ("Tarama tamamlandı.`n`nSistemde toplam: $($installedNames.Count) program`nLitsedeki paketler: $($global:WingetApps.Count)`nKurulu olarak işaretlendi: $($detectedIDs.Count)"),
+                "Winget Tarama") | Out-Null
+        }
     } catch { WpfLog "Hata: $_" }
 
     if ($btnRefreshWinget) { $btnRefreshWinget.Content = "♻ Denetle"; $btnRefreshWinget.IsEnabled = $true }
