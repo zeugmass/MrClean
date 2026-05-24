@@ -545,7 +545,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.15"
+$global:AppVersion = "1.2.16"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -742,8 +742,9 @@ function Get-Default-Tweaks {
     return [ordered]@{
         # --- 1. GÖRSEL PERFORMANS (PROCESS MONITOR VERİLERİNE GÖRE) ---
         "Görsel Performans" = @(
-            @{ 
+            @{
                 Name="Görsel Efektler: Özel (Yazı Tipi + Küçük Resimler Açık)";
+                Description="Windows Visual Effects panelinde 'Custom' moda alır + sadece ClearType (Yazı Tipi Kenarlarını Düzelt) + Thumbnails (Simgeler yerine küçük resimler) açık bırakır, geri kalan animasyon/gölge/saydamlık efektlerini kapatır. CPU + GPU yükü düşer, eski PC'lerde belirgin hız artışı.`n`nv1.2.16 ek: 'Pencereler animasyonla küçültülüp büyütülsün' (MinAnimate, WindowMetrics) eklendi — UserPreferencesMask DEĞİL ayrı bir kayıt, format sonrası taze Win11'de default ON kalıyordu, açıkça OFF yazıldı.`n`n⚠️ NOT: Bu tweak WALLPAPER'a dokunmaz. Eğer geri aldıktan sonra masaüstü düz siyah kalıyorsa, sebep büyük olasılıkla 'Karanlık Modu Aç (Sistem + Wallpaper + Kilit Ekranı)' tweak'inin hala aktif olmasıdır — onu da geri alın.";
                 RestartExplorer="Hard";
                 Batch=@(
                     # 1. Modu "Özel" (Custom) yap
@@ -771,7 +772,13 @@ function Get-Default-Tweaks {
                     @{ Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; ValueName="ListviewAlphaSelect"; Type="DWord"; Data=0; Undo=1 },
 
                     # 9. Küçük Resimler (Senin İsteğin - IconsOnly=0)
-                    @{ Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; ValueName="IconsOnly"; Type="DWord"; Data=0; Undo=0 }
+                    @{ Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; ValueName="IconsOnly"; Type="DWord"; Data=0; Undo=0 },
+
+                    # 10. v1.2.16: Pencereler Animasyonla Küçültülüp Büyütülsün — MinAnimate (WindowMetrics).
+                    # Bu checkbox UserPreferencesMask'ta DEGIL, ayri bir registry value. Format sonrasi
+                    # taze Win11 sisteminde default "1" (animasyon ON) — tweak Custom mode'a aldigi halde
+                    # bu spesifik checkbox ON kaliyordu (kullanici raporu). Acikca "0" yazarak kapat.
+                    @{ Key="HKCU:\Control Panel\Desktop\WindowMetrics"; ValueName="MinAnimate"; Type="String"; Data="0"; Undo="1" }
                 )
             }
 
@@ -2203,26 +2210,29 @@ function Get-Default-Tweaks {
 				Description="Veri paketlerinin birikmesini bekleyen Nagle algoritmasını kapatır. Küçük paketleri biriktirmeden anında sunucuya gönderir. Mermi gidişatını (Hitreg) ve tepkiselliği ciddi oranda artırır.";
                 SubCategory="Ağ ve Ping";
                 Command='
-                    # Sadece fiziksel Ethernet/Wi-Fi adaptörlerine uygula (VPN/Loopback/Tunnel hariç)
+                    # v1.2.16: Status=Up filter kaldirildi (Wi-Fi laptop fix). NIC Disconnected da olsa
+                    # registry value yazilir (sonradan baglandiginda devreye girer). InterfaceGuid kalici.
                     $nics = Get-NetAdapter | Where-Object {
-                        $_.Status -eq "Up" -and
                         $_.InterfaceType -in @(6, 71) -and          # 6=Ethernet, 71=Wi-Fi
                         $_.PhysicalMediaType -ne "Unspecified" -and
                         $_.InterfaceDescription -notmatch "(?i)VPN|Virtual|Tunnel|Loopback|TAP|WAN Miniport|Hyper-V|Bluetooth"
                     }
+                    $wrote = 0
                     foreach ($nic in $nics) {
                         $guid = $nic.InterfaceGuid
                         $path = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters\Interfaces\$guid"
                         if (Test-Path $path) {
-                            New-ItemProperty -Path $path -Name "TcpAckFrequency" -Value 1 -PropertyType DWord -Force -ErrorAction SilentlyContinue
-                            New-ItemProperty -Path $path -Name "TCPNoDelay" -Value 1 -PropertyType DWord -Force -ErrorAction SilentlyContinue
-                            New-ItemProperty -Path $path -Name "TcpDelAckTicks" -Value 0 -PropertyType DWord -Force -ErrorAction SilentlyContinue
+                            New-ItemProperty -Path $path -Name "TcpAckFrequency" -Value 1 -PropertyType DWord -Force -ErrorAction SilentlyContinue | Out-Null
+                            New-ItemProperty -Path $path -Name "TCPNoDelay" -Value 1 -PropertyType DWord -Force -ErrorAction SilentlyContinue | Out-Null
+                            New-ItemProperty -Path $path -Name "TcpDelAckTicks" -Value 0 -PropertyType DWord -Force -ErrorAction SilentlyContinue | Out-Null
+                            $wrote++
                         }
                     }
+                    Write-Host "[TCPNoDelay] $wrote NIC interface uzeri (TcpAckFrequency + TCPNoDelay + TcpDelAckTicks)."
                 ';
                 UndoCommand='
+                    # v1.2.16: Status=Up filter kaldirildi (Wi-Fi laptop fix).
                     $nics = Get-NetAdapter | Where-Object {
-                        $_.Status -eq "Up" -and
                         $_.InterfaceType -in @(6, 71) -and
                         $_.PhysicalMediaType -ne "Unspecified" -and
                         $_.InterfaceDescription -notmatch "(?i)VPN|Virtual|Tunnel|Loopback|TAP|WAN Miniport|Hyper-V|Bluetooth"
@@ -2237,7 +2247,7 @@ function Get-Default-Tweaks {
                         }
                     }
                 ';
-                RestartExplorer=$false 
+                RestartExplorer=$false
             },
 
             # --- C: ZAMANLAYICI (TIMER & BCDEDIT) ---
@@ -6228,10 +6238,15 @@ function Get-Tweak-IsActive($tweak) {
             }
 
             # B) TCP/NETWORK KONTROLLERİ (NoDelay)
+            # v1.2.16: Status=Up filter kaldirildi (Wi-Fi laptop bug fix). NIC Restart-NetAdapter sonrasi
+            # 5-30 sn Disconnected'da kalir (WLAN auth + DHCP). Bu sirada Check-Tweak-Status tetiklenirse
+            # filter ile NIC bulunamaz -> 0 NIC -> false -> switch otomatik kapanir (yanlislikla).
+            # Registry value sadik kalir, NIC up olmasa bile okunabilir. Ayni mantik Ag Adaptoru Offload
+            # icin v1.2.12 te DetectScript te uygulanmisti.
             elseif ($tweak.Name -match "TCP NoDelay") {
                 $nics = Get-NetAdapter | Where-Object {
-                    $_.Status -eq "Up" -and
                     $_.InterfaceType -in @(6, 71) -and
+                    $_.PhysicalMediaType -ne "Unspecified" -and
                     $_.InterfaceDescription -notmatch "(?i)VPN|Virtual|Tunnel|Loopback|TAP|WAN Miniport|Hyper-V|Bluetooth"
                 }
                 $successCount = 0
@@ -6757,6 +6772,47 @@ function Apply-System-Tweaks {
 
     foreach ($t in $toDisable) { Process-TweakItem $t $true }
     foreach ($t in $toEnable) { Process-TweakItem $t $false }
+
+    # --- v1.2.16: APPLY DOGRULAMA — her tweak gercekten istenen state'te mi kontrol et ---
+    # Kullanici bildirimi: "Ag Adaptoru Offload + TCP NoDelay birlikte Apply -> ikisi de kapaniyor".
+    # Sebep: DetectScript'lerden biri Wi-Fi Disconnected durumunda false donerse switch otomatik
+    # kapaniyor. Bu log Apply sonrasi her tweak'in gercek state'ini gosterir, kullanici hangisinin
+    # neden basarisiz oldugunu (Apply mi DetectScript mi) net gorebilir.
+    if (($toEnable.Count + $toDisable.Count) -gt 0) {
+        WpfLog "--- DOGRULAMA (Apply sonrasi gercek state) ---"
+        $okCnt = 0; $failCnt = 0
+        foreach ($t in $toEnable) {
+            try {
+                $isActive = Get-Tweak-IsActive $t
+                if ($isActive) {
+                    WpfLog "[DOGRULAMA] ✓ AKTIF : $($t.Name)"
+                    $okCnt++
+                } else {
+                    WpfLog "[DOGRULAMA] ❌ APPLY BASARISIZ veya DetectScript yanlis dondurdu : $($t.Name) — switch otomatik kapanacak"
+                    $failCnt++
+                }
+            } catch {
+                WpfLog "[DOGRULAMA] ⚠️ Detect hatasi : $($t.Name) — $($_.Exception.Message)"
+                $failCnt++
+            }
+        }
+        foreach ($t in $toDisable) {
+            try {
+                $isActive = Get-Tweak-IsActive $t
+                if (-not $isActive) {
+                    WpfLog "[DOGRULAMA] ✓ GERI ALINDI : $($t.Name)"
+                    $okCnt++
+                } else {
+                    WpfLog "[DOGRULAMA] ❌ UNDO BASARISIZ veya DetectScript hala true diyor : $($t.Name)"
+                    $failCnt++
+                }
+            } catch {
+                WpfLog "[DOGRULAMA] ⚠️ Detect hatasi : $($t.Name) — $($_.Exception.Message)"
+                $failCnt++
+            }
+        }
+        WpfLog "[DOGRULAMA] Toplam: ✓ $okCnt basarili, ❌ $failCnt sorunlu"
+    }
 
     # --- QUICK UNDO için snapshot (Sprint 4.3) ---
     $global:LastTweakOperation = [ordered]@{
