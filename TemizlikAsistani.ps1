@@ -545,7 +545,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.11"
+$global:AppVersion = "1.2.12"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -2086,10 +2086,17 @@ function Get-Default-Tweaks {
                 Name="Ağ Adaptörü Offload Devre Dışı (RSS / LSO / Checksum)";
                 SubCategory="Ağ ve Ping";
                 Risk="Low"; RestartExplorer=$false; SkipRebootDialog=$true;
-                Description="Aktif ağ kartlarındaki donanım offload özelliklerini kapatır:`n  • Receive Side Scaling (RSS) — CPU çekirdek dağıtımı`n  • Large Send Offload v2 (IPv4/IPv6) — TCP segmentation hardware offload`n  • TCP/UDP/IPv4 Checksum Offload — paket doğrulama hardware offload`n`nDPC latency azalır, CPU paket işlemeyi tek thread'de hızlı yapar (espor için tercih). valleyofdoom + Battle(non)sense önerileri.`n`n⚠️ VPN, güvenlik yazılımı (Kaspersky/ESET), Hyper-V veya server-class iş yükleriyle çatışabilir. Anti-cheat uyumlu.`n`nv1.2.10 fix: RegistryKeyword tabanli yazim (NDIS standart). Onceki DisplayName ile yazim TR Windows lokalizasyonunda match etmiyordu (ornek: RSS -> Yan Olcuyu Al), Apply sessizce basarisiz oluyordu.";
+                Description="Aktif ağ kartlarındaki donanım offload özelliklerini kapatır:`n  • Receive Side Scaling (RSS) — CPU çekirdek dağıtımı`n  • Large Send Offload v2 (IPv4/IPv6) — TCP segmentation hardware offload`n  • TCP/UDP/IPv4 Checksum Offload — paket doğrulama hardware offload`n`nDPC latency azalır, CPU paket işlemeyi tek thread'de hızlı yapar (espor için tercih). valleyofdoom + Battle(non)sense önerileri.`n`n⚠️ VPN, güvenlik yazılımı (Kaspersky/ESET), Hyper-V veya server-class iş yükleriyle çatışabilir. Anti-cheat uyumlu.`n`nv1.2.10: RegistryKeyword tabanli yazim (NDIS standart, TR Windows lokalization fix).`nv1.2.11: Wi-Fi laptop fix — DetectScript Status filter kaldirildi (WLAN auth + DHCP suresince Disconnected'da bile registry okunur), Restart wait Wi-Fi icin 30 sn / Ethernet icin 12 sn dinamik.";
                 DetectScript='
-                    # RegistryKeyword locale-independent — TR Windowsda da NDIS standart keyword ayni.
-                    $adapters = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq "Up" -and $_.InterfaceAlias -notmatch "Loopback|VPN|Virtual|Tunnel" }
+                    # v1.2.11 fix: Status=Up filter kaldirildi — Wi-Fi NIC Restart-NetAdapter sonrasi
+                    # 5-30 sn boyunca Status=Disconnected durumunda kalir (WLAN authentication + DHCP).
+                    # Bu sirada Check-Tweak-Status calistirsa "0 adapter" gorup false donerdi.
+                    # Cozum: Status filter cikar + PhysicalMediaType ile fiziksel NIC sec (Loopback/VPN/Virtual hariç).
+                    # Registry zaten yazili olur, NIC up olmasa bile okunabilir.
+                    $adapters = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object {
+                        $_.InterfaceAlias -notmatch "Loopback|VPN|Virtual|Tunnel" -and
+                        $_.PhysicalMediaType -ne "Unspecified"
+                    }
                     foreach ($a in $adapters) {
                         $rss = Get-NetAdapterAdvancedProperty -Name $a.Name -RegistryKeyword "*RSS" -ErrorAction SilentlyContinue
                         if ($rss -and "$($rss.RegistryValue)" -eq "0") { return $true }
@@ -2111,35 +2118,45 @@ function Get-Default-Tweaks {
                     )
                     $adapters = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq "Up" -and $_.InterfaceAlias -notmatch "Loopback|VPN|Virtual|Tunnel" }
                     $count = 0
-                    $adapterNames = @($adapters | Select-Object -ExpandProperty Name)
+                    $adapterInfo = @($adapters | Select-Object Name, InterfaceType, MediaConnectionState)
+                    $adapterNames = @($adapterInfo | Select-Object -ExpandProperty Name)
+                    # InterfaceType 71 = Wi-Fi (IEEE 802.11), 6 = Ethernet. WLAN authentication + DHCP
+                    # ile Wi-Fi restart 5-30 sn surer, Ethernet 1-3 sn yeter.
+                    $hasWiFi = @($adapterInfo | Where-Object { $_.InterfaceType -eq 71 }).Count -gt 0
                     foreach ($a in $adapters) {
+                        $appliedThis = 0
                         foreach ($o in $offloads) {
                             try {
                                 Set-NetAdapterAdvancedProperty -Name $a.Name -RegistryKeyword $o.Key -RegistryValue $o.Value -NoRestart -ErrorAction Stop
+                                $appliedThis++
                             } catch {
                                 # Bu keyword bu NIC sofor tarafindan desteklenmiyor olabilir, sessiz gec
                             }
                         }
+                        Write-Host "[NetAdapter] $($a.Name): $appliedThis offload property Disabled."
                         $count++
                     }
                     # Tek seferde restart — paket islem yolu degisikligi icin
                     try { $adapterNames | ForEach-Object { Restart-NetAdapter -Name $_ -Confirm:$false -ErrorAction SilentlyContinue } } catch {}
-                    # Restart-NetAdapter NIC i 2-3 saniye disable/enable yapar. Apply-System-Tweaks
-                    # hemen ardindan Check-Tweak-Status tetikler — NIC Status hala "Disabled" / "Disconnected"
-                    # ise Get-NetAdapter Where Status=Up 0 sayisi doner, hem bu tweak hem komsu
-                    # TCP NoDelay tweak inin DetectScript i "false" sonucu vererek switch i kapatir.
-                    # Cozum: max 12 sn NIC nin tekrar "Up" duruma donmesini bekle.
-                    $deadline = (Get-Date).AddSeconds(12)
+                    # Restart-NetAdapter NIC i 2-3 sn disable/enable yapar (Wi-Fi 5-30 sn cunku WLAN auth + DHCP).
+                    # Check-Tweak-Status hemen ardindan tetiklenirse NIC Status="Disconnected" ise sorun
+                    # olabilirdi — v1.2.11 te DetectScript Status filter kaldirildi, registry-based check yapar.
+                    # Yine de UX icin restart tamamlanmasini bekle (Wi-Fi 30 sn, Ethernet 12 sn).
+                    $timeoutSec = if ($hasWiFi) { 30 } else { 12 }
+                    Write-Host "[NetAdapter] NIC restart, $timeoutSec sn beklenecek (Wi-Fi var mi: $hasWiFi)..."
+                    $deadline = (Get-Date).AddSeconds($timeoutSec)
                     while ((Get-Date) -lt $deadline) {
-                        $allUp = $true
+                        $allReady = $true
                         foreach ($n in $adapterNames) {
                             $cur = Get-NetAdapter -Name $n -ErrorAction SilentlyContinue
-                            if (-not $cur -or $cur.Status -ne "Up") { $allUp = $false; break }
+                            # "Up" veya "Disconnected" kabul (NIC acik, baglanma sureci sirasinda da OK).
+                            # Sadece "Disabled" / "NotPresent" durumu bekle.
+                            if (-not $cur -or $cur.Status -notin @("Up","Disconnected")) { $allReady = $false; break }
                         }
-                        if ($allUp) { break }
-                        Start-Sleep -Milliseconds 400
+                        if ($allReady) { break }
+                        Start-Sleep -Milliseconds 500
                     }
-                    Write-Host "[NetAdapter] $count adapter icin RSS/LSO/Checksum offloadlari Disabled."
+                    Write-Host "[NetAdapter] Tamamlandi: $count adapter, RSS/LSO/Checksum offloadlari Disabled."
                 ';
                 UndoCommand='
                     # Reset-NetAdapterAdvancedProperty -RegistryKeyword parameter set i YOK (sadece -DisplayName var).
@@ -2156,7 +2173,9 @@ function Get-Default-Tweaks {
                         @{ Key = "*IPChecksumOffloadIPv4";  Value = 3 }
                     )
                     $adapters = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq "Up" -and $_.InterfaceAlias -notmatch "Loopback|VPN|Virtual|Tunnel" }
-                    $adapterNames = @($adapters | Select-Object -ExpandProperty Name)
+                    $adapterInfo = @($adapters | Select-Object Name, InterfaceType)
+                    $adapterNames = @($adapterInfo | Select-Object -ExpandProperty Name)
+                    $hasWiFi = @($adapterInfo | Where-Object { $_.InterfaceType -eq 71 }).Count -gt 0
                     foreach ($a in $adapters) {
                         foreach ($d in $defaults) {
                             try {
@@ -2165,17 +2184,17 @@ function Get-Default-Tweaks {
                         }
                     }
                     try { $adapterNames | ForEach-Object { Restart-NetAdapter -Name $_ -Confirm:$false -ErrorAction SilentlyContinue } } catch {}
-                    # Apply ile ayni mantik: NIC restart sonrasi Up duruma donsun, akabinde
-                    # Check-Tweak-Status DetectScript hatali "false" dondurmesin.
-                    $deadline = (Get-Date).AddSeconds(12)
+                    # Apply ile ayni mantik: Wi-Fi 30 sn, Ethernet 12 sn. Up veya Disconnected kabul.
+                    $timeoutSec = if ($hasWiFi) { 30 } else { 12 }
+                    $deadline = (Get-Date).AddSeconds($timeoutSec)
                     while ((Get-Date) -lt $deadline) {
-                        $allUp = $true
+                        $allReady = $true
                         foreach ($n in $adapterNames) {
                             $cur = Get-NetAdapter -Name $n -ErrorAction SilentlyContinue
-                            if (-not $cur -or $cur.Status -ne "Up") { $allUp = $false; break }
+                            if (-not $cur -or $cur.Status -notin @("Up","Disconnected")) { $allReady = $false; break }
                         }
-                        if ($allUp) { break }
-                        Start-Sleep -Milliseconds 400
+                        if ($allReady) { break }
+                        Start-Sleep -Milliseconds 500
                     }
                 '
             },
