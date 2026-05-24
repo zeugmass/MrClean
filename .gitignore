@@ -65,3 +65,6 @@ MrClean/
 # IntelliJ vs (ihtimal)
 *.iml
 .idea/
+
+# Commit message dosyalari (-F flag ile gecici kullanim, repo'ya gitmesin)
+COMMIT_MSG*.txt

@@ -523,6 +523,9 @@ $global:TweaksLoaded = $false    # script: → global: (tab handler ile Load-Twe
 $global:CustomTools = @()
 $global:RestorePointMode = "Ask" # "Ask" | "Auto" | "Never" — Tweak uygulamadan önce Sistem Geri Yükleme davranışı
 $global:LastTweakOperation = $null # Sprint 4.3: Quick undo icin son apply'in snapshot'i { Applied = @(...); Undone = @(...); Time = ... }
+# v1.2.10: Benchmark snapshot dizini — tweak oncesi/sonrasi performans karsilastirmasi icin.
+# Her snapshot JSON: bench_<yyyyMMdd_HHmmss>.json. Get-BenchSnapshot 9 metrik suite calistirir.
+$global:BenchDir = Join-Path $env:APPDATA "MrClean\benchmarks"
 $global:ConfigDirty = $false     # Dirty flag: true olduğunda Mark-ConfigDirty diske yazar
 $global:DashResult  = $null      # Dashboard WMI verisi (Show-HardwareDetail erişiyor)
 $global:DashCache   = $null      # 5 dakika önbellek
@@ -542,7 +545,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.9"
+$global:AppVersion = "1.2.10"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -992,20 +995,22 @@ function Get-Default-Tweaks {
 			@{
 				Name="Tüm Tray İkonlarını Göster";
 				SubCategory="Görev Çubuğu";
-				Description="Sistem tepsisindeki tüm gizli ikonları görünür yapar (taşma menüsü kapatır). Ek olarak NotifyIconSettings altındaki tüm ikon kayıtlarını 'IsPromoted=1' yapar.";
-				RestartExplorer="Soft";
+				Description="Sistem tepsisindeki tüm gizli ikonları görünür yapar (taşma menüsü kapatır). Ek olarak NotifyIconSettings altındaki tüm ikon kayıtlarını IsPromoted=1 yapar.`n`n⚠️ v1.2.10 fix: Win11 22H2+'da Explorer Hard restart şart (taskbar tam reload). Önceki versiyon hidden ikonları yanlışlıkla atlıyordu (bug).";
+				RestartExplorer="Hard";
 				DetectScript='
 					$v = (Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer" -Name "EnableAutoTray" -ErrorAction SilentlyContinue).EnableAutoTray
 					return ("$v" -eq "0")
 				';
 				Command='
+					# Win10/Win11 ortak: EnableAutoTray=0 ile tasma menusunu kapatir
 					Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer" -Name "EnableAutoTray" -Value 0 -Type DWord -Force
+
+					# Win11 22H2+ icin: NotifyIconSettings altinda HER ikon kaydina IsPromoted=1 yaz.
+					# Onceki bug: "if cur -ne 0 -and -ne null" hidden ikonlari (cur=0) BYPASS ediyordu —
+					# esas gostermek istediklerimizi atliyordu. Simdi tum kayitlara unconditional set.
 					$nip = Get-ChildItem -Path "registry::HKEY_CURRENT_USER\Control Panel\NotifyIconSettings" -Recurse -Force -ErrorAction SilentlyContinue
 					foreach ($k in $nip) {
-						$cur = (Get-ItemProperty -Path "registry::$k" -Name "IsPromoted" -ErrorAction SilentlyContinue).IsPromoted
-						if ($cur -ne 0 -and $cur -ne $null) {
-							Set-ItemProperty -Path "registry::$k" -Name "IsPromoted" -Value 1 -Force -ErrorAction SilentlyContinue
-						}
+						Set-ItemProperty -Path "registry::$k" -Name "IsPromoted" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
 					}
 				';
 				UndoCommand='
@@ -1476,9 +1481,38 @@ function Get-Default-Tweaks {
                 Risk="Low"; RestartExplorer=$false
             },
             @{
-                Name="Memory Compression Kapat (16GB+ RAM için)";
-                Description="Windows'un boş RAM'i sıkıştırma mekanizmasını kapatır. 16GB+ RAM'i olanlarda CPU yükü azalır (compression yok), erişim daha hızlı. ⚠️ 8GB altı RAM'de YAPMA — RAM yetmez, swap'a düşer.";
-                Command="Disable-MMAgent -MemoryCompression";
+                Name="Memory Compression Kapat (RAM-aware)";
+                Description="Windows'un boş RAM'i sıkıştırma mekanizmasını kapatır. 16GB+ RAM'de CPU yükü azalır (compression yok), bellek erişimi daha hızlı.`n`n🧠 RAM-aware (v1.2.10): Apply edilirken sistem RAM'i otomatik tespit edilir:`n  • 16GB+ → direkt uygulanır`n  • 8-16GB → onay sorusu gelir (RAM marjinal)`n  • <8GB → uygulanmaz, hata mesajı verir (swap'a düşer, sistem yavaşlar)`n`nDetectScript Get-MMAgent ile gerçek state okur (registry değil).";
+                Command='
+                    # RAM-aware kontrol: 16GB+ direkt, 8-16GB onay, <8GB iptal
+                    try {
+                        $totalGB = [Math]::Round(((Get-CimInstance Win32_PhysicalMemory -ErrorAction Stop | Measure-Object -Property Capacity -Sum).Sum / 1GB), 0)
+                    } catch {
+                        # WMI hata verirse, alternatif: ComputerInfo
+                        try {
+                            $totalGB = [Math]::Round((Get-CimInstance Win32_ComputerSystem -ErrorAction Stop).TotalPhysicalMemory / 1GB, 0)
+                        } catch { $totalGB = 0 }
+                    }
+
+                    if ($totalGB -ge 16) {
+                        Disable-MMAgent -MemoryCompression -ErrorAction SilentlyContinue
+                        Write-Host "[MemCompression] Disabled — sistem RAM $totalGB GB (16GB+ guvenli)."
+                    } elseif ($totalGB -ge 8) {
+                        # Marjinal — kullaniciya soral
+                        $msg = "Sistem RAM: $totalGB GB (16GB altinda).`n`nMemory Compression kapatmak bu durumda riskli olabilir — RAM yetersiz kalip swap dosyasina dusebilir, sistem yavaslar.`n`nYine de uygulamak istiyor musun?"
+                        $resp = [System.Windows.MessageBox]::Show($msg, "Memory Compression — RAM Uyarisi", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
+                        if ($resp -eq "Yes") {
+                            Disable-MMAgent -MemoryCompression -ErrorAction SilentlyContinue
+                            Write-Host "[MemCompression] Disabled — kullanici onayi ile ($totalGB GB RAM)."
+                        } else {
+                            Write-Host "[MemCompression] Atlandi — kullanici iptal etti ($totalGB GB RAM)."
+                        }
+                    } else {
+                        # 8GB altinda risk yuksek
+                        [System.Windows.MessageBox]::Show("Sistem RAM cok dusuk: $totalGB GB.`n`nMemory Compression bu durumda kapatilamaz — RAM yetersiz kalir, sistem ciddi yavaslar.`n`nTweak atlandi.", "Memory Compression — Iptal", "OK", "Error") | Out-Null
+                        Write-Host "[MemCompression] IPTAL — RAM $totalGB GB (<8GB)."
+                    }
+                ';
                 UndoCommand="Enable-MMAgent -MemoryCompression";
                 # Detection: Get-MMAgent state'ten oku — registry tabanlı bir tweak değil
                 DetectScript="(Get-MMAgent).MemoryCompression -eq `$false";
@@ -2048,7 +2082,104 @@ function Get-Default-Tweaks {
                     Write-Host "[NetAdapter] $count adapter icin tum power/wake degerleri silindi (default)."
                 '
             },
-            @{ 
+            @{
+                Name="Ağ Adaptörü Offload Devre Dışı (RSS / LSO / Checksum)";
+                SubCategory="Ağ ve Ping";
+                Risk="Low"; RestartExplorer=$false; SkipRebootDialog=$true;
+                Description="Aktif ağ kartlarındaki donanım offload özelliklerini kapatır:`n  • Receive Side Scaling (RSS) — CPU çekirdek dağıtımı`n  • Large Send Offload v2 (IPv4/IPv6) — TCP segmentation hardware offload`n  • TCP/UDP/IPv4 Checksum Offload — paket doğrulama hardware offload`n`nDPC latency azalır, CPU paket işlemeyi tek thread'de hızlı yapar (espor için tercih). valleyofdoom + Battle(non)sense önerileri.`n`n⚠️ VPN, güvenlik yazılımı (Kaspersky/ESET), Hyper-V veya server-class iş yükleriyle çatışabilir. Anti-cheat uyumlu.`n`nv1.2.10 fix: RegistryKeyword tabanli yazim (NDIS standart). Onceki DisplayName ile yazim TR Windows lokalizasyonunda match etmiyordu (ornek: RSS -> Yan Olcuyu Al), Apply sessizce basarisiz oluyordu.";
+                DetectScript='
+                    # RegistryKeyword locale-independent — TR Windowsda da NDIS standart keyword ayni.
+                    $adapters = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq "Up" -and $_.InterfaceAlias -notmatch "Loopback|VPN|Virtual|Tunnel" }
+                    foreach ($a in $adapters) {
+                        $rss = Get-NetAdapterAdvancedProperty -Name $a.Name -RegistryKeyword "*RSS" -ErrorAction SilentlyContinue
+                        if ($rss -and "$($rss.RegistryValue)" -eq "0") { return $true }
+                    }
+                    return $false
+                ';
+                Command='
+                    # NDIS standart keyword tablosu (locale-independent). Microsoft NIC driver standardi.
+                    # Disabled = 0 her keyword icin (Checksum offloadlarinin default-enabled degeri 3).
+                    $offloads = @(
+                        @{ Key = "*RSS";                    Value = 0 },
+                        @{ Key = "*LsoV2IPv4";              Value = 0 },
+                        @{ Key = "*LsoV2IPv6";              Value = 0 },
+                        @{ Key = "*TCPChecksumOffloadIPv4"; Value = 0 },
+                        @{ Key = "*TCPChecksumOffloadIPv6"; Value = 0 },
+                        @{ Key = "*UDPChecksumOffloadIPv4"; Value = 0 },
+                        @{ Key = "*UDPChecksumOffloadIPv6"; Value = 0 },
+                        @{ Key = "*IPChecksumOffloadIPv4";  Value = 0 }
+                    )
+                    $adapters = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq "Up" -and $_.InterfaceAlias -notmatch "Loopback|VPN|Virtual|Tunnel" }
+                    $count = 0
+                    $adapterNames = @($adapters | Select-Object -ExpandProperty Name)
+                    foreach ($a in $adapters) {
+                        foreach ($o in $offloads) {
+                            try {
+                                Set-NetAdapterAdvancedProperty -Name $a.Name -RegistryKeyword $o.Key -RegistryValue $o.Value -NoRestart -ErrorAction Stop
+                            } catch {
+                                # Bu keyword bu NIC sofor tarafindan desteklenmiyor olabilir, sessiz gec
+                            }
+                        }
+                        $count++
+                    }
+                    # Tek seferde restart — paket islem yolu degisikligi icin
+                    try { $adapterNames | ForEach-Object { Restart-NetAdapter -Name $_ -Confirm:$false -ErrorAction SilentlyContinue } } catch {}
+                    # Restart-NetAdapter NIC i 2-3 saniye disable/enable yapar. Apply-System-Tweaks
+                    # hemen ardindan Check-Tweak-Status tetikler — NIC Status hala "Disabled" / "Disconnected"
+                    # ise Get-NetAdapter Where Status=Up 0 sayisi doner, hem bu tweak hem komsu
+                    # TCP NoDelay tweak inin DetectScript i "false" sonucu vererek switch i kapatir.
+                    # Cozum: max 12 sn NIC nin tekrar "Up" duruma donmesini bekle.
+                    $deadline = (Get-Date).AddSeconds(12)
+                    while ((Get-Date) -lt $deadline) {
+                        $allUp = $true
+                        foreach ($n in $adapterNames) {
+                            $cur = Get-NetAdapter -Name $n -ErrorAction SilentlyContinue
+                            if (-not $cur -or $cur.Status -ne "Up") { $allUp = $false; break }
+                        }
+                        if ($allUp) { break }
+                        Start-Sleep -Milliseconds 400
+                    }
+                    Write-Host "[NetAdapter] $count adapter icin RSS/LSO/Checksum offloadlari Disabled."
+                ';
+                UndoCommand='
+                    # Reset-NetAdapterAdvancedProperty -RegistryKeyword parameter set i YOK (sadece -DisplayName var).
+                    # DisplayName ise TR Windowsda lokalize ("Yan Olcuyu Al" vs.) — eski Reset cagrisi calismiyordu.
+                    # Cozum: Microsoft NDIS standart default degerleri direkt Set ile yaz (RSS=1, LSO=1, Checksum=3).
+                    $defaults = @(
+                        @{ Key = "*RSS";                    Value = 1 },
+                        @{ Key = "*LsoV2IPv4";              Value = 1 },
+                        @{ Key = "*LsoV2IPv6";              Value = 1 },
+                        @{ Key = "*TCPChecksumOffloadIPv4"; Value = 3 },
+                        @{ Key = "*TCPChecksumOffloadIPv6"; Value = 3 },
+                        @{ Key = "*UDPChecksumOffloadIPv4"; Value = 3 },
+                        @{ Key = "*UDPChecksumOffloadIPv6"; Value = 3 },
+                        @{ Key = "*IPChecksumOffloadIPv4";  Value = 3 }
+                    )
+                    $adapters = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq "Up" -and $_.InterfaceAlias -notmatch "Loopback|VPN|Virtual|Tunnel" }
+                    $adapterNames = @($adapters | Select-Object -ExpandProperty Name)
+                    foreach ($a in $adapters) {
+                        foreach ($d in $defaults) {
+                            try {
+                                Set-NetAdapterAdvancedProperty -Name $a.Name -RegistryKeyword $d.Key -RegistryValue $d.Value -NoRestart -ErrorAction Stop
+                            } catch {}
+                        }
+                    }
+                    try { $adapterNames | ForEach-Object { Restart-NetAdapter -Name $_ -Confirm:$false -ErrorAction SilentlyContinue } } catch {}
+                    # Apply ile ayni mantik: NIC restart sonrasi Up duruma donsun, akabinde
+                    # Check-Tweak-Status DetectScript hatali "false" dondurmesin.
+                    $deadline = (Get-Date).AddSeconds(12)
+                    while ((Get-Date) -lt $deadline) {
+                        $allUp = $true
+                        foreach ($n in $adapterNames) {
+                            $cur = Get-NetAdapter -Name $n -ErrorAction SilentlyContinue
+                            if (-not $cur -or $cur.Status -ne "Up") { $allUp = $false; break }
+                        }
+                        if ($allUp) { break }
+                        Start-Sleep -Milliseconds 400
+                    }
+                '
+            },
+            @{
                 Name="TCP NoDelay ve AckFrequency (Nagle Algoritmasını Kapat)";
 				Description="Veri paketlerinin birikmesini bekleyen Nagle algoritmasını kapatır. Küçük paketleri biriktirmeden anında sunucuya gönderir. Mermi gidişatını (Hitreg) ve tepkiselliği ciddi oranda artırır.";
                 SubCategory="Ağ ve Ping";
@@ -2103,10 +2234,30 @@ function Get-Default-Tweaks {
             @{
                 Name="HPET (Platform Clock) Kapat";
                 SubCategory="Zamanlayıcı (Timer)";
-				Description="Eski nesil yüksek hassasiyetli olay zamanlayıcısını kapatır. Modern işlemcilerde (Ryzen/Core) HPET'in kapalı olması DPC gecikmesini düşürür ve FPS'i stabilize eder. ⚠️ Valorant/Ricochet ile 'Platform Tick Zorla' ayarıyla BİRLİKTE kullanmayın.";
+				Description="Eski nesil yüksek hassasiyetli olay zamanlayıcısını kapatır. Modern işlemcilerde (Ryzen/Core) HPET'in kapalı olması DPC gecikmesini düşürür ve FPS'i stabilize eder. ⚠️ Valorant/Ricochet gibi anti-cheat'li oyunlarda dikkatli kullanın — sistem timer manipülasyonu false positive yapabilir.";
                 Command='bcdedit /deletevalue useplatformclock';
                 UndoCommand='bcdedit /set useplatformclock yes';
                 RestartExplorer=$false
+            },
+            @{
+                Name="TSC Sync Policy: Enhanced (Multi-CPU)";
+                SubCategory="Zamanlayıcı (Timer)";
+                Description="Time Stamp Counter (TSC) senkronizasyon politikasını 'enhanced' moduna alır. Çok çekirdekli CPU'larda (Ryzen 9800X3D dahil) çekirdekler arası TSC kayması varsa Windows daha agresif senkronlama uygular. Espor stutter ve mikro-takılmaları azaltır.`n`n📚 Kaynak: valleyofdoom/PC-Tuning research docs. Modern Ryzen/Core sistemlerde önerilir.`n`n⚠️ Reboot şarttır (kernel boot config). Anti-cheat uyumlu.";
+                Risk="Low"; RestartExplorer=$false;
+                DetectScript='
+                    # bcdedit cache uzerinden kontrol — Refresh-BcdEdit-Cache zaten Add_Loaded sonrasi prime ediliyor
+                    if ($script:BcdEditEnumOutput -match "(?im)tscsyncpolicy\s+Enhanced") { return $true }
+                    return $false
+                ';
+                Command='
+                    $null = Invoke-HiddenCommand "bcdedit.exe" "/set tscsyncpolicy enhanced"
+                    # Cache invalidate — bir sonraki DetectScript taze okusun
+                    $script:BcdEditEnumOutput = ""
+                ';
+                UndoCommand='
+                    $null = Invoke-HiddenCommand "bcdedit.exe" "/deletevalue tscsyncpolicy"
+                    $script:BcdEditEnumOutput = ""
+                '
             }
             # NOT (v1.2.9): "Platform Tick Zorla" tweak'i kaldirildi — Topluluk kaniti
             # (Overclock.net + Blur Busters): useplatformtick yes input lag yaratir + Sleep
@@ -2992,12 +3143,14 @@ $xaml = @"
                             
                             <!-- Alt Butonlar -->
                             <Border Grid.Row="1" Background="#222" CornerRadius="5" Padding="5" Margin="0,10,0,0">
-                                <UniformGrid Rows="1">
-                                    <Button x:Name="btnFixUpdate" Content="🛠️ Update Onar" Background="#E68A00" Foreground="White" Height="35" Margin="0,0,5,0" FontWeight="Bold" ToolTip="Windows Update servisini sıfırla ve yeniden başlat"/>
-                                    <Button x:Name="btnResetNet" Content="🌐 Ağ Sıfırla" Background="#333" Foreground="White" Height="35" Margin="0,0,5,0" ToolTip="Ağ ayarlarını (DNS, IP, WinSock) sıfırla — 5 adımlı DHCP DNS fix dahil"/>
-                                    <Button x:Name="btnResetWinHttpProxy" Content="📡 WinHTTP Sıfırla" Background="#333" Foreground="White" Height="35" Margin="0,0,5,0" ToolTip="WinHTTP sistem proxy ayarlarını sıfırla (Windows Update, Defender, Store)"/>
-                                    <Button x:Name="btnTimerResTest" Content="⏱️ Timer Test" Background="#333" Foreground="White" Height="35" Margin="0,0,5,0" ToolTip="Timer Resolution canlı test + Otomatik İnce Ayar Benchmark (valleyofdoom/SwiftyPop algoritması)"/>
-                                    <Button x:Name="btnSfcScan" Content="🔍 SFC Scan" Background="#006600" Foreground="White" Height="35" FontWeight="Bold" ToolTip="System File Checker ile sistem dosyalarını onar (sfc /scannow)"/>
+                                <UniformGrid Rows="2" Columns="4">
+                                    <Button x:Name="btnFixUpdate" Content="🛠️ Update Onar" Background="#E68A00" Foreground="White" Height="35" Margin="3" FontWeight="Bold" ToolTip="Windows Update servisini sıfırla ve yeniden başlat"/>
+                                    <Button x:Name="btnResetNet" Content="🌐 Ağ Sıfırla" Background="#333" Foreground="White" Height="35" Margin="3" ToolTip="Ağ ayarlarını (DNS, IP, WinSock) sıfırla — 5 adımlı DHCP DNS fix dahil"/>
+                                    <Button x:Name="btnResetWinHttpProxy" Content="📡 WinHTTP Sıfırla" Background="#333" Foreground="White" Height="35" Margin="3" ToolTip="WinHTTP sistem proxy ayarlarını sıfırla (Windows Update, Defender, Store)"/>
+                                    <Button x:Name="btnTimerResTest" Content="⏱️ Timer Test" Background="#333" Foreground="White" Height="35" Margin="3" ToolTip="Timer Resolution canlı test + Otomatik İnce Ayar Benchmark (valleyofdoom/SwiftyPop algoritması)"/>
+                                    <Button x:Name="btnActivityLog" Content="📜 Aktivite Log" Background="#333" Foreground="White" Height="35" Margin="3" ToolTip="Apply / Undo geçmişi — son 100 işlem, tek tek veya toplu geri alma"/>
+                                    <Button x:Name="btnBenchmark" Content="⚖️ Benchmark" Background="#444488" Foreground="White" Height="35" Margin="3" FontWeight="Bold" ToolTip="9 metrik performans ölçümü — tweak öncesi/sonrası snapshot al, karşılaştır (Timer, Ping, DNS, Disk 4K, DPC, RAM)"/>
+                                    <Button x:Name="btnSfcScan" Content="🔍 SFC Scan" Background="#006600" Foreground="White" Height="35" Margin="3" FontWeight="Bold" ToolTip="System File Checker ile sistem dosyalarını onar (sfc /scannow)"/>
                                 </UniformGrid>
                             </Border>
                         </Grid>
@@ -3761,7 +3914,7 @@ $xamlTweakMgr = @"
         </Grid>
         <Border Grid.Column='2' Background='#222' CornerRadius='5' Padding='15'>
 			<ScrollViewer VerticalScrollBarVisibility='Auto' HorizontalScrollBarVisibility='Disabled'>
-				<Grid>
+				<Grid Margin='0,0,18,0'>
 					<Grid.ColumnDefinitions>
 						<ColumnDefinition Width='*'/>
 					</Grid.ColumnDefinitions>
@@ -4309,6 +4462,8 @@ $btnFixUpdate = $Win.FindName('btnFixUpdate')
 $btnResetNet = $Win.FindName('btnResetNet')
 $btnResetWinHttpProxy = $Win.FindName('btnResetWinHttpProxy')
 $btnTimerResTest = $Win.FindName('btnTimerResTest')
+$btnActivityLog = $Win.FindName('btnActivityLog')
+$btnBenchmark = $Win.FindName('btnBenchmark')
 $btnSfcScan = $Win.FindName('btnSfcScan')
 $tvShellBags = $Win.FindName('tvShellBags'); $tvWinget = $Win.FindName('tvWinget')
 
@@ -6446,10 +6601,10 @@ function Apply-System-Tweaks {
     }
     
     Scan-Nodes $tvTweaks.Items
-    
+
     $totalOps = $toEnable.Count + $toDisable.Count
     if ($totalOps -eq 0) {[System.Windows.MessageBox]::Show("Herhangi bir değişiklik yapılmadı. Sistem zaten seçimlerinizle aynı durumda.", "Bilgi") | Out-Null; return }
-    
+
     # --- MESAJ GÜNCELLEMESİ (Daha Anlaşılır) ---
     $msg = "Seçimleriniz (Açık/Kapalı durumları) sisteminizle eşitlenecek.`n`n"
     if ($toEnable.Count -gt 0) { $msg += "✅ $($toEnable.Count) ayar UYGULANACAK (Açılacak).`n" }
@@ -7157,19 +7312,28 @@ ipconfig /flushdns > $null
         })
         
         # SİL BUTONU
-        $btnDel.Add_Click({ 
-            if ($lst.SelectedIndex -ne -1) { 
+        $btnDel.Add_Click({
+            if ($lst.SelectedIndex -ne -1) {
                 $selTweak = $lst.SelectedItem.Tag
+                # v1.2.10: Yanlislikla silme onleme — onay MessageBox ekle.
+                # Profil Yoneticisi Sil ve sag tik "Listeden Sil" zaten onay soruyor; bu da uyumlu.
+                $confirm = [System.Windows.MessageBox]::Show(
+                    ("'{0}' tweak'i Ayar Yöneticisi'nden kalıcı olarak silinecek.`n`nBu tweak Tweaks sekmesindeki listeden kaldırılır, geri alınamaz. (Sıfırlamak için 'Yeni' butonu ile yeniden ekleyebilirsin veya config dosyasını sıfırlayıp varsayılana dönebilirsin.)`n`nDevam edilsin mi?" -f $selTweak.Name),
+                    "Tweak Sil — Onay",
+                    [System.Windows.MessageBoxButton]::YesNo,
+                    [System.Windows.MessageBoxImage]::Warning)
+                if ($confirm -ne 'Yes') { return }
+
                 $cat = $global:TweakList.Keys | Where-Object { $global:TweakList[$_] -contains $selTweak }
                 $arr = [System.Collections.ArrayList]$global:TweakList[$cat]
                 $arr.Remove($selTweak)
                 $global:TweakList[$cat] = $arr.ToArray()
-                
+
                 # Silerken açıklamayı da JSON'dan temizle
                 $global:ItemDescriptions.Remove($selTweak.Name)
 
-                Mark-ConfigDirty; Refresh-List; Load-Tweak-Tree 
-            } 
+                Mark-ConfigDirty; Refresh-List; Load-Tweak-Tree
+            }
         })
         
         if ($TargetTweak) { foreach ($item in $lst.Items) { if ($item.Tag.Name -eq $TargetTweak.Name) { $lst.SelectedItem = $item; $lst.ScrollIntoView($item); break } } }
@@ -7212,6 +7376,420 @@ function Write-TweakAuditLog {
             Set-Content $logPath -Value ($lines | Select-Object -Skip $half) -Encoding UTF8
         }
     } catch {}
+}
+
+# =========================================================
+# BENCHMARK SUITE (v1.2.10) — Tweak oncesi/sonrasi performans karsilastirmasi
+# 7 metrik: timer, loopback, gateway, dns, processStart, ram, dpc, sysCounts. (disk4k kaldirildi)
+# Her metrik kendi fonksiyonunda (test edilebilir/yeniden kullanilabilir). Top-level
+# Get-BenchSnapshot tum suite'i siralı calistirir, hashtable doner. JSON CRUD ayri.
+# =========================================================
+
+# ---- METRIK 1: Timer / Sleep precision ----
+# TimerRes::MeasureOnce N kez calistirir, Sleep(1)-1ms delta = "fazladan kac ms uyudu" olcumu.
+# Lower = better. Detayli aciklama Show-TimerResolutionTest fonksiyonunda.
+function Test-TimerPrecision {
+    param([int]$Samples = 50)
+    try {
+        # REALTIME priority ile warmup + N sample
+        [TimerRes]::SetRealtimePriority() | Out-Null
+        $null = [TimerRes]::MeasureOnce()   # warmup atilir
+        $deltas = New-Object System.Collections.Generic.List[double]
+        for ($i = 0; $i -lt $Samples; $i++) {
+            $d = [TimerRes]::MeasureOnce()
+            [void]$deltas.Add($d)
+        }
+        [TimerRes]::SetNormalPriority() | Out-Null
+        $avg = ($deltas | Measure-Object -Average).Average
+        $sumSq = 0.0; foreach ($v in $deltas) { $sumSq += ($v - $avg) * ($v - $avg) }
+        $stddev = if ($deltas.Count -gt 1) { [Math]::Sqrt($sumSq / ($deltas.Count - 1)) } else { 0.0 }
+        return @{ Ok = $true; AvgMs = [Math]::Round($avg, 4); StddevMs = [Math]::Round($stddev, 4); Samples = $deltas.Count }
+    } catch {
+        try { [TimerRes]::SetNormalPriority() | Out-Null } catch {}
+        return @{ Ok = $false; Error = $_.Exception.Message; AvgMs = -1; StddevMs = -1 }
+    }
+}
+
+# ---- METRIK 2: Loopback ping (127.0.0.1) ----
+# Pure TCP stack latency, NIC disinda. NIC-ozel tweak ile degismez ama TCP stack tweak ile degisir.
+function Test-LoopbackPing {
+    param([int]$Samples = 50)
+    try {
+        $ping = New-Object System.Net.NetworkInformation.Ping
+        $times = New-Object System.Collections.Generic.List[double]
+        # Warmup
+        try { $ping.Send("127.0.0.1", 500) | Out-Null } catch {}
+        for ($i = 0; $i -lt $Samples; $i++) {
+            $sw = [System.Diagnostics.Stopwatch]::StartNew()
+            try {
+                $r = $ping.Send("127.0.0.1", 500)
+                $sw.Stop()
+                if ($r.Status -eq 'Success') {
+                    # Stopwatch sub-ms hassasiyetli, Ping.RoundtripTime integer ms
+                    [void]$times.Add($sw.Elapsed.TotalMilliseconds)
+                }
+            } catch { $sw.Stop() }
+        }
+        if ($times.Count -eq 0) { return @{ Ok = $false; AvgMs = -1; Error = "Hicbir ping basarili degil" } }
+        $avg = ($times | Measure-Object -Average).Average
+        $min = ($times | Measure-Object -Minimum).Minimum
+        $max = ($times | Measure-Object -Maximum).Maximum
+        $sumSq = 0.0; foreach ($v in $times) { $sumSq += ($v - $avg) * ($v - $avg) }
+        $jit = if ($times.Count -gt 1) { [Math]::Sqrt($sumSq / ($times.Count - 1)) } else { 0.0 }
+        return @{
+            Ok = $true; AvgMs = [Math]::Round($avg, 3); MinMs = [Math]::Round($min, 3); MaxMs = [Math]::Round($max, 3); JitterMs = [Math]::Round($jit, 3); Samples = $times.Count
+        }
+    } catch { return @{ Ok = $false; Error = $_.Exception.Message; AvgMs = -1 } }
+}
+
+# ---- METRIK 3: Gateway ping ----
+# Routera ping — yerel ag latency + jitter. NIC offload, MMCSS NetworkThrottling, packet processing
+# path tweak'lerinden DOGRUDAN etkilenir.
+function Test-GatewayPing {
+    param([int]$Samples = 50)
+    try {
+        $gw = $null
+        try {
+            $gw = (Get-NetIPConfiguration -ErrorAction Stop | Where-Object { $_.IPv4DefaultGateway } | Select-Object -First 1).IPv4DefaultGateway.NextHop
+        } catch {}
+        if (-not $gw) { return @{ Ok = $false; Error = "Default gateway bulunamadi"; AvgMs = -1 } }
+        $ping = New-Object System.Net.NetworkInformation.Ping
+        $times = New-Object System.Collections.Generic.List[double]
+        try { $ping.Send($gw, 1000) | Out-Null } catch {}
+        for ($i = 0; $i -lt $Samples; $i++) {
+            $sw = [System.Diagnostics.Stopwatch]::StartNew()
+            try {
+                $r = $ping.Send($gw, 1000)
+                $sw.Stop()
+                if ($r.Status -eq 'Success') { [void]$times.Add($sw.Elapsed.TotalMilliseconds) }
+            } catch { $sw.Stop() }
+            Start-Sleep -Milliseconds 20  # ag fairness, burst yapmasin
+        }
+        if ($times.Count -eq 0) { return @{ Ok = $false; AvgMs = -1; Error = "Gateway pinge cevap vermedi"; Gateway = $gw } }
+        $avg = ($times | Measure-Object -Average).Average
+        $min = ($times | Measure-Object -Minimum).Minimum
+        $max = ($times | Measure-Object -Maximum).Maximum
+        $sumSq = 0.0; foreach ($v in $times) { $sumSq += ($v - $avg) * ($v - $avg) }
+        $jit = if ($times.Count -gt 1) { [Math]::Sqrt($sumSq / ($times.Count - 1)) } else { 0.0 }
+        return @{
+            Ok = $true; Gateway = $gw; AvgMs = [Math]::Round($avg, 3); MinMs = [Math]::Round($min, 3); MaxMs = [Math]::Round($max, 3); JitterMs = [Math]::Round($jit, 3); Samples = $times.Count
+        }
+    } catch { return @{ Ok = $false; Error = $_.Exception.Message; AvgMs = -1 } }
+}
+
+# ---- METRIK 4: DNS resolve latency ----
+# 10 farkli domain icin Resolve-DnsName cagrisi, ortalama ms. DNS server degisikligi
+# (Cloudflare vs Google vs ISP) ve cache tweak'leri buradan ölcülür.
+function Test-DnsResolve {
+    param([int]$DomainsPerRun = 10)
+    try {
+        $domains = @("google.com","cloudflare.com","github.com","stackoverflow.com","wikipedia.org","microsoft.com","amazon.com","reddit.com","youtube.com","apple.com")
+        $domains = $domains | Get-Random -Count ([Math]::Min($DomainsPerRun, $domains.Count))
+        $times = New-Object System.Collections.Generic.List[double]
+        # Cache temizle (admin gerek; basarisizsa zaten cache var)
+        try { Clear-DnsClientCache -ErrorAction SilentlyContinue } catch {}
+        foreach ($d in $domains) {
+            $sw = [System.Diagnostics.Stopwatch]::StartNew()
+            try {
+                $null = Resolve-DnsName -Name $d -Type A -DnsOnly -NoHostsFile -QuickTimeout -ErrorAction Stop
+                $sw.Stop()
+                [void]$times.Add($sw.Elapsed.TotalMilliseconds)
+            } catch { $sw.Stop() }
+        }
+        if ($times.Count -eq 0) { return @{ Ok = $false; AvgMs = -1; Error = "DNS resolve hicbiri basarili degil" } }
+        $avg = ($times | Measure-Object -Average).Average
+        return @{ Ok = $true; AvgMs = [Math]::Round($avg, 2); Samples = $times.Count; DomainCount = $domains.Count }
+    } catch { return @{ Ok = $false; Error = $_.Exception.Message; AvgMs = -1 } }
+}
+
+# ---- METRIK 5: Disk 4K random read ----
+# 16MB test dosyasi olusur, N kez rastgele offset 4KB okur, IOPS + avg op time olcer.
+# Disable Indexing, defrag, Superfetch tweak'leri buradan ölcülür.
+function Test-Disk4kRead {
+    param([int]$Iterations = 5000, [int]$FileSizeMB = 16)
+    $testFile = Join-Path $env:TEMP ("mrclean_bench_disk_{0}.bin" -f ([Guid]::NewGuid().ToString("N")))
+    try {
+        # 1) Test dosyasi olustur (random data — compress edilebilir degil)
+        $rng = New-Object System.Random
+        $bytes = New-Object byte[] ($FileSizeMB * 1024 * 1024)
+        $rng.NextBytes($bytes)
+        [System.IO.File]::WriteAllBytes($testFile, $bytes)
+
+        # 2) Disk cache temizleme imkansız (admin/IFS gerek), o yuzden iki kez okuyup ilkini at
+        $buf = New-Object byte[] 4096
+        $fileLen = (Get-Item $testFile).Length
+        $maxOffset = $fileLen - 4096
+        $fs = [System.IO.File]::Open($testFile, [System.IO.FileMode]::Open, [System.IO.FileAccess]::Read, [System.IO.FileShare]::Read)
+        try {
+            # Warmup — ilk 20 okuma at
+            for ($w = 0; $w -lt 20; $w++) {
+                $off = $rng.Next(0, [int]$maxOffset) -band -4096
+                $fs.Position = $off
+                $null = $fs.Read($buf, 0, 4096)
+            }
+            $sw = [System.Diagnostics.Stopwatch]::StartNew()
+            for ($i = 0; $i -lt $Iterations; $i++) {
+                $off = $rng.Next(0, [int]$maxOffset) -band -4096
+                $fs.Position = $off
+                $null = $fs.Read($buf, 0, 4096)
+            }
+            $sw.Stop()
+        } finally { $fs.Close() }
+
+        $elapsedSec = $sw.Elapsed.TotalSeconds
+        if ($elapsedSec -le 0) { $elapsedSec = 0.001 }
+        $iops = [Math]::Round($Iterations / $elapsedSec, 0)
+        $avgUs = [Math]::Round(($elapsedSec * 1e6) / $Iterations, 2)
+        return @{ Ok = $true; IOPS = $iops; AvgMicroSec = $avgUs; Iterations = $Iterations; FileSizeMB = $FileSizeMB }
+    } catch {
+        return @{ Ok = $false; Error = $_.Exception.Message; IOPS = -1; AvgMicroSec = -1 }
+    } finally {
+        try { if (Test-Path $testFile) { Remove-Item $testFile -Force -ErrorAction SilentlyContinue } } catch {}
+    }
+}
+
+# ---- METRIK 6: Process start latency ----
+# cmd.exe /c exit N kez baslat, avg ms. AntiVirus on-access scan, UAC overhead, MsMpEng yuku
+# buradan görunur.
+function Test-ProcessStartLatency {
+    param([int]$Samples = 20)
+    try {
+        # Warmup
+        $p = Start-Process -FilePath "cmd.exe" -ArgumentList "/c","exit" -WindowStyle Hidden -PassThru
+        $p.WaitForExit()
+        $times = New-Object System.Collections.Generic.List[double]
+        for ($i = 0; $i -lt $Samples; $i++) {
+            $sw = [System.Diagnostics.Stopwatch]::StartNew()
+            try {
+                $p = Start-Process -FilePath "cmd.exe" -ArgumentList "/c","exit" -WindowStyle Hidden -PassThru -ErrorAction Stop
+                $p.WaitForExit(5000) | Out-Null
+                $sw.Stop()
+                [void]$times.Add($sw.Elapsed.TotalMilliseconds)
+            } catch { $sw.Stop() }
+        }
+        if ($times.Count -eq 0) { return @{ Ok = $false; AvgMs = -1 } }
+        $avg = ($times | Measure-Object -Average).Average
+        return @{ Ok = $true; AvgMs = [Math]::Round($avg, 1); Samples = $times.Count }
+    } catch { return @{ Ok = $false; Error = $_.Exception.Message; AvgMs = -1 } }
+}
+
+# ---- METRIK 7: DPC time % (kernel deferred procedure load) ----
+# Win32_PerfFormattedData_Counters_ProcessorInformation WMI class — locale-independent
+# (Get-Counter "\Processor Information(_Total)\% DPC Time" TR Windowsta counter adi lokalize,
+# match etmiyor). Yuksek DPC = NIC/disk driver kotu, audio glitch, oyunda frame stutter.
+# NetAdapter offload, MSI Mode, NetAdapter PowerSave tweak'leri buradan ölcülür.
+function Test-DpcTime {
+    param([int]$DurationSec = 5)
+    try {
+        $vals  = New-Object System.Collections.Generic.List[double]
+        $intrs = New-Object System.Collections.Generic.List[double]
+        for ($i = 0; $i -lt $DurationSec; $i++) {
+            $row = $null
+            try {
+                $row = Get-CimInstance -ClassName Win32_PerfFormattedData_Counters_ProcessorInformation -Filter "Name='_Total'" -ErrorAction Stop | Select-Object -First 1
+            } catch {
+                # Eski fallback (XP-era)
+                try { $row = Get-CimInstance -ClassName Win32_PerfFormattedData_PerfOS_Processor -Filter "Name='_Total'" -ErrorAction Stop | Select-Object -First 1 } catch {}
+            }
+            if ($row) {
+                [void]$vals.Add([double]$row.PercentDPCTime)
+                [void]$intrs.Add([double]$row.PercentInterruptTime)
+            }
+            Start-Sleep -Seconds 1
+        }
+        if ($vals.Count -eq 0) { return @{ Ok = $false; Error = "WMI counter okunamadi"; AvgPercent = -1; PeakPercent = -1 } }
+        $avg  = ($vals | Measure-Object -Average).Average
+        $peak = ($vals | Measure-Object -Maximum).Maximum
+        $intAvg = if ($intrs.Count -gt 0) { ($intrs | Measure-Object -Average).Average } else { 0 }
+        return @{ Ok = $true; AvgPercent = [Math]::Round($avg, 3); PeakPercent = [Math]::Round($peak, 3); InterruptAvgPercent = [Math]::Round($intAvg, 3); Samples = $vals.Count }
+    } catch {
+        return @{ Ok = $false; Error = $_.Exception.Message; AvgPercent = -1; PeakPercent = -1 }
+    }
+}
+
+# ---- METRIK 8: Sistem snapshot (anlik sayilar) ----
+# Memory Compression, Background Apps, Bloatware, Telemetri kapatma tweak'leri buradan ölcülür.
+function Get-SystemSnapshot {
+    try {
+        $os = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
+        $availMB = if ($os) { [Math]::Round($os.FreePhysicalMemory / 1024, 0) } else { -1 }
+        $totalMB = if ($os) { [Math]::Round($os.TotalVisibleMemorySize / 1024, 0) } else { -1 }
+        $procCount = (Get-Process -ErrorAction SilentlyContinue).Count
+        $svcRunning = (Get-Service -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq 'Running' }).Count
+        # HandleCount: Get-Counter '\Process(_Total)\Handle Count' TR Windowsta lokalize. Get-Process
+        # uzerinden topla — locale-independent + admin gerekmez.
+        $handleCount = 0
+        try { $handleCount = (Get-Process -ErrorAction SilentlyContinue | Measure-Object -Property HandleCount -Sum).Sum } catch {}
+        return @{
+            Ok = $true
+            AvailableRamMB = $availMB
+            TotalRamMB     = $totalMB
+            ProcessCount   = $procCount
+            ServicesRunning = $svcRunning
+            HandleCount    = [int]$handleCount
+        }
+    } catch { return @{ Ok = $false; Error = $_.Exception.Message } }
+}
+
+# ---- ORKESTRATOR ----
+# Tum metrikleri sirali calistirir. ProgressCallback varsa her metrik sonu cagirir
+# (UI'da progress bar + step label icin).
+function Get-BenchSnapshot {
+    param(
+        [scriptblock]$ProgressCallback = $null,
+        [string]$Label = ""
+    )
+    $result = [ordered]@{
+        timestamp = (Get-Date -Format "yyyy-MM-ddTHH:mm:ss")
+        label     = $Label
+        mrCleanVersion = $global:AppVersion
+        metrics   = [ordered]@{}
+    }
+
+    $steps = @(
+        @{ Key = "timer";        Label = "Timer / Sleep precision";    Run = { Test-TimerPrecision -Samples 50 } }
+        @{ Key = "loopback";     Label = "Loopback ping (127.0.0.1)"; Run = { Test-LoopbackPing -Samples 50 } }
+        @{ Key = "gateway";      Label = "Gateway ping";               Run = { Test-GatewayPing -Samples 50 } }
+        @{ Key = "dns";          Label = "DNS resolve";                Run = { Test-DnsResolve -DomainsPerRun 10 } }
+        # disk4k step v1.2.10 sonu kaldirildi — programda disk-perf etkileyen tweak yok,
+        # bos zaman harcamayalim. Test-Disk4kRead helper duruyor (ileride disk-related tweak
+        # eklenirse anlik geri agirilabilir).
+        @{ Key = "processStart"; Label = "Process start latency";      Run = { Test-ProcessStartLatency -Samples 20 } }
+        @{ Key = "dpc";          Label = "DPC time (5 sn sample)";     Run = { Test-DpcTime -DurationSec 5 } }
+        @{ Key = "system";       Label = "Sistem snapshot";            Run = { Get-SystemSnapshot } }
+    )
+    # PresentMon icin yer ayrildi (placeholder — ileride sprint)
+    $result.metrics["frameTime"] = @{ Ok = $false; Note = "PresentMon entegrasyonu ileride" }
+
+    $i = 0
+    foreach ($s in $steps) {
+        $i++
+        if ($ProgressCallback) { & $ProgressCallback $i $steps.Count $s.Label }
+        try {
+            $r = & $s.Run
+        } catch {
+            $r = @{ Ok = $false; Error = $_.Exception.Message }
+        }
+        $result.metrics[$s.Key] = $r
+    }
+    if ($ProgressCallback) { & $ProgressCallback $steps.Count $steps.Count "Tamamlandi" }
+
+    return $result
+}
+
+# ---- JSON CRUD ----
+function Save-BenchSnapshot {
+    param([Parameter(Mandatory=$true)]$Snapshot)
+    try {
+        if (-not (Test-Path $global:BenchDir)) {
+            New-Item -ItemType Directory -Path $global:BenchDir -Force | Out-Null
+        }
+        $ts = (Get-Date -Format "yyyyMMdd_HHmmss")
+        $fn = "bench_$ts.json"
+        $fp = Join-Path $global:BenchDir $fn
+        $Snapshot.fileName = $fn
+        $Snapshot | ConvertTo-Json -Depth 6 | Out-File -FilePath $fp -Encoding UTF8 -Force
+        return $fp
+    } catch {
+        WpfLog ("[Bench] Snapshot kaydedilemedi: {0}" -f $_.Exception.Message)
+        return $null
+    }
+}
+
+function Get-BenchSnapshots {
+    if (-not (Test-Path $global:BenchDir)) { return @() }
+    $list = New-Object System.Collections.Generic.List[object]
+    Get-ChildItem $global:BenchDir -Filter "bench_*.json" -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending | ForEach-Object {
+        try {
+            $obj = Get-Content $_.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
+            $obj | Add-Member -NotePropertyName "_path" -NotePropertyValue $_.FullName -Force
+            [void]$list.Add($obj)
+        } catch {}
+    }
+    return $list
+}
+
+function Remove-BenchSnapshot {
+    param([Parameter(Mandatory=$true)][string]$Path)
+    if (Test-Path $Path) {
+        try { Remove-Item $Path -Force -ErrorAction Stop; return $true } catch { return $false }
+    }
+    return $false
+}
+
+function Set-BenchSnapshotLabel {
+    param([Parameter(Mandatory=$true)][string]$Path,
+          [Parameter(Mandatory=$true)][string]$NewLabel)
+    if (-not (Test-Path $Path)) { return $false }
+    try {
+        $obj = Get-Content $Path -Raw -Encoding UTF8 | ConvertFrom-Json
+        $obj.label = $NewLabel
+        $obj | ConvertTo-Json -Depth 6 | Out-File -FilePath $Path -Encoding UTF8 -Force
+        return $true
+    } catch { return $false }
+}
+
+# ---- METRIK DIFF — lower-is-better / higher-is-better flag tablosu ----
+# Compare-BenchSnapshots iki snapshot uretir; her satir: metric, a, b, delta, pctChange, verdict.
+# verdict: "better" | "worse" | "neutral" | "n/a"
+function Get-BenchMetricCatalog {
+    # field: metric path (snapshot.metrics.<group>.<field>), label, unit, direction
+    # direction: "lower" = lower-is-better, "higher" = higher-is-better
+    return @(
+        @{ Group = "timer";        Field = "AvgMs";        Label = "Timer Sleep delta (avg)";    Unit = "ms";        Direction = "lower" }
+        @{ Group = "timer";        Field = "StddevMs";     Label = "Timer Sleep delta (stddev)"; Unit = "ms";        Direction = "lower" }
+        @{ Group = "loopback";     Field = "AvgMs";        Label = "Loopback ping (avg)";        Unit = "ms";        Direction = "lower" }
+        @{ Group = "loopback";     Field = "JitterMs";     Label = "Loopback ping (jitter)";     Unit = "ms";        Direction = "lower" }
+        @{ Group = "gateway";      Field = "AvgMs";        Label = "Gateway ping (avg)";         Unit = "ms";        Direction = "lower" }
+        @{ Group = "gateway";      Field = "JitterMs";     Label = "Gateway ping (jitter)";      Unit = "ms";        Direction = "lower" }
+        @{ Group = "dns";          Field = "AvgMs";        Label = "DNS resolve (avg)";          Unit = "ms";        Direction = "lower" }
+        # disk4k satirlari kaldirildi (orkestratorden cikti — disk tweak yok)
+        @{ Group = "processStart"; Field = "AvgMs";        Label = "Process start (cmd /c exit)"; Unit = "ms";       Direction = "lower" }
+        @{ Group = "dpc";          Field = "AvgPercent";   Label = "DPC time (avg)";              Unit = "%";         Direction = "lower" }
+        @{ Group = "dpc";          Field = "PeakPercent";  Label = "DPC time (peak)";             Unit = "%";         Direction = "lower" }
+        @{ Group = "system";       Field = "AvailableRamMB"; Label = "Bos RAM";                   Unit = "MB";        Direction = "higher" }
+        @{ Group = "system";       Field = "ProcessCount"; Label = "Process sayisi";              Unit = "";          Direction = "lower" }
+        @{ Group = "system";       Field = "ServicesRunning"; Label = "Calisan servis sayisi";    Unit = "";          Direction = "lower" }
+        @{ Group = "system";       Field = "HandleCount";  Label = "Handle sayisi";               Unit = "";          Direction = "lower" }
+    )
+}
+
+function Compare-BenchSnapshots {
+    param([Parameter(Mandatory=$true)]$SnapshotA, [Parameter(Mandatory=$true)]$SnapshotB)
+    $catalog = Get-BenchMetricCatalog
+    $rows = New-Object System.Collections.Generic.List[object]
+    foreach ($c in $catalog) {
+        $aVal = $null; $bVal = $null
+        try { $aVal = $SnapshotA.metrics.$($c.Group).$($c.Field) } catch {}
+        try { $bVal = $SnapshotB.metrics.$($c.Group).$($c.Field) } catch {}
+        $aNum = $null; $bNum = $null
+        if ($null -ne $aVal -and $aVal -is [System.ValueType]) { $aNum = [double]$aVal }
+        elseif ($aVal -match '^-?\d+(\.\d+)?$') { $aNum = [double]$aVal }
+        if ($null -ne $bVal -and $bVal -is [System.ValueType]) { $bNum = [double]$bVal }
+        elseif ($bVal -match '^-?\d+(\.\d+)?$') { $bNum = [double]$bVal }
+
+        $verdict = "n/a"; $delta = $null; $pct = $null
+        if ($null -ne $aNum -and $null -ne $bNum -and $aNum -ge 0 -and $bNum -ge 0) {
+            $delta = [Math]::Round($bNum - $aNum, 3)
+            if ($aNum -ne 0) { $pct = [Math]::Round((($bNum - $aNum) / $aNum) * 100, 1) } else { $pct = 0 }
+            $sig = if ([Math]::Abs($pct) -lt 2) { "neutral" } else { if ($delta -gt 0) { "up" } else { "down" } }
+            if ($sig -eq "neutral") { $verdict = "neutral" }
+            elseif ($c.Direction -eq "lower") { $verdict = if ($sig -eq "down") { "better" } else { "worse" } }
+            else                              { $verdict = if ($sig -eq "up")   { "better" } else { "worse" } }
+        }
+
+        [void]$rows.Add([PSCustomObject]@{
+            Label    = $c.Label
+            Unit     = $c.Unit
+            AValue   = $aVal
+            BValue   = $bVal
+            Delta    = $delta
+            PctChange = $pct
+            Verdict  = $verdict
+            Direction = $c.Direction
+        })
+    }
+    return $rows
 }
 
 # =========================================================
@@ -9426,15 +10004,15 @@ function Show-ToolManager {
 }
 
 # ---- RecommendedProfiles + Show-RecommendedProfiles ----
-$script:RecommendedProfiles = @{
+# v1.2.10: Tag-based profil-tweak baglantisi — single source of truth.
+# Tweak silindiginde otomatik filtrelenir (TweakList'te yoksa donmez), yeni tweak eklenince
+# sadece $profileTagMap'i guncellemen yeterli (RecommendedProfiles array'ine dokunmaya gerek yok).
+# Cakisan tweak'ler birden fazla profil'de olabilir (orn. "Nihai Performans" hem Oyun hem Hiz).
+function Get-ProfileTweaks {
+    param([string]$ProfileKey)
 
-    "Oyun" = @{
-        Icon        = "🎮"
-        Title       = "Oyun / Düşük Gecikme"
-        Description = "Input lag azaltma, CPU/ağ optimizasyonu"
-        Color       = "#1A472A"
-        AccentColor = "#4CAF50"
-        Tweaks      = @(
+    $profileTagMap = @{
+        "Oyun" = @(
             "Nihai Performans Güç Planını Aktif Et",
             "Win32 Öncelik Ayırma (CPU Oyuna Odaklanır)",
             "Fare İvmesini (Acceleration) Tamamen Kapat",
@@ -9444,21 +10022,15 @@ $script:RecommendedProfiles = @{
             "Keyboard Data Queue Size (Tamponu Artır)",
             "MSI Mode (GPU Interrupt) Aç",
             "Network Throttling Kapat (Ağ Kısıtlamasını Kaldır)",
+            "Ağ Adaptörü Offload Devre Dışı (RSS / LSO / Checksum)",
             "TCP NoDelay ve AckFrequency (Nagle Algoritmasını Kapat)",
             "Timer Resolution 0.5ms (Espor)",
             "HPET (Platform Clock) Kapat",
+            "TSC Sync Policy: Enhanced (Multi-CPU)",
             "Görsel Efektler: Özel (Yazı Tipi + Küçük Resimler Açık)",
             "Xbox Game DVR Kapat"
         )
-    }
-
-    "Gizlilik" = @{
-        Icon        = "🔒"
-        Title       = "Gizlilik Odaklı"
-        Description = "Telemetri, izinler ve Microsoft takibini kapatır"
-        Color       = "#1A1A4A"
-        AccentColor = "#4A90D9"
-        Tweaks      = @(
+        "Gizlilik" = @(
             "Reklam Kimliğini Kapat",
             "Konum Hizmetlerini Tamamen Kapat",
             "Kamera (Webcam) Erişimini Tamamen Kapat",
@@ -9476,6 +10048,55 @@ $script:RecommendedProfiles = @{
             "Cortana ve Cloud Aramayı Tamamen Kapat",
             "Yerel olarak uygun içerik Kapat"
         )
+        "Hiz" = @(
+            "Görsel Efektler: Özel (Yazı Tipi + Küçük Resimler Açık)",
+            "Hazırda Bekletmeyi Kapat (Hibernate)",
+            "Nihai Performans Güç Planını Aktif Et",
+            "Cortana ve Cloud Aramayı Tamamen Kapat",
+            "Windows Update'i Kısıtla (Otomatik Yüklemeyi Kapat)",
+            "Xbox Game DVR Kapat",
+            "Pencere Öğelerini (Widget) Kapat",
+            "OneDrive'ı Sistemden Tamamen Kaldır"
+        )
+    }
+
+    if (-not $profileTagMap.ContainsKey($ProfileKey)) { return @() }
+
+    $profileTweakNames = $profileTagMap[$ProfileKey]
+    $result = @()
+
+    # Sadece $global:TweakList'te gercekten var olan tweak'leri don — broken refs filtrelenir.
+    # Kullanici silmis veya bizim sprint'te kaldirmis olabiliriz, broken referans gozukmesin.
+    foreach ($cat in $global:TweakList.Keys) {
+        foreach ($tweak in $global:TweakList[$cat]) {
+            if ($profileTweakNames -contains $tweak.Name) {
+                $result += $tweak.Name
+            }
+        }
+    }
+
+    return $result
+}
+
+$script:RecommendedProfiles = @{
+
+    # v1.2.10: Tweaks field'lari silindi — tweak listesi runtime'da Get-ProfileTweaks ile alinir.
+    # Sadece metadata (Icon/Title/Description/Color/AccentColor) burada kalir.
+
+    "Oyun" = @{
+        Icon        = "🎮"
+        Title       = "Oyun / Düşük Gecikme"
+        Description = "Input lag azaltma, CPU/ağ optimizasyonu"
+        Color       = "#1A472A"
+        AccentColor = "#4CAF50"
+    }
+
+    "Gizlilik" = @{
+        Icon        = "🔒"
+        Title       = "Gizlilik Odaklı"
+        Description = "Telemetri, izinler ve Microsoft takibini kapatır"
+        Color       = "#1A1A4A"
+        AccentColor = "#4A90D9"
     }
 
     "Hiz" = @{
@@ -9484,23 +10105,18 @@ $script:RecommendedProfiles = @{
         Description = "Gereksiz servisleri ve görsel efektleri kapatır"
         Color       = "#4A2800"
         AccentColor = "#E68A00"
-        Tweaks      = @(
-            "Görsel Efektler: Özel (Yazı Tipi + Küçük Resimler Açık)",
-            "Hazırda Bekletmeyi Kapat (Hibernate)",
-            "Nihai Performans Güç Planını Aktif Et",
-            "Cortana ve Cloud Aramayı Tamamen Kapat",
-            "Windows Update'i Kısıtla (Otomatik Yüklemeyi Kapat)",
-            "Xbox Game DVR Kapat",
-            "Pencere Öğelerini (Widget) Kapat",
-            "Başlat Önerilenler Bölümünü Kapat",
-            "OneDrive'ı Sistemden Tamamen Kaldır"
-        )
     }
 }
 
 function Show-RecommendedProfiles {
     # Secili profil setini tut
     $script:SelProfiles = @{}   # "Oyun"=$true vb.
+
+    # v1.2.10: Runtime tweak sayilari — kartta gosterilir, broken refs sayilmaz (Get-ProfileTweaks
+    # mevcut TweakList'ten filtreler). Tweak silindiginde sayi otomatik dusyor.
+    $oyunCount     = (Get-ProfileTweaks "Oyun").Count
+    $gizlilikCount = (Get-ProfileTweaks "Gizlilik").Count
+    $hizCount      = (Get-ProfileTweaks "Hiz").Count
 
     $xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
@@ -9583,7 +10199,7 @@ function Show-RecommendedProfiles {
                     <Border Background="#222" CornerRadius="4" Padding="10,8"
                             Margin="0,0,0,4">
                         <TextBlock Foreground="#AAA" FontSize="11">
-                            <Run Text="15 tweak" FontWeight="Bold" Foreground="#4CAF50"/>
+                            <Run Text="$oyunCount tweak" FontWeight="Bold" Foreground="#4CAF50"/>
                             <Run Text=" · Güç planı, fare/klavye önceliği, MSI Mode, ağ optimizasyonu, timer"/>
                         </TextBlock>
                     </Border>
@@ -9621,7 +10237,7 @@ function Show-RecommendedProfiles {
                     <Border Background="#222" CornerRadius="4" Padding="10,8"
                             Margin="0,0,0,4">
                         <TextBlock Foreground="#AAA" FontSize="11">
-                            <Run Text="16 tweak" FontWeight="Bold" Foreground="#4A90D9"/>
+                            <Run Text="$gizlilikCount tweak" FontWeight="Bold" Foreground="#4A90D9"/>
                             <Run Text=" · Konum, kamera, telemetri, Cortana, arka plan uygulamaları, izinler"/>
                         </TextBlock>
                     </Border>
@@ -9659,7 +10275,7 @@ function Show-RecommendedProfiles {
                     <Border Background="#222" CornerRadius="4" Padding="10,8"
                             Margin="0,0,0,4">
                         <TextBlock Foreground="#AAA" FontSize="11">
-                            <Run Text="9 tweak" FontWeight="Bold" Foreground="#E68A00"/>
+                            <Run Text="$hizCount tweak" FontWeight="Bold" Foreground="#E68A00"/>
                             <Run Text=" · Görsel efektler, hibernate, gereksiz servisler"/>
                         </TextBlock>
                     </Border>
@@ -9730,7 +10346,7 @@ function Show-RecommendedProfiles {
         # Tweak listelerini doldur
         function Fill-TweakList($ic, $profileKey) {
             $ic.Items.Clear()
-            foreach ($tweak in $script:RecommendedProfiles[$profileKey].Tweaks) {
+            foreach ($tweak in (Get-ProfileTweaks $profileKey)) {
                 $tb = New-Object System.Windows.Controls.TextBlock
                 $tb.Text       = "• $tweak"
                 $tb.Foreground = [System.Windows.Media.Brushes]::Gray
@@ -9761,9 +10377,9 @@ function Show-RecommendedProfiles {
         # Checkbox değişince tweak sayısını güncelle
         function Update-Selection {
             $allTweaks = @()
-            if ($chkOyun.IsChecked)     { $allTweaks += $script:RecommendedProfiles["Oyun"].Tweaks }
-            if ($chkGizlilik.IsChecked) { $allTweaks += $script:RecommendedProfiles["Gizlilik"].Tweaks }
-            if ($chkHiz.IsChecked)      { $allTweaks += $script:RecommendedProfiles["Hiz"].Tweaks }
+            if ($chkOyun.IsChecked)     { $allTweaks += Get-ProfileTweaks "Oyun" }
+            if ($chkGizlilik.IsChecked) { $allTweaks += Get-ProfileTweaks "Gizlilik" }
+            if ($chkHiz.IsChecked)      { $allTweaks += Get-ProfileTweaks "Hiz" }
 
             # Tekrarları kaldır
             $unique = $allTweaks | Select-Object -Unique
@@ -9796,9 +10412,9 @@ function Show-RecommendedProfiles {
         # Uygula
         $btnApply.Add_Click({
             $allTweaks = @()
-            if ($chkOyun.IsChecked)     { $allTweaks += $script:RecommendedProfiles["Oyun"].Tweaks }
-            if ($chkGizlilik.IsChecked) { $allTweaks += $script:RecommendedProfiles["Gizlilik"].Tweaks }
-            if ($chkHiz.IsChecked)      { $allTweaks += $script:RecommendedProfiles["Hiz"].Tweaks }
+            if ($chkOyun.IsChecked)     { $allTweaks += Get-ProfileTweaks "Oyun" }
+            if ($chkGizlilik.IsChecked) { $allTweaks += Get-ProfileTweaks "Gizlilik" }
+            if ($chkHiz.IsChecked)      { $allTweaks += Get-ProfileTweaks "Hiz" }
             $unique = $allTweaks | Select-Object -Unique
 
             $parts = @()
@@ -9912,10 +10528,12 @@ function Show-ProfileManager {
     }
 
     function Load-ProfileFiles {
+        # v1.2.10: 3 -> 50 profil listele (kullanici eski profilleri silebilsin).
+        # Cogu kullanici icin 50 yeterli, daha fazlasi UI kalabalik olur.
         $profiles = @()
         Get-ChildItem $profileDir -Filter "*.json" -ErrorAction SilentlyContinue |
         Sort-Object LastWriteTime -Descending |
-        Select-Object -First 3 |
+        Select-Object -First 50 |
         ForEach-Object {
             try {
                 $data = Get-Content $_.FullName -Raw | ConvertFrom-Json
@@ -9983,7 +10601,7 @@ function Show-ProfileManager {
 
         <TextBlock Grid.Row="0" Text="Profil Yöneticisi" Foreground="#FFFFFF"
                    FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
-        <TextBlock Grid.Row="1" Text="Son 3 profil listelenir. Profiller AppData\MrClean\Profiles klasörüne kaydedilir."
+        <TextBlock Grid.Row="1" Text="Profiller en yeniden eskiye sıralanır (son 50). AppData\MrClean\Profiles klasörüne kaydedilir. Sil butonu seçili profili kalıcı kaldırır."
                    Foreground="#555" FontSize="11" Margin="0,0,0,12" TextWrapping="Wrap"/>
 
         <!-- PROFİL LİSTESİ -->
@@ -10052,15 +10670,22 @@ function Show-ProfileManager {
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="8"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBlock x:Name="txtPMStatus" Grid.Column="0"
                        Text="" Foreground="#888" FontSize="11"
                        VerticalAlignment="Center"/>
-            <Button x:Name="btnLoad" Grid.Column="2"
+            <Button x:Name="btnDelete" Grid.Column="2"
+                    Style="{StaticResource PMButton}"
+                    Content="🗑️ Sil" Height="34" Width="80"
+                    Background="#A00000" IsEnabled="False"
+                    ToolTip="Seçili profili kalıcı olarak sil"/>
+            <Button x:Name="btnLoad" Grid.Column="4"
                     Style="{StaticResource PMButton}"
                     Content="📂 Yükle" Height="34" Width="100"
                     Background="#007ACC" IsEnabled="False"/>
-            <Button x:Name="btnPMClose" Grid.Column="4"
+            <Button x:Name="btnPMClose" Grid.Column="6"
                     Style="{StaticResource PMButton}"
                     Content="Kapat" Height="34" Width="80"
                     Background="#3A3A3A"/>
@@ -10078,6 +10703,7 @@ function Show-ProfileManager {
         $txtName = $winPM.FindName('txtProfileName')
         $btnSv   = $winPM.FindName('btnSave')
         $btnLd   = $winPM.FindName('btnLoad')
+        $btnDel  = $winPM.FindName('btnDelete')
         $btnCl   = $winPM.FindName('btnPMClose')
         $txtStat = $winPM.FindName('txtPMStatus')
 
@@ -10094,7 +10720,32 @@ function Show-ProfileManager {
         Refresh-List
 
         $lstP.Add_SelectionChanged({
-            $btnLd.IsEnabled = ($null -ne $lstP.SelectedItem)
+            $hasSel = ($null -ne $lstP.SelectedItem)
+            $btnLd.IsEnabled  = $hasSel
+            $btnDel.IsEnabled = $hasSel
+        })
+
+        # Sil: secili profili kalici kaldir (onay sorulur)
+        $btnDel.Add_Click({
+            $sel = $lstP.SelectedItem
+            if (-not $sel) { return }
+            $confirm = [System.Windows.MessageBox]::Show(
+                ("'{0}' profili kalıcı olarak silinecek.`n`nDosya: {1}`n`nDevam edilsin mi?" -f $sel.Name, $sel.FilePath),
+                "Profil Sil",
+                [System.Windows.MessageBoxButton]::YesNo,
+                [System.Windows.MessageBoxImage]::Warning)
+            if ($confirm -ne 'Yes') { return }
+            try {
+                Remove-Item -Path $sel.FilePath -Force -ErrorAction Stop
+                $txtStat.Text = ("🗑️ '{0}' silindi." -f $sel.Name)
+                Refresh-List
+                $btnDel.IsEnabled = $false
+                $btnLd.IsEnabled  = $false
+            } catch {
+                [System.Windows.MessageBox]::Show(
+                    ("Profil silinemedi: {0}" -f $_.Exception.Message),
+                    "Hata", "OK", "Error") | Out-Null
+            }
         })
 
         # Kaydet
@@ -11475,32 +12126,53 @@ function Show-HardwareDetail {
         $gpuItems = New-Object System.Collections.ObjectModel.ObservableCollection[Object]
 
         foreach ($g in $d.GpuDetail) {
-            # AIB eslestirmesi — once birebir isim eslesimi, sonra partial
+            # v1.2.10: iGPU tespit — CPU icine gomulu GPU'larda AIB (Add-in Board) uretici anlamsiz.
+            # Sebep: iGPU'nun PCI subsystem vendor ID si anakart ureticisinden gelir (orn. MSI 1462)
+            # ama MSI iGPU uretmedi — MSI anakart uretti, GPU AMD/Intel CPU icinde. Eski kod bu
+            # subsystem vendor ID'sini AIB olarak gosterip "MSI" diyordu (yaniltici).
+            # Pattern match: "Radeon(TM) Graphics" (model suffix yok) = AMD iGPU (Ryzen 7000+ APU),
+            # "UHD/HD Graphics" + "Iris" = Intel iGPU. Dedicated isim varsa zorla false.
+            $isIntegrated = $false
+            if ($g.Name -match "Radeon\(TM\) Graphics|Radeon Graphics$|UHD Graphics|^Intel.*HD Graphics|Iris(\s|$)") {
+                $isIntegrated = $true
+            }
+            if ($g.Name -match "GeForce|RTX|GTX|Quadro|Radeon RX|Radeon Pro|Arc\s") {
+                $isIntegrated = $false   # dedicated patterni override eder (overlap yakalama)
+            }
+
             $vendor = $null
-            foreach ($pnpName in $aibMap.Keys) {
-                if ($pnpName -eq $g.Name -or
-                    $pnpName.ToLower().Contains($g.Name.ToLower()) -or
-                    $g.Name.ToLower().Contains($pnpName.ToLower())) {
-                    $vendor = $aibMap[$pnpName]; break
-                }
-            }
-            # Partial match fallback (GPU adi parcalara bolunup aranir)
-            if (-not $vendor) {
-                foreach ($part in ($g.Name -split '\s+' | Where-Object { $_.Length -gt 4 })) {
-                    foreach ($pnpName in $aibMap.Keys) {
-                        if ($pnpName.ToLower().Contains($part.ToLower())) {
-                            $vendor = $aibMap[$pnpName]; break
-                        }
+            if ($isIntegrated) {
+                # iGPU: AIB yok, CPU uretici belirt
+                if     ($g.Name -match "Radeon|AMD")        { $vendor = "iGPU (AMD CPU icinde)"   }
+                elseif ($g.Name -match "Intel|UHD|Iris|HD") { $vendor = "iGPU (Intel CPU icinde)" }
+                else                                          { $vendor = "iGPU (CPU icinde gomulu)" }
+            } else {
+                # AIB eslestirmesi (sadece dedicated GPU'lar icin) — once birebir, sonra partial
+                foreach ($pnpName in $aibMap.Keys) {
+                    if ($pnpName -eq $g.Name -or
+                        $pnpName.ToLower().Contains($g.Name.ToLower()) -or
+                        $g.Name.ToLower().Contains($pnpName.ToLower())) {
+                        $vendor = $aibMap[$pnpName]; break
                     }
-                    if ($vendor) { break }
                 }
-            }
-            # Son fallback: chip uretici
-            if (-not $vendor) {
-                if     ($g.Name -match "NVIDIA|GeForce|RTX|GTX|Quadro") { $vendor = "NVIDIA" }
-                elseif ($g.Name -match "Radeon|RX |AMD")                 { $vendor = "AMD"    }
-                elseif ($g.Name -match "Intel|Arc|Iris|UHD")             { $vendor = "Intel"  }
-                else                                                      { $vendor = "Bilinmiyor" }
+                # Partial match fallback (GPU adi parcalara bolunup aranir)
+                if (-not $vendor) {
+                    foreach ($part in ($g.Name -split '\s+' | Where-Object { $_.Length -gt 4 })) {
+                        foreach ($pnpName in $aibMap.Keys) {
+                            if ($pnpName.ToLower().Contains($part.ToLower())) {
+                                $vendor = $aibMap[$pnpName]; break
+                            }
+                        }
+                        if ($vendor) { break }
+                    }
+                }
+                # Son fallback: chip uretici
+                if (-not $vendor) {
+                    if     ($g.Name -match "NVIDIA|GeForce|RTX|GTX|Quadro") { $vendor = "NVIDIA" }
+                    elseif ($g.Name -match "Radeon|RX |AMD")                 { $vendor = "AMD"    }
+                    elseif ($g.Name -match "Intel|Arc|Iris|UHD")             { $vendor = "Intel"  }
+                    else                                                      { $vendor = "Bilinmiyor" }
+                }
             }
 
             # VRAM: registry QWORD, fallback WMI degerine don
@@ -11513,6 +12185,8 @@ function Show-HardwareDetail {
                 }
             }
             $vramStr = if ($vramGB) { "$vramGB GB" } else { "$($g.VRAM) GB" }
+            # iGPU VRAM shared memory'den ayrilir (dedicated VRAM yok). Kullaniciya net olsun.
+            if ($isIntegrated) { $vramStr = "$vramStr (paylaşımlı)" }
 
             # Surucu versiyonu: NVIDIA Windows suru numarasini oyun suru numarasina cevir
             $drv = $g.Driver
@@ -11848,6 +12522,1441 @@ function Load-DashboardData {
 	})
 
 $script:DashTimer.Start()
+}
+
+# =========================================================
+# Show-BenchmarkPanel (v1.2.10) — Performans olcum + snapshot karsilastirma
+# 9 metrik suite (Get-BenchSnapshot) UI thread'de senkron calistirilir, Do-Events ile UI
+# her 20ms nefes alir. Snapshot listesi DataGrid'de gosterilir, 2 secim ile diff modal.
+# =========================================================
+
+function Show-BenchDiffModal {
+    param([Parameter(Mandatory=$true)]$SnapA, [Parameter(Mandatory=$true)]$SnapB)
+    $rows = Compare-BenchSnapshots -SnapshotA $SnapA -SnapshotB $SnapB
+    $xamlD = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="🔄 Benchmark Karsilastirma" Height="600" Width="920"
+        Background="#181818" WindowStartupLocation="CenterOwner" WindowStyle="ToolWindow" ResizeMode="CanResize">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="🔄 Benchmark Karsilastirma" Foreground="#FFFFFF" FontSize="18" FontWeight="Bold" Margin="0,0,0,6"/>
+
+        <Grid Grid.Row="1" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Border Grid.Column="0" Background="#1F1F1F" CornerRadius="5" Padding="10" Margin="0,0,5,0">
+                <StackPanel>
+                    <TextBlock Text="A (Once)" Foreground="#4CC2FF" FontWeight="Bold"/>
+                    <TextBlock x:Name="lblALabel" Foreground="#DDD" FontSize="12"/>
+                    <TextBlock x:Name="lblATime"  Foreground="#888" FontSize="11"/>
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Background="#1F1F1F" CornerRadius="5" Padding="10" Margin="5,0,0,0">
+                <StackPanel>
+                    <TextBlock Text="B (Sonra)" Foreground="#FFB347" FontWeight="Bold"/>
+                    <TextBlock x:Name="lblBLabel" Foreground="#DDD" FontSize="12"/>
+                    <TextBlock x:Name="lblBTime"  Foreground="#888" FontSize="11"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="2" Background="#1F1F1F" CornerRadius="5" BorderBrush="#2E2E2E" BorderThickness="1">
+            <ListView x:Name="lvDiff" Background="Transparent" BorderThickness="0" Foreground="White">
+                <ListView.View>
+                    <GridView>
+                        <GridView.ColumnHeaderContainerStyle>
+                            <Style TargetType="GridViewColumnHeader">
+                                <Setter Property="Background" Value="#2A2A2A"/>
+                                <Setter Property="Foreground" Value="#DDD"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter Property="Height" Value="28"/>
+                            </Style>
+                        </GridView.ColumnHeaderContainerStyle>
+                        <GridViewColumn Header="Metrik"   Width="260" DisplayMemberBinding="{Binding Label}"/>
+                        <GridViewColumn Header="A"        Width="100" DisplayMemberBinding="{Binding AValue}"/>
+                        <GridViewColumn Header="B"        Width="100" DisplayMemberBinding="{Binding BValue}"/>
+                        <GridViewColumn Header="Delta"    Width="90"  DisplayMemberBinding="{Binding Delta}"/>
+                        <GridViewColumn Header="% Degis." Width="90"  DisplayMemberBinding="{Binding PctDisplay}"/>
+                        <GridViewColumn Header="Birim"    Width="60"  DisplayMemberBinding="{Binding Unit}"/>
+                        <GridViewColumn Header="Sonuc"    Width="110" DisplayMemberBinding="{Binding VerdictIcon}"/>
+                    </GridView>
+                </ListView.View>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="Foreground" Value="#E8E8E8"/>
+                        <Setter Property="Padding" Value="2,4"/>
+                    </Style>
+                </ListView.ItemContainerStyle>
+            </ListView>
+        </Border>
+
+        <TextBlock Grid.Row="3" x:Name="txtSummary" Foreground="#888" FontSize="11" Margin="0,8,0,0" TextWrapping="Wrap"/>
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button x:Name="btnDChart" Content="📊 Grafik Olarak Göster" Width="200" Height="30" Background="#2E5E2E" Foreground="White" BorderThickness="0" Margin="0,0,8,0" Cursor="Hand"/>
+            <Button x:Name="btnDClose" Content="Kapat" Width="100" Height="30" Background="#3A3A3A" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+        </StackPanel>
+    </Grid>
+</Window>
+"@
+    try {
+        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlD)
+        $w = [Windows.Markup.XamlReader]::Load($reader)
+        $w.Owner = $Win
+
+        $w.FindName('lblALabel').Text = if ($SnapA.label) { $SnapA.label } else { "(etiketsiz)" }
+        $w.FindName('lblBLabel').Text = if ($SnapB.label) { $SnapB.label } else { "(etiketsiz)" }
+        $w.FindName('lblATime').Text  = $SnapA.timestamp
+        $w.FindName('lblBTime').Text  = $SnapB.timestamp
+
+        $lv = $w.FindName('lvDiff')
+        $win = 0; $loss = 0; $neutral = 0; $na = 0
+        foreach ($r in $rows) {
+            $icon = switch ($r.Verdict) {
+                'better'  { '🟢 Iyilesti';  $win++ }
+                'worse'   { '🔴 Kotulesti'; $loss++ }
+                'neutral' { '⚪ Aynı';      $neutral++ }
+                default   { '— Yok';        $na++ }
+            }
+            $r | Add-Member -NotePropertyName VerdictIcon -NotePropertyValue $icon -Force
+
+            # PctDisplay: +/- yerine ok yonu + mutlak deger. Eksi sign "iyi" verdict ile cakisip
+            # kafa karistiriyordu — ok raw delta yonunu gosterir, renk yargi (chart ile tutarli).
+            if ($null -ne $r.PctChange) {
+                $pn = [double]$r.PctChange
+                $ar = if     ($pn -gt 0.05)  { [char]0x2191 }
+                      elseif ($pn -lt -0.05) { [char]0x2193 }
+                      else                    { [char]0x2022 }
+                $disp = ("{0} {1:F1}%" -f $ar, [Math]::Abs($pn))
+            } else { $disp = "—" }
+            $r | Add-Member -NotePropertyName PctDisplay -NotePropertyValue $disp -Force
+
+            $lv.Items.Add($r) | Out-Null
+        }
+        $w.FindName('txtSummary').Text = ("Toplam {0} metrik · 🟢 {1} iyilesti · 🔴 {2} kotulesti · ⚪ {3} ayni · — {4} olculemedi" -f $rows.Count, $win, $loss, $neutral, $na)
+
+        # Grafik butonu — chart modal'ini ac, owner = diff modal
+        $w.FindName('btnDChart').Add_Click({
+            try {
+                $aLab = if ($SnapA.label) { $SnapA.label } else { "(etiketsiz)" }
+                $bLab = if ($SnapB.label) { $SnapB.label } else { "(etiketsiz)" }
+                Show-BenchDiffChart -Rows $rows -ALabel $aLab -BLabel $bLab -ATime $SnapA.timestamp -BTime $SnapB.timestamp -Owner $w
+            } catch {
+                WpfLog ("BenchChart Hata: " + $_.Exception.Message)
+            }
+        })
+        $w.FindName('btnDClose').Add_Click({ $w.Close() })
+        $w.ShowDialog() | Out-Null
+    } catch {
+        WpfLog ("BenchDiff Hata: " + $_.Exception.Message)
+    }
+}
+
+# =========================================================
+# Show-BenchDiffChart (v1.2.10) — Karsilastirma sonucunu yatay bar chart olarak gosterir.
+# WPF Canvas uzerinde Rectangle + TextBlock cizimi (3rd party kutuphane yok). Her metrik bir
+# bar: uzunluk = |% degisim|, renk = verdict (better/worse/neutral/n/a).
+# =========================================================
+function Show-BenchDiffChart {
+    param(
+        [Parameter(Mandatory=$true)]$Rows,
+        [string]$ALabel = "A",
+        [string]$BLabel = "B",
+        [string]$ATime  = "",
+        [string]$BTime  = "",
+        $Owner = $null
+    )
+
+    # Sadece sayisal (N/A olmayan) ve degisimli metrikleri al — temiz chart
+    $chartRows = @($Rows | Where-Object { $null -ne $_.PctChange })
+    if ($chartRows.Count -eq 0) {
+        [System.Windows.MessageBox]::Show("Grafige cevrilebilir veri yok (tum metrikler N/A).", "Bilgi") | Out-Null
+        return
+    }
+
+    # Bar genisligi olceklendirme — %50 hedef tavan; outlier varsa max'a clamp ama tepe %100'de
+    $maxPct = 10.0
+    foreach ($r in $chartRows) {
+        $abs = [Math]::Abs([double]$r.PctChange)
+        if ($abs -gt $maxPct -and $abs -le 200) { $maxPct = $abs }
+    }
+    if ($maxPct -lt 10) { $maxPct = 10 }  # minimum scale (cok kucuk degisimler de gorunsun)
+    if ($maxPct -gt 100) { $maxPct = 100 } # ust tavan
+
+    # Layout sabitleri (pixel)
+    $labelW = 270
+    $pctW   = 70
+    $barAreaW = 440
+    $barH   = 18
+    $rowH   = 30
+    $marginTop = 12
+    $canvasW = $labelW + $pctW + $barAreaW + 80
+    $canvasH = ($chartRows.Count * $rowH) + (2 * $marginTop)
+
+    # px per percent point
+    $pxPerPct = ($barAreaW - 20) / $maxPct
+
+    $xamlC = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="📊 Bench Karsilastirma — Grafik" Height="640" Width="$($canvasW + 60)"
+        Background="#181818" WindowStartupLocation="CenterOwner"
+        WindowStyle="ToolWindow" ResizeMode="CanResize" MinWidth="700" MinHeight="400">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="📊 Karsilastirma Grafigi (yuzdesel degisim)" Foreground="#FFFFFF" FontSize="17" FontWeight="Bold" Margin="0,0,0,4"/>
+
+        <Grid Grid.Row="1" Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Border Grid.Column="0" Background="#1F1F1F" CornerRadius="4" Padding="8" Margin="0,0,5,0">
+                <StackPanel>
+                    <TextBlock Foreground="#4CC2FF" FontWeight="Bold" FontSize="12" Text="A (Once)"/>
+                    <TextBlock Foreground="#DDD" FontSize="11" x:Name="lblCA"/>
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Background="#1F1F1F" CornerRadius="4" Padding="8" Margin="5,0,0,0">
+                <StackPanel>
+                    <TextBlock Foreground="#FFB347" FontWeight="Bold" FontSize="12" Text="B (Sonra)"/>
+                    <TextBlock Foreground="#DDD" FontSize="11" x:Name="lblCB"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- LEGEND -->
+        <StackPanel Grid.Row="2" Orientation="Vertical" Margin="0,0,0,8">
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,3">
+                <Rectangle Width="14" Height="14" Fill="#27AE60" VerticalAlignment="Center"/>
+                <TextBlock Text="  🟢 Iyilesti     " Foreground="#CCC" FontSize="11" VerticalAlignment="Center" Margin="2,0,12,0"/>
+                <Rectangle Width="14" Height="14" Fill="#E74C3C" VerticalAlignment="Center"/>
+                <TextBlock Text="  🔴 Kotulesti     " Foreground="#CCC" FontSize="11" VerticalAlignment="Center" Margin="2,0,12,0"/>
+                <Rectangle Width="14" Height="14" Fill="#777" VerticalAlignment="Center"/>
+                <TextBlock Text="  ⚪ Aynı (noise &lt; 2%)" Foreground="#CCC" FontSize="11" VerticalAlignment="Center" Margin="2,0,12,0"/>
+            </StackPanel>
+            <TextBlock Foreground="#888" FontSize="10" FontStyle="Italic" Margin="0,2,0,0" TextWrapping="Wrap">
+                <Run Text="↑ = değer arttı  ·  ↓ = değer azaldı  ·  Renk: iyileşme/kötüleşme yargısı (örnek: ↓ ping yeşil = düşüş iyi)."/>
+            </TextBlock>
+        </StackPanel>
+
+        <Border Grid.Row="3" Background="#1F1F1F" CornerRadius="5" BorderBrush="#2E2E2E" BorderThickness="1">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="6">
+                <Canvas x:Name="chartCanvas" Background="Transparent" Width="$canvasW" Height="$canvasH"/>
+            </ScrollViewer>
+        </Border>
+
+        <TextBlock Grid.Row="4" x:Name="lblCFoot" Foreground="#888" FontSize="11" Margin="0,8,0,0" TextWrapping="Wrap"/>
+
+        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
+            <Button x:Name="btnCClose" Content="Kapat" Width="100" Height="30" Background="#3A3A3A" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+        </StackPanel>
+    </Grid>
+</Window>
+"@
+    try {
+        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlC)
+        $winC = [Windows.Markup.XamlReader]::Load($reader)
+        if ($Owner) { $winC.Owner = $Owner } else { $winC.Owner = $Win }
+
+        $winC.FindName('lblCA').Text = ("{0}   ·   {1}" -f $ALabel, $ATime)
+        $winC.FindName('lblCB').Text = ("{0}   ·   {1}" -f $BLabel, $BTime)
+
+        $canvas = $winC.FindName('chartCanvas')
+
+        # Verdict renkleri (hex brush)
+        $colorBetter  = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color]::FromRgb(0x27, 0xAE, 0x60))
+        $colorWorse   = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color]::FromRgb(0xE7, 0x4C, 0x3C))
+        $colorNeutral = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color]::FromRgb(0x77, 0x77, 0x77))
+        $colorNA      = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color]::FromRgb(0x44, 0x44, 0x44))
+        $colorAxis    = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color]::FromRgb(0x33, 0x33, 0x33))
+        $colorText    = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color]::FromRgb(0xE0, 0xE0, 0xE0))
+        $colorTextDim = New-Object System.Windows.Media.SolidColorBrush ([System.Windows.Media.Color]::FromRgb(0xAA, 0xAA, 0xAA))
+
+        # X axis baseline (bar baslangic noktasi)
+        $axisX = $labelW + $pctW + 10
+        $axisLine = New-Object System.Windows.Shapes.Rectangle
+        $axisLine.Width = 1
+        $axisLine.Height = ($chartRows.Count * $rowH)
+        $axisLine.Fill = $colorAxis
+        [System.Windows.Controls.Canvas]::SetLeft($axisLine, $axisX)
+        [System.Windows.Controls.Canvas]::SetTop($axisLine, $marginTop)
+        $canvas.Children.Add($axisLine) | Out-Null
+
+        # Olcek etiketleri — 0%, %25, %50 vb. tepe ucu
+        $scaleSteps = @(0, 0.25, 0.5, 0.75, 1.0)
+        foreach ($s in $scaleSteps) {
+            $tickX = $axisX + ($s * $maxPct * $pxPerPct)
+            $tickTb = New-Object System.Windows.Controls.TextBlock
+            $tickTb.Text = ("{0}%" -f [int]($s * $maxPct))
+            $tickTb.Foreground = $colorTextDim
+            $tickTb.FontSize = 9
+            [System.Windows.Controls.Canvas]::SetLeft($tickTb, $tickX - 8)
+            [System.Windows.Controls.Canvas]::SetTop($tickTb, ($marginTop + $chartRows.Count * $rowH))
+            $canvas.Children.Add($tickTb) | Out-Null
+
+            # Hafif dikey kilavuz cizgi
+            if ($s -gt 0) {
+                $guide = New-Object System.Windows.Shapes.Rectangle
+                $guide.Width = 1; $guide.Height = ($chartRows.Count * $rowH)
+                $guide.Fill = $colorAxis; $guide.Opacity = 0.45
+                [System.Windows.Controls.Canvas]::SetLeft($guide, $tickX)
+                [System.Windows.Controls.Canvas]::SetTop($guide, $marginTop)
+                $canvas.Children.Add($guide) | Out-Null
+            }
+        }
+
+        $y = $marginTop
+        foreach ($r in $chartRows) {
+            # Metrik adi (sol)
+            $tbLabel = New-Object System.Windows.Controls.TextBlock
+            $tbLabel.Text = $r.Label
+            $tbLabel.Foreground = $colorText
+            $tbLabel.FontSize = 12
+            $tbLabel.Width = $labelW - 10
+            $tbLabel.TextTrimming = 'CharacterEllipsis'
+            $tbLabel.ToolTip = $r.Label
+            [System.Windows.Controls.Canvas]::SetLeft($tbLabel, 4)
+            [System.Windows.Controls.Canvas]::SetTop($tbLabel, $y + 3)
+            $canvas.Children.Add($tbLabel) | Out-Null
+
+            # Pct text (orta) — ok yonu raw delta'yi (arti/azalis) gosterir, renk yargi (iyi/kotu).
+            # +/- sign kafa karistiriyordu: "lower=better" metrikte deger -%50 dustugunde gozle
+            # eksi = kotu okunur ama bizim verdict = iyi. Ok + mutlak deger daha tutarli.
+            $pctNum = [double]$r.PctChange
+            $arrow  = if     ($pctNum -gt 0.05) { [char]0x2191 }   # ↑ arttı
+                      elseif ($pctNum -lt -0.05) { [char]0x2193 }  # ↓ azaldı
+                      else                       { [char]0x2022 }  # • degismez (sifir civari)
+            $tbPct = New-Object System.Windows.Controls.TextBlock
+            $tbPct.Text = ("{0} {1:F1}%" -f $arrow, [Math]::Abs($pctNum))
+            $tbPct.Foreground = switch ($r.Verdict) {
+                'better'  { $colorBetter }
+                'worse'   { $colorWorse }
+                default   { $colorTextDim }
+            }
+            $tbPct.FontSize = 12
+            $tbPct.FontWeight = 'SemiBold'
+            $tbPct.TextAlignment = 'Right'
+            $tbPct.Width = $pctW
+            [System.Windows.Controls.Canvas]::SetLeft($tbPct, $labelW - 5)
+            [System.Windows.Controls.Canvas]::SetTop($tbPct, $y + 3)
+            $canvas.Children.Add($tbPct) | Out-Null
+
+            # Bar
+            $absPct = [Math]::Min([Math]::Abs($pctNum), $maxPct)
+            $barW   = $absPct * $pxPerPct
+            if ($barW -lt 2) { $barW = 2 }   # cok kucuk degisimler bile ipucu olarak gorunsun
+            $rect = New-Object System.Windows.Shapes.Rectangle
+            $rect.Width  = $barW
+            $rect.Height = $barH
+            $rect.RadiusX = 2; $rect.RadiusY = 2
+            $rect.Fill = switch ($r.Verdict) {
+                'better'  { $colorBetter }
+                'worse'   { $colorWorse }
+                'neutral' { $colorNeutral }
+                default   { $colorNA }
+            }
+            [System.Windows.Controls.Canvas]::SetLeft($rect, $axisX)
+            [System.Windows.Controls.Canvas]::SetTop($rect, $y + 2)
+            $canvas.Children.Add($rect) | Out-Null
+
+            # A -> B raw deger (bar sonuna)
+            $tbAB = New-Object System.Windows.Controls.TextBlock
+            $tbAB.Text = ("{0} -> {1} {2}" -f $r.AValue, $r.BValue, $r.Unit)
+            $tbAB.Foreground = $colorTextDim
+            $tbAB.FontSize = 11
+            [System.Windows.Controls.Canvas]::SetLeft($tbAB, $axisX + $barW + 8)
+            [System.Windows.Controls.Canvas]::SetTop($tbAB, $y + 3)
+            $canvas.Children.Add($tbAB) | Out-Null
+
+            $y += $rowH
+        }
+
+        # Footer summary
+        $wins  = @($chartRows | Where-Object { $_.Verdict -eq 'better'  }).Count
+        $loss  = @($chartRows | Where-Object { $_.Verdict -eq 'worse'   }).Count
+        $neut  = @($chartRows | Where-Object { $_.Verdict -eq 'neutral' }).Count
+        $winC.FindName('lblCFoot').Text = ("{0} metrik gorulmektedir · 🟢 {1} · 🔴 {2} · ⚪ {3} · olceklendirme: max {4:F0}% bar = tepe" -f $chartRows.Count, $wins, $loss, $neut, $maxPct)
+
+        $winC.FindName('btnCClose').Add_Click({ $winC.Close() })
+        $winC.ShowDialog() | Out-Null
+    } catch {
+        WpfLog ("BenchChart Hata: " + $_.Exception.Message)
+    }
+}
+
+# =========================================================
+# Show-BenchMetricGuide (v1.2.10) — Hangi metrik hangi tweak'ten etkilenir?
+# Statik referans tablo. Bench panel'den buton ile acilir, kullanici tweak Apply etmeden
+# once veya bench diff sonrasi "X metrik degisti, hangi tweak yapmistim" yorumu icin.
+# =========================================================
+function Get-BenchMetricToTweakMap {
+    return @(
+        @{
+            Metric    = "⏱️ Timer Sleep precision (avg + stddev)"
+            Direction = "Düşük = İyi"
+            Affects   = @(
+                "Timer Resolution 0.5ms (Espor)",
+                "HPET (Platform Clock) Kapat",
+                "TSC Sync Policy: Enhanced",
+                "MSI Mode (GPU Interrupt)",
+                "Dinamik Tık Kapat (otomatik dahil)"
+            )
+            Note = "Win11 EcoQoS sleep'i throttle ediyorsa 5-7ms gorulur; tweak'lerle 0.5-1.5ms hedef."
+        }
+        @{
+            Metric    = "🔁 Loopback ping (127.0.0.1)"
+            Direction = "Düşük = İyi"
+            Affects   = @(
+                "TCP NoDelay ve AckFrequency (Nagle Kapat)",
+                "Ağ Adaptörü Performans (NetProfile)"
+            )
+            Note = "TCP stack pure latency. NIC offload/güç tweak'leri burayı ETKILEMEZ (loopback NIC kullanmaz)."
+        }
+        @{
+            Metric    = "🌐 Gateway ping (router) avg + jitter"
+            Direction = "Düşük = İyi"
+            Affects   = @(
+                "Ağ Adaptörü Offload Devre Dışı (RSS / LSO / Checksum)",
+                "Ağ Kartı Güç Tasarrufu ve Uyandırma Kapat",
+                "TCP NoDelay ve AckFrequency",
+                "Ağ Adaptörü Performans (NetProfile)"
+            )
+            Note = "Yerel ağ latency. Modern ev ağında 1-3ms tipik. Düşüş genelde marjinal (0.1-0.3ms)."
+        }
+        @{
+            Metric    = "🔎 DNS resolve (10 domain avg)"
+            Direction = "Düşük = İyi"
+            Affects   = @(
+                "(Mevcut DNS değiştiren tweak yok — Ayarlar / Tools / manuel)"
+            )
+            Note = "ISP DNS yerine Cloudflare (1.1.1.1) veya Google (8.8.8.8) genelde 30-100ms düşürür."
+        }
+        @{
+            Metric    = "🚀 Process start latency (cmd /c exit)"
+            Direction = "Düşük = İyi"
+            Affects   = @(
+                "UAC Kapat (Risk: Yüksek)",
+                "Arka Plan Uygulamalarını Kapat (Sistem Politikası)",
+                "Microsoft GameInput / RDP / Snipping Tool kaldırma",
+                "Copilot Tamamen Kapat",
+                "Microsoft Update Health Tools kaldır"
+            )
+            Note = "AntiVirus on-access scan (MsMpEng), UAC consent dialog overhead, process spawn yükü."
+        }
+        @{
+            Metric    = "⚡ DPC time % (kernel deferred procedure)"
+            Direction = "Düşük = İyi"
+            Affects   = @(
+                "Ağ Adaptörü Offload Devre Dışı",
+                "MSI Mode (GPU Interrupt) Aç",
+                "Ağ Kartı Güç Tasarrufu Kapat",
+                "Timer Resolution 0.5ms",
+                "HPET Kapat",
+                "NVIDIA / AMD Optimizasyonu (manuel)"
+            )
+            Note = "Driver kalitesi göstergesi. Audio glitch, oyun stutter, frame time jitter sebebi. <1% iyi, >5% sorun."
+        }
+        @{
+            Metric    = "💾 Boş RAM (MB)"
+            Direction = "Yüksek = İyi"
+            Affects   = @(
+                "Memory Compression Kapat (16GB+ RAM)",
+                "Arka Plan Uygulamalarını Kapat",
+                "Telemetri / Diagnostic Veri Kapat",
+                "Bloatware kaldırma (GameInput, Update Health, Snipping)",
+                "Copilot Tamamen Kapat",
+                "Karanlık Mod (DWM marjinal)"
+            )
+            Note = "Tweak öncesi/sonrası 100-500MB fark görülebilir. Memory Compression kapatınca CPU'da kazanılır, RAM marjinal değişir."
+        }
+        @{
+            Metric    = "🔢 Process count"
+            Direction = "Düşük = İyi"
+            Affects   = @(
+                "Bloatware kaldırma (5 tweak: GameInput/RDP/Snipping/UpdateHealth/MeetNow)",
+                "Copilot Tamamen Kapat (Uninstall + Policy)",
+                "Arka Plan Uygulamalarını Kapat"
+            )
+            Note = "Tipik Win11: 180-220 process. Her bloatware kaldırma 2-5 process azaltır."
+        }
+        @{
+            Metric    = "⚙️ Servis sayısı (Running)"
+            Direction = "Düşük = İyi"
+            Affects   = @(
+                "Telemetri Kapat (DiagTrack, dmwappushservice)",
+                "Microsoft Update Health Tools (uhssvc)",
+                "Hibernate Kapat (SysMain dolaylı)"
+            )
+            Note = "Tipik Win11: 100-130 running service. Telemetri kapatma ~3-5 servis azaltır."
+        }
+        @{
+            Metric    = "📎 Handle count (toplam)"
+            Direction = "Düşük = İyi"
+            Affects   = @(
+                "Arka Plan Uygulamalarını Kapat",
+                "Bloatware + Copilot kaldırma",
+                "Karanlık Mod (DWM marjinal)"
+            )
+            Note = "Tipik sistem: 80k-150k handle. Background app'leri kapatma 10-30k azaltır."
+        }
+    )
+}
+
+function Show-BenchMetricGuide {
+    $xamlG = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="📋 Bench Metrik Rehberi — Hangi tweak neyi etkiler?" Height="700" Width="880"
+        Background="#181818" WindowStartupLocation="CenterOwner"
+        WindowStyle="ToolWindow" ResizeMode="CanResize" MinWidth="700" MinHeight="500">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="📋 Metrik Rehberi" Foreground="#FFFFFF" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
+        <TextBlock Grid.Row="1" Foreground="#888" FontSize="11" Margin="0,0,0,10" TextWrapping="Wrap">
+            <Run Text="Bench yapan tweak'in hangi metriğe etki etmesi BEKLENİR. Bench öncesi/sonrası diff'e bakarken yorumu kolaylaştırır."/><LineBreak/>
+            <Run Text="ÖNEMLİ: Bir metrik beklenmedik şekilde değişmezse, tweak'in o sistem üzerinde gerçekten çalışmadığını (TR Windows lokalization, driver uyumsuzluğu, vb.) gösterebilir." Foreground="#FFB347" FontStyle="Italic"/>
+        </TextBlock>
+
+        <Border Grid.Row="2" Background="#1F1F1F" CornerRadius="5" BorderBrush="#2E2E2E" BorderThickness="1">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="6">
+                <StackPanel x:Name="spGuide"/>
+            </ScrollViewer>
+        </Border>
+
+        <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+            <Button x:Name="btnGClose" Content="Kapat" Width="100" Height="32" Background="#3A3A3A" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+        </StackPanel>
+    </Grid>
+</Window>
+"@
+    try {
+        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlG)
+        $winG = [Windows.Markup.XamlReader]::Load($reader)
+        $winG.Owner = $Win
+
+        $sp = $winG.FindName('spGuide')
+        foreach ($entry in (Get-BenchMetricToTweakMap)) {
+            # Her metrik bir card
+            $border = New-Object System.Windows.Controls.Border
+            $border.Background  = '#252525'
+            $border.CornerRadius = '4'
+            $border.BorderBrush = '#333'
+            $border.BorderThickness = 1
+            $border.Padding = '12,10'
+            $border.Margin = '0,0,0,8'
+
+            $stack = New-Object System.Windows.Controls.StackPanel
+
+            # Baslik + direction
+            $titleRow = New-Object System.Windows.Controls.DockPanel
+            $tbTitle = New-Object System.Windows.Controls.TextBlock
+            $tbTitle.Text = $entry.Metric
+            $tbTitle.Foreground = '#FFFFFF'
+            $tbTitle.FontSize = 14
+            $tbTitle.FontWeight = 'Bold'
+            $stack.Children.Add($tbTitle) | Out-Null
+
+            $tbDir = New-Object System.Windows.Controls.TextBlock
+            $tbDir.Text = ("Yön: {0}" -f $entry.Direction)
+            $tbDir.Foreground = '#4CC2FF'
+            $tbDir.FontSize = 11
+            $tbDir.Margin = '0,2,0,8'
+            $stack.Children.Add($tbDir) | Out-Null
+
+            # Affects list
+            $tbLab = New-Object System.Windows.Controls.TextBlock
+            $tbLab.Text = "Bu metriği etkileyen tweak'ler:"
+            $tbLab.Foreground = '#CCC'
+            $tbLab.FontSize = 11
+            $tbLab.Margin = '0,2,0,4'
+            $stack.Children.Add($tbLab) | Out-Null
+
+            foreach ($t in $entry.Affects) {
+                $tbItem = New-Object System.Windows.Controls.TextBlock
+                $tbItem.Text = "  • $t"
+                $tbItem.Foreground = '#E8E8E8'
+                $tbItem.FontSize = 12
+                $tbItem.Margin = '12,1,0,1'
+                $stack.Children.Add($tbItem) | Out-Null
+            }
+
+            # Note
+            if ($entry.Note) {
+                $tbN = New-Object System.Windows.Controls.TextBlock
+                $tbN.Text = "💡 " + $entry.Note
+                $tbN.Foreground = '#888'
+                $tbN.FontSize = 11
+                $tbN.FontStyle = 'Italic'
+                $tbN.TextWrapping = 'Wrap'
+                $tbN.Margin = '0,8,0,0'
+                $stack.Children.Add($tbN) | Out-Null
+            }
+
+            $border.Child = $stack
+            $sp.Children.Add($border) | Out-Null
+        }
+
+        $winG.FindName('btnGClose').Add_Click({ $winG.Close() })
+        $winG.ShowDialog() | Out-Null
+    } catch {
+        WpfLog ("BenchGuide Hata: " + $_.Exception.Message)
+    }
+}
+
+function Show-BenchmarkPanel {
+    $xamlB = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="⚖️ Performans Benchmark" Height="680" Width="1020"
+        Background="#181818" WindowStartupLocation="CenterOwner"
+        WindowStyle="ToolWindow" ResizeMode="CanResize" MinWidth="820" MinHeight="560">
+    <Window.Resources>
+        <Style x:Key="BBtn" TargetType="Button">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,3"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.88"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="⚖️ Performans Benchmark" Foreground="#FFFFFF" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
+        <TextBlock Grid.Row="1" Foreground="#888" FontSize="11" Margin="0,0,0,10" TextWrapping="Wrap">
+            <Run Text="7 metrikli sistem performans olcumu. Tweak Apply oncesi/sonrasi snapshot al, karsilastir — gercek etki gor."/><LineBreak/>
+            <Run Text="Suite suresi yaklasik 12-18 sn. '📋 Metrik Rehberi' butonu hangi tweak hangi metrigi etkiledigini gosterir." Foreground="#666" FontStyle="Italic"/>
+        </TextBlock>
+
+        <!-- BENCH BUTONLARI VE ETIKET INPUT -->
+        <Grid Grid.Row="2" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="Etiket:" Foreground="#CCC" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <TextBox x:Name="txtBLabel" Grid.Column="1" Width="260" Height="28" Background="#2A2A2A" Foreground="White" BorderBrush="#444" Padding="6,2" VerticalContentAlignment="Center" Text=""/>
+            <Button x:Name="btnRunBench" Grid.Column="3" Style="{StaticResource BBtn}" Content="📊 Tam Bench Calistir" Background="#0066AA" Width="200" Height="32" FontWeight="Bold"/>
+        </Grid>
+
+        <!-- PROGRESS BAR + STATUS -->
+        <Grid Grid.Row="3" Margin="0,0,0,12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <ProgressBar Grid.Row="0" x:Name="pbBench" Height="14" Background="#1F1F1F" Foreground="#0066AA" BorderBrush="#444" Minimum="0" Maximum="100" Value="0"/>
+            <TextBlock Grid.Row="1" x:Name="lblBStat" Foreground="#888" FontSize="11" Margin="0,4,0,0" Text="Hazir"/>
+        </Grid>
+
+        <!-- SNAPSHOT LISTESI -->
+        <Border Grid.Row="4" Background="#1F1F1F" CornerRadius="5" BorderBrush="#2E2E2E" BorderThickness="1">
+            <ListView x:Name="lvBench" Background="Transparent" BorderThickness="0" Foreground="White" SelectionMode="Extended">
+                <ListView.View>
+                    <GridView>
+                        <GridView.ColumnHeaderContainerStyle>
+                            <Style TargetType="GridViewColumnHeader">
+                                <Setter Property="Background" Value="#2A2A2A"/>
+                                <Setter Property="Foreground" Value="#DDD"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter Property="Height" Value="28"/>
+                            </Style>
+                        </GridView.ColumnHeaderContainerStyle>
+                        <GridViewColumn Header="Tarih"     Width="160" DisplayMemberBinding="{Binding timestamp}"/>
+                        <GridViewColumn Header="Etiket"    Width="280" DisplayMemberBinding="{Binding label}"/>
+                        <GridViewColumn Header="Timer Avg" Width="90"  DisplayMemberBinding="{Binding _timer}"/>
+                        <GridViewColumn Header="GW Ping"   Width="90"  DisplayMemberBinding="{Binding _gw}"/>
+                        <GridViewColumn Header="Proc Start" Width="100" DisplayMemberBinding="{Binding _proc}"/>
+                        <GridViewColumn Header="DPC %"     Width="80"  DisplayMemberBinding="{Binding _dpc}"/>
+                        <GridViewColumn Header="Bos RAM"   Width="100" DisplayMemberBinding="{Binding _ram}"/>
+                    </GridView>
+                </ListView.View>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="Foreground" Value="#E8E8E8"/>
+                        <Setter Property="Padding" Value="2,3"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#0E3A5A"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#252525"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ListView.ItemContainerStyle>
+            </ListView>
+        </Border>
+
+        <TextBlock Grid.Row="5" x:Name="txtBSummary" Foreground="#888" FontSize="11" Margin="0,8,0,0"/>
+
+        <Grid Grid.Row="6" Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="btnCompare" Grid.Column="0" Style="{StaticResource BBtn}" Content="🔄 Karsilastir (2 sec)" Background="#0066AA" Width="180" Height="32" IsEnabled="False"/>
+            <Button x:Name="btnRelabel" Grid.Column="2" Style="{StaticResource BBtn}" Content="✏️ Etiket Degistir" Background="#3A3A3A" Width="150" Height="32" IsEnabled="False"/>
+            <Button x:Name="btnDelBench" Grid.Column="4" Style="{StaticResource BBtn}" Content="🗑️ Sil" Background="#A00000" Width="80" Height="32" IsEnabled="False"/>
+            <Button x:Name="btnGuide" Grid.Column="6" Style="{StaticResource BBtn}" Content="📋 Metrik Rehberi" Background="#2E5E2E" Width="160" Height="32" ToolTip="Hangi tweak hangi metriği etkilemesi beklenir — referans tablo"/>
+            <Button x:Name="btnBRefresh" Grid.Column="8" Style="{StaticResource BBtn}" Content="♻ Yenile" Background="#3A3A3A" Width="100" Height="32"/>
+            <Button x:Name="btnBClose" Grid.Column="10" Style="{StaticResource BBtn}" Content="Kapat" Background="#3A3A3A" Width="100" Height="32"/>
+        </Grid>
+    </Grid>
+</Window>
+"@
+    try {
+        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlB)
+        $winB   = [Windows.Markup.XamlReader]::Load($reader)
+        $winB.Owner = $Win
+
+        $txtLabel    = $winB.FindName('txtBLabel')
+        $btnRun      = $winB.FindName('btnRunBench')
+        $pb          = $winB.FindName('pbBench')
+        $lblStat     = $winB.FindName('lblBStat')
+        $lv          = $winB.FindName('lvBench')
+        $txtSummary  = $winB.FindName('txtBSummary')
+        $btnCmp      = $winB.FindName('btnCompare')
+        $btnRelabel  = $winB.FindName('btnRelabel')
+        $btnDel      = $winB.FindName('btnDelBench')
+        $btnGuide    = $winB.FindName('btnGuide')
+        $btnRefresh  = $winB.FindName('btnBRefresh')
+        $btnClose    = $winB.FindName('btnBClose')
+
+        function Refresh-BenchList {
+            $lv.Items.Clear()
+            $snaps = Get-BenchSnapshots
+            if (-not $snaps -or $snaps.Count -eq 0) {
+                $txtSummary.Text = "Henuz benchmark snapshot yok. 'Tam Bench Calistir' ile ilk olcumu al."
+                return
+            }
+            foreach ($s in $snaps) {
+                # Ozet sutunlar icin (display-only). disk4k v1.2.10 sonu kaldirildi,
+                # yerini Process Start aldi (UAC/AntiVirus/process spawn tweak'lerine duyarli).
+                $tAvg  = try { [Math]::Round([double]$s.metrics.timer.AvgMs, 3) } catch { "-" }
+                $gAvg  = try { [Math]::Round([double]$s.metrics.gateway.AvgMs, 2) } catch { "-" }
+                $proc  = try { [Math]::Round([double]$s.metrics.processStart.AvgMs, 1) } catch { "-" }
+                $dpc   = try { [Math]::Round([double]$s.metrics.dpc.AvgPercent, 2) } catch { "-" }
+                $ram   = try { [int]$s.metrics.system.AvailableRamMB } catch { "-" }
+                $s | Add-Member -NotePropertyName "_timer" -NotePropertyValue ("$tAvg ms") -Force
+                $s | Add-Member -NotePropertyName "_gw"    -NotePropertyValue ("$gAvg ms") -Force
+                $s | Add-Member -NotePropertyName "_proc"  -NotePropertyValue ("$proc ms") -Force
+                $s | Add-Member -NotePropertyName "_dpc"   -NotePropertyValue ("$dpc %")   -Force
+                $s | Add-Member -NotePropertyName "_ram"   -NotePropertyValue ("$ram MB")  -Force
+                $lv.Items.Add($s) | Out-Null
+            }
+            $txtSummary.Text = "$($snaps.Count) snapshot · 2 secip 'Karsilastir' = diff modal"
+        }
+        Refresh-BenchList
+
+        $lv.Add_SelectionChanged({
+            $cnt = $lv.SelectedItems.Count
+            $btnCmp.IsEnabled = ($cnt -eq 2)
+            $btnRelabel.IsEnabled = ($cnt -eq 1)
+            $btnDel.IsEnabled = ($cnt -ge 1)
+            if ($cnt -eq 2)     { $btnCmp.Content = "🔄 Karsilastir (2 sec)" }
+            elseif ($cnt -gt 2) { $btnCmp.Content = "🔄 Karsilastir (cok fazla sec)" }
+            else                { $btnCmp.Content = ("🔄 Karsilastir ($cnt/2 sec)") }
+        })
+
+        $btnRun.Add_Click({
+            $btnRun.IsEnabled = $false
+            $btnRefresh.IsEnabled = $false
+            $lv.IsEnabled = $false
+            $pb.Value = 0
+            $lblStat.Text = "Baslatiliyor..."
+            Do-Events
+
+            $label = $txtLabel.Text.Trim()
+            if ([string]::IsNullOrEmpty($label)) { $label = "Manuel " + (Get-Date -Format "HH:mm:ss") }
+
+            $progressCb = {
+                param($step, $total, $stepLabel)
+                $pb.Value = if ($total -gt 0) { ($step / $total) * 100 } else { 0 }
+                $lblStat.Text = ("[{0}/{1}] {2}" -f $step, $total, $stepLabel)
+                Do-Events
+            }
+
+            try {
+                $snap = Get-BenchSnapshot -ProgressCallback $progressCb -Label $label
+                $fp = Save-BenchSnapshot -Snapshot $snap
+                if ($fp) {
+                    $lblStat.Text = "Snapshot kaydedildi: " + (Split-Path $fp -Leaf)
+                    $txtLabel.Text = ""
+                    Refresh-BenchList
+                } else {
+                    $lblStat.Text = "HATA: snapshot kaydedilemedi (log'a bak)"
+                }
+            } catch {
+                $lblStat.Text = "HATA: " + $_.Exception.Message
+            } finally {
+                $pb.Value = 100
+                $btnRun.IsEnabled = $true
+                $btnRefresh.IsEnabled = $true
+                $lv.IsEnabled = $true
+            }
+        })
+
+        $btnCmp.Add_Click({
+            if ($lv.SelectedItems.Count -ne 2) { return }
+            # En eski = A, en yeni = B (timestamp'a gore)
+            $two = @($lv.SelectedItems) | Sort-Object { [datetime]$_.timestamp }
+            $a = $two[0]; $b = $two[1]
+            Show-BenchDiffModal -SnapA $a -SnapB $b
+        })
+
+        $btnRelabel.Add_Click({
+            if ($lv.SelectedItems.Count -ne 1) { return }
+            $sel = $lv.SelectedItem
+            Add-Type -AssemblyName Microsoft.VisualBasic
+            $newLbl = [Microsoft.VisualBasic.Interaction]::InputBox(
+                "Yeni etiket (snapshot icin):",
+                "Etiket Degistir",
+                [string]$sel.label)
+            if ($null -eq $newLbl) { return }
+            if ([string]::IsNullOrWhiteSpace($newLbl)) { return }
+            $ok = Set-BenchSnapshotLabel -Path $sel._path -NewLabel $newLbl
+            if ($ok) {
+                Refresh-BenchList
+            } else {
+                [System.Windows.MessageBox]::Show("Etiket degistirilemedi.", "Hata", "OK", "Error") | Out-Null
+            }
+        })
+
+        $btnDel.Add_Click({
+            $sels = @($lv.SelectedItems)
+            if ($sels.Count -eq 0) { return }
+            $confirm = [System.Windows.MessageBox]::Show(
+                ("$($sels.Count) snapshot silinecek. Devam edilsin mi?"),
+                "Sil Onayi", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
+            if ($confirm -ne 'Yes') { return }
+            $ok = 0; $fail = 0
+            foreach ($s in $sels) {
+                if (Remove-BenchSnapshot -Path $s._path) { $ok++ } else { $fail++ }
+            }
+            Refresh-BenchList
+            $lblStat.Text = "$ok silindi, $fail hata"
+        })
+
+        $btnGuide.Add_Click({ Show-BenchMetricGuide })
+        $btnRefresh.Add_Click({ Refresh-BenchList })
+        $btnClose.Add_Click({ $winB.Close() })
+
+        $winB.ShowDialog() | Out-Null
+    } catch {
+        WpfLog ("Benchmark Hata: " + $_.Exception.Message)
+        [System.Windows.MessageBox]::Show(
+            ("Benchmark panel acilamadi: {0}" -f $_.Exception.Message),
+            "Hata", "OK", "Error") | Out-Null
+    }
+}
+
+# =========================================================
+# Show-ActivityLog (v1.2.10) — Apply / Undo gecmisi paneli
+# Snapshot yerine eklendi. tweak_history.log (Write-TweakAuditLog) icerigini parse eder,
+# son N kaydi listeler, secimle veya per-row buton ile tek/coklu geri alma sunar.
+# =========================================================
+
+# $global:TweakList yapisi: [ordered]@{ "Kategori Adi" = @(tweakHash1, tweakHash2, ...); ... }
+# Yani anahtar KATEGORI, deger ise tweak array. Tweak adi anahtar DEGIL — bu yuzden
+# .Contains($tweakName) calismaz. Tum kategoriler iterate edilip Name esitligi aranmali.
+function Find-TweakByName {
+    param([string]$Name)
+    if (-not $global:TweakList -or [string]::IsNullOrEmpty($Name)) { return $null }
+    foreach ($cat in $global:TweakList.Keys) {
+        $arr = $global:TweakList[$cat]
+        if (-not $arr) { continue }
+        foreach ($tw in $arr) {
+            if ($tw -and $tw.Name -eq $Name) { return $tw }
+        }
+    }
+    return $null
+}
+
+# tweak_history.log parser. Her tweak adi icin bir entry uretir (Apply ve Undo bucket ayri).
+# Find-TweakByName ile Risk + Command/UndoCommand bilgisini iliskilendirir.
+function Get-ActivityLogEntries {
+    param([int]$Limit = 100)
+    $logPath = Join-Path $AppDataPath "tweak_history.log"
+    if (-not (Test-Path $logPath)) { return @() }
+
+    $entries  = New-Object System.Collections.Generic.List[object]
+    $lines    = Get-Content $logPath -Encoding UTF8 -ErrorAction SilentlyContinue
+    if (-not $lines) { return @() }
+
+    $curTime   = $null
+    $curBucket = $null
+    foreach ($line in $lines) {
+        if ($line -match '^=== \[(.+?)\] (.+?) ===$') {
+            try {
+                $curTime = [DateTime]::ParseExact($Matches[1], 'yyyy-MM-dd HH:mm:ss', [System.Globalization.CultureInfo]::InvariantCulture)
+            } catch { $curTime = $null }
+            $curBucket = $null
+            continue
+        }
+        if ($line -match '^UYGULANAN') { $curBucket = 'Apply'; continue }
+        if ($line -match '^GERI ALINAN') { $curBucket = 'Undo';  continue }
+        if (-not $curTime -or -not $curBucket) { continue }
+        # "  + Tweak Adi" veya "  - Tweak Adi"
+        if ($line -match '^\s*[\+\-]\s+(.+?)\s*$') {
+            $tweakName = $Matches[1].Trim()
+            if ([string]::IsNullOrEmpty($tweakName)) { continue }
+
+            # Tweak metadata lookup — kategori-iterating Find-TweakByName ile
+            $risk     = '?'
+            $hasFix   = $false
+            $tw       = Find-TweakByName $tweakName
+            if ($tw) {
+                if ($tw.Risk) { $risk = [string]$tw.Risk }
+                # Geri alabilir mi: Apply ise UndoCommand/Undo, Undo ise Command/Data var mi
+                if ($curBucket -eq 'Apply') {
+                    $hasFix = ($tw.UndoCommand -or $tw.Undo -or ($tw.Batch -and $tw.Batch.Count -gt 0))
+                } else {
+                    $hasFix = ($tw.Command -or $tw.Data -or ($tw.Batch -and $tw.Batch.Count -gt 0))
+                }
+            }
+
+            $riskIcon = switch ($risk) {
+                'High'    { '🔴 Yüksek' }
+                'Medium'  { '🟡 Orta' }
+                'Low'     { '🟢 Düşük' }
+                default   { '⚪ —' }
+            }
+            $actionIcon = if ($curBucket -eq 'Apply') { '✅ Apply' } else { '↶ Undo' }
+
+            $entries.Add([PSCustomObject]@{
+                DateTime    = $curTime
+                DateStr     = $curTime.ToString('yyyy-MM-dd')
+                TimeStr     = $curTime.ToString('HH:mm:ss')
+                Action      = $curBucket          # 'Apply' veya 'Undo'
+                ActionIcon  = $actionIcon
+                TweakName   = $tweakName
+                Risk        = $risk
+                RiskIcon    = $riskIcon
+                CanReverse  = $hasFix
+            }) | Out-Null
+        }
+    }
+
+    # En yeni en ustte — son $Limit kayit
+    @($entries | Sort-Object DateTime -Descending | Select-Object -First $Limit)
+}
+
+# Tek entry icin reverse — Apply ise Undo komutu, Undo ise Apply komutu uygulanir.
+# Invoke-QuickUndo icindeki Invoke-TweakAction pattern'i ile birebir mantik.
+function Invoke-SingleActivityReverse {
+    param([Parameter(Mandatory=$true)]$Entry)
+
+    $tw = Find-TweakByName $Entry.TweakName
+    if (-not $tw) {
+        return @{ Ok = $false; Reason = "Tweak tanimi bulunamadi (silinmis veya yeniden adlandirilmis): $($Entry.TweakName)" }
+    }
+    $isUndo  = ($Entry.Action -eq 'Apply')   # Apply yapilmissa Undo et, Undo yapilmissa yeniden Apply et
+    $batch   = if ($tw.Batch) { $tw.Batch } else { @($tw) }
+
+    try {
+        foreach ($sub in $batch) {
+            if ($isUndo -and $sub.UndoCommand) {
+                & ([ScriptBlock]::Create($sub.UndoCommand))
+            } elseif (-not $isUndo -and $sub.Command) {
+                & ([ScriptBlock]::Create($sub.Command))
+            } elseif ($sub.Key) {
+                $targetValue = if ($isUndo) { $sub.Undo } else { $sub.Data }
+                if ($targetValue -eq "DELETE_KEY") {
+                    if ($sub.ValueName) {
+                        if (Test-Path $sub.Key) { Remove-ItemProperty -Path $sub.Key -Name $sub.ValueName -ErrorAction SilentlyContinue }
+                    } else {
+                        if (Test-Path $sub.Key) { Remove-Item -Path $sub.Key -Force -Recurse -ErrorAction SilentlyContinue }
+                    }
+                } elseif ($targetValue -eq "DELETE_VALUE") {
+                    if (Test-Path $sub.Key) { Remove-ItemProperty -Path $sub.Key -Name $sub.ValueName -ErrorAction SilentlyContinue }
+                } else {
+                    if (-not (Test-Path $sub.Key)) {
+                        try { New-Item -Path $sub.Key -Force -ErrorAction Stop | Out-Null } catch { continue }
+                    }
+                    if ([string]::IsNullOrEmpty($sub.ValueName)) {
+                        Set-Item -Path $sub.Key -Value $targetValue -Force -ErrorAction Stop
+                    } else {
+                        Set-ItemProperty -Path $sub.Key -Name $sub.ValueName -Value $targetValue -Type $sub.Type -Force -ErrorAction Stop
+                    }
+                }
+            }
+        }
+        return @{ Ok = $true; Reason = "" }
+    } catch {
+        return @{ Ok = $false; Reason = $_.Exception.Message }
+    }
+}
+
+function Show-ActivityLog {
+    $xamlAL = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="📜 Aktivite Log — Apply / Undo Gecmisi" Height="640" Width="980"
+        Background="#181818" WindowStartupLocation="CenterOwner"
+        WindowStyle="ToolWindow" ResizeMode="CanResize" MinWidth="820" MinHeight="500">
+    <Window.Resources>
+        <!-- ComboBox stili ana pencereden birebir kopyalandi (Window ayri Resources kapsami,
+             devralinmaz). Hardcoded Background/Foreground'lar bu Style yuzunden saydam kalir. -->
+        <ControlTemplate x:Key="ALComboToggle" TargetType="ToggleButton">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition/>
+                    <ColumnDefinition Width="20"/>
+                </Grid.ColumnDefinitions>
+                <Border x:Name="Border" Grid.ColumnSpan="2" CornerRadius="2" Background="#2D2D30" BorderBrush="#555" BorderThickness="1"/>
+                <Path x:Name="Arrow" Grid.Column="1" Fill="White" HorizontalAlignment="Center" VerticalAlignment="Center" Data="M 0 0 L 4 4 L 8 0 Z"/>
+            </Grid>
+        </ControlTemplate>
+        <Style TargetType="ComboBox">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="#2D2D30"/>
+            <Setter Property="BorderBrush" Value="#555"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <ToggleButton Name="ToggleButton" Template="{StaticResource ALComboToggle}" Grid.Column="2" Focusable="false" IsChecked="{Binding Path=IsDropDownOpen,Mode=TwoWay,RelativeSource={RelativeSource TemplatedParent}}" ClickMode="Press"/>
+                            <ContentPresenter Name="ContentSite" IsHitTestVisible="False" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" Margin="10,3,23,3" VerticalAlignment="Center" HorizontalAlignment="Left"/>
+                            <TextBox x:Name="PART_EditableTextBox" Style="{x:Null}" Template="{x:Null}" HorizontalAlignment="Left" VerticalAlignment="Center" Margin="3,3,23,3" Focusable="True" Background="Transparent" Visibility="Hidden" IsReadOnly="{TemplateBinding IsReadOnly}"/>
+                            <Popup Name="Popup" Placement="Bottom" IsOpen="{TemplateBinding IsDropDownOpen}" AllowsTransparency="True" Focusable="False" PopupAnimation="Slide">
+                                <Grid Name="DropDown" SnapsToDevicePixels="True" MinWidth="{TemplateBinding ActualWidth}" MaxHeight="{TemplateBinding MaxDropDownHeight}">
+                                    <Border x:Name="DropDownBorder" Background="#252526" BorderThickness="1" BorderBrush="#555"/>
+                                    <ScrollViewer Margin="4,6,4,6" SnapsToDevicePixels="True">
+                                        <StackPanel IsItemsHost="True" KeyboardNavigation.DirectionalNavigation="Contained"/>
+                                    </ScrollViewer>
+                                </Grid>
+                            </Popup>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Padding" Value="5"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBoxItem">
+                        <Border x:Name="Border" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#3E3E42"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="Border" Property="Background" Value="#007ACC"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ALBtn" TargetType="Button">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontFamily" Value="Segoe UI"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="3" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="6,2" TextElement.Foreground="{TemplateBinding Foreground}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.55"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Opacity" Value="0.88"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ALRowBtn" TargetType="Button" BasedOn="{StaticResource ALBtn}">
+            <Setter Property="Background" Value="#0066AA"/>
+            <Setter Property="Height" Value="22"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Padding" Value="6,0"/>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="📜 Aktivite Log" Foreground="#FFFFFF" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
+        <TextBlock Grid.Row="1" Foreground="#888" FontSize="11" Margin="0,0,0,10" TextWrapping="Wrap">
+            <Run Text="Apply / Undo gecmisi (son 100 islem). Bir satira tikla → 'Sec' isaretli olur. Tek satir icin sag taraftaki 'Geri Al', coklu icin alttaki 'Secilenleri Geri Al'."/><LineBreak/>
+            <Run Text="Kaynak: %APPDATA%\MrClean\tweak_history.log"  Foreground="#666" FontStyle="Italic"/>
+        </TextBlock>
+
+        <!-- FILTRE SATIRI -->
+        <Grid Grid.Row="2" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="12"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Text="Islem:" Foreground="#CCC" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <ComboBox x:Name="cbALAction" Grid.Column="1" Width="130" Height="26">
+                <ComboBoxItem Content="Hepsi" IsSelected="True"/>
+                <ComboBoxItem Content="Sadece Apply"/>
+                <ComboBoxItem Content="Sadece Undo"/>
+            </ComboBox>
+
+            <TextBlock Grid.Column="3" Text="Baslangic:" Foreground="#CCC" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <DatePicker x:Name="dpALFrom" Grid.Column="4" Width="130" Height="24" Background="#2A2A2A" Foreground="Black"/>
+
+            <TextBlock Grid.Column="6" Text="Bitis:" Foreground="#CCC" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <DatePicker x:Name="dpALTo" Grid.Column="7" Width="130" Height="24" Background="#2A2A2A" Foreground="Black"/>
+
+            <TextBlock Grid.Column="9" Text="Ara:" Foreground="#CCC" VerticalAlignment="Center" Margin="0,0,6,0"/>
+            <TextBox x:Name="txtALSearch" Grid.Column="10" Height="24" Background="#2A2A2A" Foreground="White" BorderBrush="#444" Padding="4,2" VerticalContentAlignment="Center"/>
+
+            <Button x:Name="btnALReset" Grid.Column="11" Style="{StaticResource ALBtn}" Content="Sifirla" Background="#3A3A3A" Width="70" Height="24" Margin="6,0,0,0"/>
+        </Grid>
+
+        <!-- LISTE -->
+        <Border Grid.Row="3" Background="#1F1F1F" CornerRadius="5" BorderBrush="#2E2E2E" BorderThickness="1">
+            <ListView x:Name="lvActivity" Background="Transparent" BorderThickness="0" Foreground="White" SelectionMode="Extended"
+                      ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListView.View>
+                    <GridView>
+                        <GridView.ColumnHeaderContainerStyle>
+                            <Style TargetType="GridViewColumnHeader">
+                                <Setter Property="Background" Value="#2A2A2A"/>
+                                <Setter Property="Foreground" Value="#DDD"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter Property="Height" Value="28"/>
+                                <Setter Property="BorderBrush" Value="#333"/>
+                                <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                            </Style>
+                        </GridView.ColumnHeaderContainerStyle>
+                        <GridViewColumn Header="Tarih" Width="100" DisplayMemberBinding="{Binding DateStr}"/>
+                        <GridViewColumn Header="Saat" Width="80"  DisplayMemberBinding="{Binding TimeStr}"/>
+                        <GridViewColumn Header="Islem" Width="90" DisplayMemberBinding="{Binding ActionIcon}"/>
+                        <GridViewColumn Header="Tweak" Width="360" DisplayMemberBinding="{Binding TweakName}"/>
+                        <GridViewColumn Header="Risk" Width="100" DisplayMemberBinding="{Binding RiskIcon}"/>
+                        <GridViewColumn Header="" Width="120">
+                            <GridViewColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="↶ Geri Al" Style="{StaticResource ALRowBtn}" Tag="{Binding}" Width="100"/>
+                                </DataTemplate>
+                            </GridViewColumn.CellTemplate>
+                        </GridViewColumn>
+                    </GridView>
+                </ListView.View>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="Foreground" Value="#E8E8E8"/>
+                        <Setter Property="Padding" Value="2,3"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#0E3A5A"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#252525"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ListView.ItemContainerStyle>
+            </ListView>
+        </Border>
+
+        <!-- STATUS -->
+        <TextBlock Grid.Row="4" x:Name="txtALStatus" Text="" Foreground="#888" FontSize="11" Margin="0,8,0,0" TextWrapping="Wrap"/>
+
+        <!-- ALT BUTONLAR -->
+        <Grid Grid.Row="5" Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="btnALReverse" Grid.Column="0" Style="{StaticResource ALBtn}" Content="🔄 Secilenleri Geri Al" Background="#0066AA" Width="200" Height="32" IsEnabled="False"/>
+            <Button x:Name="btnALRefresh" Grid.Column="2" Style="{StaticResource ALBtn}" Content="♻ Yenile" Background="#3A3A3A" Width="100" Height="32"/>
+            <Button x:Name="btnALClose"   Grid.Column="4" Style="{StaticResource ALBtn}" Content="Kapat"   Background="#3A3A3A" Width="100" Height="32"/>
+        </Grid>
+    </Grid>
+</Window>
+"@
+
+    try {
+        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlAL)
+        $winAL  = [Windows.Markup.XamlReader]::Load($reader)
+        $winAL.Owner = $Win
+
+        $lv          = $winAL.FindName('lvActivity')
+        $cbAction    = $winAL.FindName('cbALAction')
+        $dpFrom      = $winAL.FindName('dpALFrom')
+        $dpTo        = $winAL.FindName('dpALTo')
+        $txtSearch   = $winAL.FindName('txtALSearch')
+        $btnReset    = $winAL.FindName('btnALReset')
+        $btnReverse  = $winAL.FindName('btnALReverse')
+        $btnRefresh  = $winAL.FindName('btnALRefresh')
+        $btnClose    = $winAL.FindName('btnALClose')
+        $txtStat     = $winAL.FindName('txtALStatus')
+
+        # Tum entries cache (Refresh ile yenilenir)
+        $script:ALAllEntries = @()
+
+        function Refresh-ActivityList {
+            $script:ALAllEntries = Get-ActivityLogEntries -Limit 100
+            Apply-ALFilters
+        }
+
+        function Apply-ALFilters {
+            $lv.Items.Clear()
+            if (-not $script:ALAllEntries) {
+                $txtStat.Text = "Henuz aktivite kaydi yok. Apply / QuickUndo islemleri burada gorunur."
+                $btnReverse.IsEnabled = $false
+                return
+            }
+
+            $actionFilter = if ($cbAction.SelectedIndex -eq 1) { 'Apply' }
+                            elseif ($cbAction.SelectedIndex -eq 2) { 'Undo' }
+                            else { $null }
+            $fromDate = if ($dpFrom.SelectedDate) { $dpFrom.SelectedDate } else { $null }
+            $toDate   = if ($dpTo.SelectedDate)   { $dpTo.SelectedDate.AddDays(1).AddSeconds(-1) } else { $null }
+            $search   = $txtSearch.Text.Trim().ToLower()
+
+            $shown = 0
+            foreach ($e in $script:ALAllEntries) {
+                if ($actionFilter -and $e.Action -ne $actionFilter) { continue }
+                if ($fromDate -and $e.DateTime -lt $fromDate) { continue }
+                if ($toDate   -and $e.DateTime -gt $toDate)   { continue }
+                if ($search -and ($e.TweakName.ToLower().IndexOf($search) -lt 0)) { continue }
+                $lv.Items.Add($e) | Out-Null
+                $shown++
+            }
+
+            $txtStat.Text = "$shown / $($script:ALAllEntries.Count) kayit gosteriliyor"
+            $btnReverse.IsEnabled = ($shown -gt 0)
+        }
+
+        # Geri al onay + uygulama (tek entry veya secili coklu)
+        function Invoke-ALReverse {
+            param([array]$Targets)
+            if (-not $Targets -or $Targets.Count -eq 0) { return }
+
+            $msg = "$($Targets.Count) islem tersine cevrilecek:`n`n"
+            $previewMax = [Math]::Min(5, $Targets.Count)
+            for ($i = 0; $i -lt $previewMax; $i++) {
+                $t = $Targets[$i]
+                $what = if ($t.Action -eq 'Apply') { "Apply -> Undo" } else { "Undo -> Apply" }
+                $msg += "  - $($t.TweakName)  ($what)`n"
+            }
+            if ($Targets.Count -gt $previewMax) {
+                $msg += "  ... ve $($Targets.Count - $previewMax) daha`n"
+            }
+            $msg += "`nDevam edilsin mi?"
+
+            $confirm = [System.Windows.MessageBox]::Show(
+                $msg, "Geri Al Onayi",
+                [System.Windows.MessageBoxButton]::YesNo,
+                [System.Windows.MessageBoxImage]::Question)
+            if ($confirm -ne 'Yes') { return }
+
+            Refresh-PowerCfg-Cache
+
+            $okCount   = 0
+            $failCount = 0
+            $failNotes = New-Object System.Collections.Generic.List[string]
+            $newApplied = New-Object System.Collections.Generic.List[object]
+            $newUndone  = New-Object System.Collections.Generic.List[object]
+
+            foreach ($entry in $Targets) {
+                $r = Invoke-SingleActivityReverse -Entry $entry
+                if ($r.Ok) {
+                    $okCount++
+                    # Audit log icin: Apply -> Undo bucket, Undo -> Applied bucket
+                    $twForLog = Find-TweakByName $entry.TweakName
+                    if ($twForLog) {
+                        if ($entry.Action -eq 'Apply') { $newUndone.Add($twForLog)  | Out-Null }
+                        else                            { $newApplied.Add($twForLog) | Out-Null }
+                    }
+                } else {
+                    $failCount++
+                    $failNotes.Add(("{0}: {1}" -f $entry.TweakName, $r.Reason)) | Out-Null
+                }
+            }
+
+            # Audit log'a yaz — yeni "ActivityLogReverse" islemi olarak
+            if ($newApplied.Count -gt 0 -or $newUndone.Count -gt 0) {
+                Write-TweakAuditLog -Operation "ActivityLogReverse" -Applied $newApplied -Undone $newUndone
+            }
+
+            # Cache invalidate + Tweaks sekmesi yenile
+            $global:TweakStatusCache = @{}
+            try {
+                $cachePath = Get-TweakStatusCachePath
+                if ($cachePath -and (Test-Path $cachePath)) { Remove-Item $cachePath -Force -ErrorAction SilentlyContinue }
+            } catch {}
+            try {
+                if ($btnCheckTweaks) {
+                    $btnCheckTweaks.RaiseEvent((New-Object System.Windows.RoutedEventArgs([System.Windows.Controls.Button]::ClickEvent)))
+                }
+            } catch {}
+
+            # Sonuc mesaji
+            $resultMsg = "Tamamlandi:`n`n  + Basarili: $okCount`n  - Hata: $failCount"
+            if ($failCount -gt 0) {
+                $resultMsg += "`n`nHata detaylari:`n"
+                foreach ($n in $failNotes | Select-Object -First 5) { $resultMsg += "  - $n`n" }
+                if ($failNotes.Count -gt 5) { $resultMsg += "  ... ve $($failNotes.Count - 5) daha" }
+            }
+            $resultMsg += "`n`nTweaks sekmesi otomatik yenilendi. Bazi ayarlar icin Explorer veya reboot gerekebilir."
+            [System.Windows.MessageBox]::Show(
+                $resultMsg, "Geri Al Sonucu",
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Information) | Out-Null
+
+            Refresh-ActivityList
+        }
+
+        # === EVENT BINDINGS ===
+        $cbAction.Add_SelectionChanged({ Apply-ALFilters })
+        $dpFrom.Add_SelectedDateChanged({ Apply-ALFilters })
+        $dpTo.Add_SelectedDateChanged({ Apply-ALFilters })
+        $txtSearch.Add_TextChanged({ Apply-ALFilters })
+
+        $btnReset.Add_Click({
+            $cbAction.SelectedIndex = 0
+            $dpFrom.SelectedDate = $null
+            $dpTo.SelectedDate   = $null
+            $txtSearch.Text = ""
+            Apply-ALFilters
+        })
+
+        $lv.Add_SelectionChanged({
+            $cnt = $lv.SelectedItems.Count
+            if ($cnt -gt 0) {
+                $btnReverse.Content = "🔄 Secilenleri Geri Al ($cnt)"
+                $btnReverse.IsEnabled = $true
+            } else {
+                $btnReverse.Content = "🔄 Secilenleri Geri Al"
+                $btnReverse.IsEnabled = ($lv.Items.Count -gt 0)
+            }
+        })
+
+        # Per-row "Geri Al" butonlari — ListView event bubbling ile yakala
+        $lv.AddHandler([System.Windows.Controls.Button]::ClickEvent, [System.Windows.RoutedEventHandler]{
+            param($s, $ev)
+            $src = $ev.OriginalSource
+            if ($src -is [System.Windows.Controls.Button] -and $src.Tag) {
+                $entry = $src.Tag
+                if ($entry.TweakName) {
+                    Invoke-ALReverse -Targets @($entry)
+                }
+                $ev.Handled = $true
+            }
+        })
+
+        $btnReverse.Add_Click({
+            $sel = @($lv.SelectedItems)
+            if ($sel.Count -eq 0) {
+                # Hicbir sey secili degilse goruntulenenin TUMU
+                $sel = @($lv.Items)
+                if ($sel.Count -eq 0) { return }
+            }
+            Invoke-ALReverse -Targets $sel
+        })
+
+        $btnRefresh.Add_Click({ Refresh-ActivityList })
+        $btnClose.Add_Click({ $winAL.Close() })
+
+        Refresh-ActivityList
+        $winAL.ShowDialog() | Out-Null
+    } catch {
+        WpfLog ("ActivityLog Hata: {0}" -f $_.Exception.Message)
+        [System.Windows.MessageBox]::Show(
+            ("Aktivite Log acilamadi: {0}" -f $_.Exception.Message),
+            "Hata", "OK", "Error") | Out-Null
+    }
 }
 
 # ---- Show-TimerResolutionSettings (Auto-Tune + Stress Bench parametreleri — v1.2.9) ----
@@ -14332,6 +16441,18 @@ $btnResetWinHttpProxy.Add_Click({
 # v1.2.9: Timer Resolution Test butonu — MeasureSleep tarzi olcum modal
 $btnTimerResTest.Add_Click({
     Show-TimerResolutionTest
+})
+
+# v1.2.10: Aktivite Log Yoneticisi — tweak_history.log uzerinden Apply/Undo gecmisini gosterir,
+# tek tek veya toplu geri al imkani sunar. Snapshot yerine eklendi.
+$btnActivityLog.Add_Click({
+    Show-ActivityLog
+})
+
+# v1.2.10: Performans Benchmark — 9 metrikli olcum suite (timer/ping/dns/disk/dpc/ram).
+# Tweak Apply oncesi+sonrasi snapshot alip karsilastirma ile gercek etkiyi gosterir.
+$btnBenchmark.Add_Click({
+    Show-BenchmarkPanel
 })
 
 $btnSfcScan.Add_Click({
