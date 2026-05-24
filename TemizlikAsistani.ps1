@@ -545,7 +545,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.10"
+$global:AppVersion = "1.2.11"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -7633,28 +7633,90 @@ function Get-SystemSnapshot {
 
 # ---- ORKESTRATOR ----
 # Tum metrikleri sirali calistirir. ProgressCallback varsa her metrik sonu cagirir
+# Multi-run median: N kez calistir, her numeric field icin median al + CV hesapla.
+# Outlier'a dayanikli (mean'den daha sag - sample arasinda 1 cok kotu run varsa mean bozulur,
+# median etkilenmez). Run sayisi UI'dan secilebilir (1/3/5).
+function Get-Median {
+    param([double[]]$Values)
+    if (-not $Values -or $Values.Count -eq 0) { return 0 }
+    $sorted = $Values | Sort-Object
+    $n = $sorted.Count
+    if ($n -eq 1) { return $sorted[0] }
+    if ($n % 2 -eq 1) { return $sorted[[int][Math]::Floor($n/2)] }
+    return ($sorted[$n/2 - 1] + $sorted[$n/2]) / 2.0
+}
+
+function Merge-BenchRuns {
+    param([array]$Runs)
+    if (-not $Runs -or $Runs.Count -eq 0) { return @{ Ok = $false; Error = "no runs" } }
+    if ($Runs.Count -eq 1) { return $Runs[0] }
+
+    $sample = $Runs[0]
+    if (-not $sample -or -not $sample.Ok) { return $sample }
+
+    $merged = @{ Ok = $true; _RunCount = $Runs.Count }
+
+    foreach ($key in $sample.Keys) {
+        if ($key -eq 'Ok' -or $key -eq '_RunCount') { continue }
+        $vals = New-Object System.Collections.Generic.List[double]
+        $isNumeric = $false
+        foreach ($r in $Runs) {
+            if ($r.ContainsKey($key) -and $null -ne $r[$key]) {
+                $v = $r[$key]
+                if ($v -is [System.ValueType] -and $v -isnot [bool]) {
+                    $dv = [double]$v
+                    if ($dv -ge 0) { [void]$vals.Add($dv); $isNumeric = $true }
+                }
+            }
+        }
+        if ($isNumeric -and $vals.Count -gt 0) {
+            $med = Get-Median -Values $vals.ToArray()
+            $merged[$key] = [Math]::Round($med, 4)
+            # CV (coefficient of variation) = stddev / mean * 100
+            if ($vals.Count -ge 2) {
+                $avg = ($vals | Measure-Object -Average).Average
+                $sumSq = 0.0; foreach ($v in $vals) { $sumSq += ($v - $avg) * ($v - $avg) }
+                $stddev = [Math]::Sqrt($sumSq / ($vals.Count - 1))
+                $cv = if ($avg -gt 0.001) { [Math]::Round(($stddev / $avg) * 100, 1) } else { 0 }
+                $merged["${key}_CV"] = $cv
+            }
+        } else {
+            # Non-numeric field (string), ilk run'dan al
+            $merged[$key] = $sample[$key]
+        }
+    }
+    return $merged
+}
+
 # (UI'da progress bar + step label icin).
 function Get-BenchSnapshot {
     param(
         [scriptblock]$ProgressCallback = $null,
-        [string]$Label = ""
+        [string]$Label = "",
+        [int]$Runs = 3
     )
+    if ($Runs -lt 1) { $Runs = 1 }
+    if ($Runs -gt 10) { $Runs = 10 }
     $result = [ordered]@{
         timestamp = (Get-Date -Format "yyyy-MM-ddTHH:mm:ss")
         label     = $Label
         mrCleanVersion = $global:AppVersion
+        runCount  = $Runs
         metrics   = [ordered]@{}
     }
 
     $steps = @(
-        @{ Key = "timer";        Label = "Timer / Sleep precision";    Run = { Test-TimerPrecision -Samples 50 } }
-        @{ Key = "loopback";     Label = "Loopback ping (127.0.0.1)"; Run = { Test-LoopbackPing -Samples 50 } }
-        @{ Key = "gateway";      Label = "Gateway ping";               Run = { Test-GatewayPing -Samples 50 } }
-        @{ Key = "dns";          Label = "DNS resolve";                Run = { Test-DnsResolve -DomainsPerRun 10 } }
+        @{ Key = "timer";        Label = "Timer / Sleep precision";    Run = { Test-TimerPrecision -Samples 100 } }
+        # loopback metrigi v1.2.10 sonu kaldirildi: 127.0.0.1 NIC uzerinden GITMEZ, kernel TCP
+        # stack uzerinden gider. NIC offload (RSS/LSO/Checksum) ve TCP NoDelay tweak'leri loopback'i
+        # ETKILEMEZ — kullanici yanlislikla iyilesme/kotulesme yorumluyor. Test-LoopbackPing helper
+        # ileride TCP stack tweak'leri eklenirse geri eklenir.
+        @{ Key = "gateway";      Label = "Gateway ping";               Run = { Test-GatewayPing -Samples 100 } }
+        @{ Key = "dns";          Label = "DNS resolve";                Run = { Test-DnsResolve -DomainsPerRun 20 } }
         # disk4k step v1.2.10 sonu kaldirildi — programda disk-perf etkileyen tweak yok,
         # bos zaman harcamayalim. Test-Disk4kRead helper duruyor (ileride disk-related tweak
         # eklenirse anlik geri agirilabilir).
-        @{ Key = "processStart"; Label = "Process start latency";      Run = { Test-ProcessStartLatency -Samples 20 } }
+        @{ Key = "processStart"; Label = "Process start latency";      Run = { Test-ProcessStartLatency -Samples 40 } }
         @{ Key = "dpc";          Label = "DPC time (5 sn sample)";     Run = { Test-DpcTime -DurationSec 5 } }
         @{ Key = "system";       Label = "Sistem snapshot";            Run = { Get-SystemSnapshot } }
     )
@@ -7662,17 +7724,26 @@ function Get-BenchSnapshot {
     $result.metrics["frameTime"] = @{ Ok = $false; Note = "PresentMon entegrasyonu ileride" }
 
     $i = 0
+    $totalSteps = $steps.Count * $Runs
     foreach ($s in $steps) {
         $i++
-        if ($ProgressCallback) { & $ProgressCallback $i $steps.Count $s.Label }
-        try {
-            $r = & $s.Run
-        } catch {
-            $r = @{ Ok = $false; Error = $_.Exception.Message }
+        $runResults = New-Object System.Collections.Generic.List[hashtable]
+        for ($r = 1; $r -le $Runs; $r++) {
+            $globalStep = (($i - 1) * $Runs) + $r
+            $rLabel = if ($Runs -gt 1) { "$($s.Label) (run $r/$Runs)" } else { $s.Label }
+            if ($ProgressCallback) { & $ProgressCallback $globalStep $totalSteps $rLabel }
+            try {
+                $rr = & $s.Run
+            } catch {
+                $rr = @{ Ok = $false; Error = $_.Exception.Message }
+            }
+            [void]$runResults.Add($rr)
         }
-        $result.metrics[$s.Key] = $r
+        # Median + CV ile birlestir
+        $merged = Merge-BenchRuns -Runs @($runResults)
+        $result.metrics[$s.Key] = $merged
     }
-    if ($ProgressCallback) { & $ProgressCallback $steps.Count $steps.Count "Tamamlandi" }
+    if ($ProgressCallback) { & $ProgressCallback $totalSteps $totalSteps "Tamamlandi" }
 
     return $result
 }
@@ -7738,8 +7809,7 @@ function Get-BenchMetricCatalog {
     return @(
         @{ Group = "timer";        Field = "AvgMs";        Label = "Timer Sleep delta (avg)";    Unit = "ms";        Direction = "lower" }
         @{ Group = "timer";        Field = "StddevMs";     Label = "Timer Sleep delta (stddev)"; Unit = "ms";        Direction = "lower" }
-        @{ Group = "loopback";     Field = "AvgMs";        Label = "Loopback ping (avg)";        Unit = "ms";        Direction = "lower" }
-        @{ Group = "loopback";     Field = "JitterMs";     Label = "Loopback ping (jitter)";     Unit = "ms";        Direction = "lower" }
+        # loopback satirlari kaldirildi — NIC tweak'lerinden etkilenmez (kernel stack iceri)
         @{ Group = "gateway";      Field = "AvgMs";        Label = "Gateway ping (avg)";         Unit = "ms";        Direction = "lower" }
         @{ Group = "gateway";      Field = "JitterMs";     Label = "Gateway ping (jitter)";      Unit = "ms";        Direction = "lower" }
         @{ Group = "dns";          Field = "AvgMs";        Label = "DNS resolve (avg)";          Unit = "ms";        Direction = "lower" }
@@ -7772,7 +7842,10 @@ function Compare-BenchSnapshots {
         if ($null -ne $aNum -and $null -ne $bNum -and $aNum -ge 0 -and $bNum -ge 0) {
             $delta = [Math]::Round($bNum - $aNum, 3)
             if ($aNum -ne 0) { $pct = [Math]::Round((($bNum - $aNum) / $aNum) * 100, 1) } else { $pct = 0 }
-            $sig = if ([Math]::Abs($pct) -lt 2) { "neutral" } else { if ($delta -gt 0) { "up" } else { "down" } }
+            # Noise esigi v1.2.10 sonu %2 -> %5. Modern Windowsta tek bench-arasi tipik varyans %3-7
+            # (background process, AV scan, DPC burst). %5 alti farklar artik "neutral" — false
+            # positive "iyilesti/kotulesti" yorumlarini engeller.
+            $sig = if ([Math]::Abs($pct) -lt 5) { "neutral" } else { if ($delta -gt 0) { "up" } else { "down" } }
             if ($sig -eq "neutral") { $verdict = "neutral" }
             elseif ($c.Direction -eq "lower") { $verdict = if ($sig -eq "down") { "better" } else { "worse" } }
             else                              { $verdict = if ($sig -eq "up")   { "better" } else { "worse" } }
@@ -12923,15 +12996,10 @@ function Get-BenchMetricToTweakMap {
             )
             Note = "Win11 EcoQoS sleep'i throttle ediyorsa 5-7ms gorulur; tweak'lerle 0.5-1.5ms hedef."
         }
-        @{
-            Metric    = "🔁 Loopback ping (127.0.0.1)"
-            Direction = "Düşük = İyi"
-            Affects   = @(
-                "TCP NoDelay ve AckFrequency (Nagle Kapat)",
-                "Ağ Adaptörü Performans (NetProfile)"
-            )
-            Note = "TCP stack pure latency. NIC offload/güç tweak'leri burayı ETKILEMEZ (loopback NIC kullanmaz)."
-        }
+        # Loopback ping metrigi v1.2.10 sonunda bench'ten kaldirildi: 127.0.0.1 NIC uzerinden
+        # GITMEZ (kernel TCP stack). NIC offload + TCP NoDelay tweak'leri loopback'i etkilemez.
+        # Kullanicilar yanlislikla "iyilesme/kotulesme" yorumluyor. Tweak etki gozlemi icin
+        # Gateway ping + DPC time daha dogru.
         @{
             Metric    = "🌐 Gateway ping (router) avg + jitter"
             Direction = "Düşük = İyi"
@@ -13173,21 +13241,30 @@ function Show-BenchmarkPanel {
 
         <TextBlock Grid.Row="0" Text="⚖️ Performans Benchmark" Foreground="#FFFFFF" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
         <TextBlock Grid.Row="1" Foreground="#888" FontSize="11" Margin="0,0,0,10" TextWrapping="Wrap">
-            <Run Text="7 metrikli sistem performans olcumu. Tweak Apply oncesi/sonrasi snapshot al, karsilastir — gercek etki gor."/><LineBreak/>
-            <Run Text="Suite suresi yaklasik 12-18 sn. '📋 Metrik Rehberi' butonu hangi tweak hangi metrigi etkiledigini gosterir." Foreground="#666" FontStyle="Italic"/>
+            <Run Text="6 metrikli sistem performans olcumu. Tweak Apply oncesi/sonrasi snapshot al, karsilastir — gercek etki gor."/><LineBreak/>
+            <Run Text="Multi-run median: 3 run varsayilan (~35sn) — tek run guvenilir degil cunku bench-arasi tipik %3-7 noise. Noise esigi %5: kucuk farklar 'aynı' olarak isaretlenir." Foreground="#666" FontStyle="Italic"/>
         </TextBlock>
 
-        <!-- BENCH BUTONLARI VE ETIKET INPUT -->
+        <!-- BENCH BUTONLARI + ETIKET + RUN MODU INPUT -->
         <Grid Grid.Row="2" Margin="0,0,0,10">
             <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="12"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" Text="Etiket:" Foreground="#CCC" VerticalAlignment="Center" Margin="0,0,8,0"/>
-            <TextBox x:Name="txtBLabel" Grid.Column="1" Width="260" Height="28" Background="#2A2A2A" Foreground="White" BorderBrush="#444" Padding="6,2" VerticalContentAlignment="Center" Text=""/>
-            <Button x:Name="btnRunBench" Grid.Column="3" Style="{StaticResource BBtn}" Content="📊 Tam Bench Calistir" Background="#0066AA" Width="200" Height="32" FontWeight="Bold"/>
+            <TextBox x:Name="txtBLabel" Grid.Column="1" Width="220" Height="28" Background="#2A2A2A" Foreground="White" BorderBrush="#444" Padding="6,2" VerticalContentAlignment="Center" Text=""/>
+            <TextBlock Grid.Column="3" Text="Run modu:" Foreground="#CCC" VerticalAlignment="Center" Margin="0,0,8,0"/>
+            <ComboBox x:Name="cbBRunMode" Grid.Column="4" Width="170" Height="28" VerticalContentAlignment="Center" ToolTip="Bench kaç kez tekrar edilecek (medyan alınır). Daha çok run = daha güvenilir ama daha uzun.">
+                <ComboBoxItem Content="1 run (hızlı ~12 sn)"/>
+                <ComboBoxItem Content="3 run (önerilen ~35 sn)" IsSelected="True"/>
+                <ComboBoxItem Content="5 run (detaylı ~60 sn)"/>
+            </ComboBox>
+            <Button x:Name="btnRunBench" Grid.Column="6" Style="{StaticResource BBtn}" Content="📊 Tam Bench Calistir" Background="#0066AA" Width="200" Height="32" FontWeight="Bold"/>
         </Grid>
 
         <!-- PROGRESS BAR + STATUS -->
@@ -13272,6 +13349,7 @@ function Show-BenchmarkPanel {
         $winB.Owner = $Win
 
         $txtLabel    = $winB.FindName('txtBLabel')
+        $cbRunMode   = $winB.FindName('cbBRunMode')
         $btnRun      = $winB.FindName('btnRunBench')
         $pb          = $winB.FindName('pbBench')
         $lblStat     = $winB.FindName('lblBStat')
@@ -13331,6 +13409,14 @@ function Show-BenchmarkPanel {
             $label = $txtLabel.Text.Trim()
             if ([string]::IsNullOrEmpty($label)) { $label = "Manuel " + (Get-Date -Format "HH:mm:ss") }
 
+            # Run modu dropdown -> Runs param
+            $runs = switch ($cbRunMode.SelectedIndex) {
+                0 { 1 }
+                1 { 3 }
+                2 { 5 }
+                default { 3 }
+            }
+
             $progressCb = {
                 param($step, $total, $stepLabel)
                 $pb.Value = if ($total -gt 0) { ($step / $total) * 100 } else { 0 }
@@ -13339,7 +13425,7 @@ function Show-BenchmarkPanel {
             }
 
             try {
-                $snap = Get-BenchSnapshot -ProgressCallback $progressCb -Label $label
+                $snap = Get-BenchSnapshot -ProgressCallback $progressCb -Label $label -Runs $runs
                 $fp = Save-BenchSnapshot -Snapshot $snap
                 if ($fp) {
                     $lblStat.Text = "Snapshot kaydedildi: " + (Split-Path $fp -Leaf)
