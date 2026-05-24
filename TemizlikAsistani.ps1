@@ -545,7 +545,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.14"
+$global:AppVersion = "1.2.15"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -13118,9 +13118,11 @@ function Get-BenchMetricToTweakMap {
             Metric    = "🔎 DNS resolve (10 domain avg)"
             Direction = "Düşük = İyi"
             Affects   = @(
-                "(Mevcut DNS değiştiren tweak yok — Ayarlar / Tools / manuel)"
+                "DNS: Cloudflare (Gizlilik ve Hız)  — 1.1.1.1 / 1.0.0.1",
+                "DNS: Google (Hız ve Kararlılık)    — 8.8.8.8 / 8.8.4.4",
+                "DNS: Otomatik (Varsayılan / İSS)   — DHCP (Undo)"
             )
-            Note = "ISP DNS yerine Cloudflare (1.1.1.1) veya Google (8.8.8.8) genelde 30-100ms düşürür."
+            Note = "ISP DNS yerine Cloudflare (1.1.1.1) veya Google (8.8.8.8) genelde 30-100ms düşürür. Cloudflare gizlilik odaklı (logging minimal), Google daha stabil global ağ. Üçü mutual exclusive (Group=DNS, birini seçince diğeri kapanır)."
         }
         @{
             Metric    = "🚀 Process start latency (cmd /c exit)"
