@@ -545,7 +545,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.13"
+$global:AppVersion = "1.2.14"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -9171,13 +9171,24 @@ function Get-InstalledAppRegistry {
     return $apps
 }
 
+# v1.2.14 helper: string normalize (bosluk/tire/nokta/altcizgi/parantez kaldir + lowercase).
+# Wildcard match'in temel sorunu: "ProtonVPN" -> registry "Proton VPN" eslesmezdi (bosluk).
+# Normalized match her iki tarafi da "protonvpn"e indirir, contains kontrol eder.
+function Normalize-AppNameForMatch {
+    param([string]$Text)
+    if ([string]::IsNullOrEmpty($Text)) { return "" }
+    return ($Text -replace '[\s\-_\.\(\)]', '').ToLower()
+}
+
 function Refresh-Winget-Status {
     # v1.2.13: winget list yerine registry-based detection. Sebepler:
     #   1) winget list cikti CR-refresh progress bar dump'i ile dolu (256+ satir garbage) — modern
     #      winget Microsoft Store source self-update sirasinda progress yaziyor, regex bogular.
     #   2) PS2EXE icinde winget cagrisi encoding/codepage farkli, parse kirilgan.
     #   3) Registry tarama 400ms (winget list bekleme ~5-10 sn), garanti, offline, encoding-bagimsiz.
-    # Match: hem appName wildcard (DisplayName contains) hem ID son segment (Brave.Brave -> Brave).
+    # v1.2.14: Match'i normalize ile gucu artirildi. Eski wildcard "*ProtonVPN*" registry "Proton VPN"
+    # ile eslesmiyordu (bosluk). Yeni: hem appName hem ID son segment hem DisplayName normalize
+    # edilir (bosluk/tire/nokta/parantez kaldir + lowercase), normalized contains kontrol.
     param([bool]$Silent = $false)
 
     if ($btnRefreshWinget) { $btnRefreshWinget.IsEnabled = $false; $btnRefreshWinget.Content = "Taranıyor..." }
@@ -9186,20 +9197,47 @@ function Refresh-Winget-Status {
     try {
         $installed = Get-InstalledAppRegistry
         $installedNames = @($installed | Select-Object -ExpandProperty Name)
+        # Normalize listeyi bir kere hesapla — DisplayName + Publisher beraber, cross-check icin
+        $installedNorm = @($installed | ForEach-Object {
+            [PSCustomObject]@{
+                Original = $_.Name
+                Norm     = (Normalize-AppNameForMatch $_.Name)
+                PubNorm  = (Normalize-AppNameForMatch $_.Publisher)
+            }
+        })
         $detectedIDs = @()
+        $matchDebug  = New-Object System.Collections.Generic.List[string]
 
         foreach ($appName in $global:WingetApps.Keys) {
             $wingetID = $global:WingetApps[$appName]
-            # Match 1: appName (display name) wildcard contains
-            $m1 = $installedNames | Where-Object { $_ -like "*$appName*" } | Select-Object -First 1
-            # Match 2: ID son segment ("Brave.Brave" -> "Brave", "Microsoft.VisualStudioCode" -> "VisualStudioCode")
-            $idLastSeg = ($wingetID -split '\.')[-1]
-            $m2 = $null
-            if ($idLastSeg -and $idLastSeg.Length -ge 3) {
-                $m2 = $installedNames | Where-Object { $_ -like "*$idLastSeg*" } | Select-Object -First 1
+            $appNameNorm = Normalize-AppNameForMatch $appName
+            # WingetID iki parca: first segment = publisher/vendor ("Brave.Brave" -> "Brave",
+            # "Yandex.Browser" -> "Yandex"), last segment = product ("Brave" / "Browser").
+            $idParts = $wingetID -split '\.'
+            $idFirstNorm = if ($idParts.Count -gt 0) { Normalize-AppNameForMatch $idParts[0] } else { "" }
+            $idLastNorm  = if ($idParts.Count -gt 0) { Normalize-AppNameForMatch $idParts[-1] } else { "" }
+
+            $found = $null; $via = ""
+            foreach ($entry in $installedNorm) {
+                # Match 1 (en guvenli): normalize appName contains DisplayName
+                if ($appNameNorm.Length -ge 3 -and $entry.Norm.Contains($appNameNorm)) {
+                    $found = $entry.Original; $via = "appName"; break
+                }
+                # Match 2: ID cross-check — idLastSeg DisplayName'de + idFirstSeg DisplayName veya Publisher'da.
+                # Tek basina idLastSeg yetersiz (ornek "Yandex.Browser" -> "Browser" cok jenerik, "DB Browser"
+                # gibi seylere match eder). idFirstSeg cross-check false positive engeller.
+                if (-not $found -and $idLastNorm.Length -ge 3 -and $entry.Norm.Contains($idLastNorm)) {
+                    $firstInName = ($idFirstNorm.Length -ge 3 -and $entry.Norm.Contains($idFirstNorm))
+                    $firstInPub  = ($idFirstNorm.Length -ge 3 -and $entry.PubNorm -and $entry.PubNorm.Contains($idFirstNorm))
+                    if ($firstInName -or $firstInPub) {
+                        $found = $entry.Original; $via = "id-cross"
+                        # Devam etme — appName match daha onceliklidir, ama bulduysak da yakalandi
+                    }
+                }
             }
-            if ($m1 -or $m2) {
+            if ($found) {
                 $detectedIDs += $wingetID
+                $matchDebug.Add("$appName -> '$found' ($via)") | Out-Null
             }
         }
 
@@ -9207,9 +9245,11 @@ function Refresh-Winget-Status {
         Load-Winget-Tree -MemoryList $detectedIDs
 
         WpfLog ("[Winget] Tarama: {0} kurulu program / {1} tanimli paket — {2} eslesme." -f $installedNames.Count, $global:WingetApps.Count, $detectedIDs.Count)
+        foreach ($d in $matchDebug) { WpfLog "[Winget]   $d" }
+
         if (-not $Silent) {
             [System.Windows.MessageBox]::Show(
-                ("Tarama tamamlandı.`n`nSistemde toplam: $($installedNames.Count) program`nLitsedeki paketler: $($global:WingetApps.Count)`nKurulu olarak işaretlendi: $($detectedIDs.Count)"),
+                ("Tarama tamamlandı.`n`nSistemde toplam: $($installedNames.Count) program`nListedeki paketler: $($global:WingetApps.Count)`nKurulu olarak işaretlendi: $($detectedIDs.Count)`n`nDetay için log'a bakın (her eşleşme yazıldı)."),
                 "Winget Tarama") | Out-Null
         }
     } catch { WpfLog "Hata: $_" }
