@@ -545,7 +545,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.18"
+$global:AppVersion = "1.2.19"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -2142,9 +2142,14 @@ function Get-Default-Tweaks {
                     $adapterInfo = @($adapters | Select-Object Name, InterfaceType, Status)
                     $adapterNames = @($adapterInfo | Select-Object -ExpandProperty Name)
                     $hasWiFi = @($adapterInfo | Where-Object { $_.InterfaceType -eq 71 }).Count -gt 0
-                    # WpfLog kullan — Write-Host PS2EXE de UI panel e gormez, kullanici log da yok oluyor
-                    try { WpfLog ("[NetAdapter] Apply basliyor: " + $adapterNames.Count + " NIC bulundu (Wi-Fi var mi: " + $hasWiFi + ")") } catch {}
+                    # v1.2.19: Debug loglar Debug Mode toggle ile bagli (default OFF, log temiz).
+                    # Kullanici bug raporu icin Debug Mode acar -> detayli log gorur.
+                    $dbg = $false; try { $dbg = [bool]$chkDebug.IsChecked } catch {}
+                    if ($dbg) {
+                        try { WpfLog ("[NetAdapter] Apply basliyor: " + $adapterNames.Count + " NIC bulundu (Wi-Fi var mi: " + $hasWiFi + ")") } catch {}
+                    }
                     if ($adapterNames.Count -eq 0) {
+                        # Bu uyari her zaman gorunsun — Apply hicbir sey yapmiyorsa kullanici bilmeli
                         try { WpfLog "[NetAdapter] ⚠️ HIC fiziksel NIC bulunamadi! Internete bagli misin? Wi-Fi acik mi?" } catch {}
                     }
                     foreach ($a in $adapters) {
@@ -2159,9 +2164,11 @@ function Get-Default-Tweaks {
                                 [void]$failedKeys.Add($o.Key)
                             }
                         }
-                        try { WpfLog ("[NetAdapter] " + $a.Name + " (Status=" + $a.Status + "): " + $appliedThis + " property yazildi, " + $failedThis + " desteklenmedi") } catch {}
-                        if ($failedKeys.Count -gt 0) {
-                            try { WpfLog ("[NetAdapter]   Desteklenmeyen keywordler: " + ($failedKeys -join ", ") + " (driver bunlari tanimiyor — normal)") } catch {}
+                        if ($dbg) {
+                            try { WpfLog ("[NetAdapter] " + $a.Name + " (Status=" + $a.Status + "): " + $appliedThis + " property yazildi, " + $failedThis + " desteklenmedi") } catch {}
+                            if ($failedKeys.Count -gt 0) {
+                                try { WpfLog ("[NetAdapter]   Desteklenmeyen keywordler: " + ($failedKeys -join ", ") + " (driver bunlari tanimiyor - normal)") } catch {}
+                            }
                         }
                         $count++
                     }
@@ -2169,9 +2176,9 @@ function Get-Default-Tweaks {
                     if ($adapterNames.Count -gt 0) {
                         try {
                             $adapterNames | ForEach-Object { Restart-NetAdapter -Name $_ -Confirm:$false -ErrorAction SilentlyContinue }
-                            try { WpfLog ("[NetAdapter] Restart-NetAdapter cagrildi (" + $adapterNames.Count + " NIC), bekleme basliyor") } catch {}
+                            if ($dbg) { try { WpfLog ("[NetAdapter] Restart-NetAdapter cagrildi (" + $adapterNames.Count + " NIC), bekleme basliyor") } catch {} }
                         } catch {
-                            try { WpfLog ("[NetAdapter] Restart hata: " + $_.Exception.Message) } catch {}
+                            if ($dbg) { try { WpfLog ("[NetAdapter] Restart hata: " + $_.Exception.Message) } catch {} }
                         }
                     }
                     # Restart-NetAdapter NIC i 2-3 sn disable/enable yapar (Wi-Fi 5-30 sn cunku WLAN auth + DHCP).
@@ -2189,7 +2196,7 @@ function Get-Default-Tweaks {
                         if ($allReady) { break }
                         Start-Sleep -Milliseconds 500
                     }
-                    try { WpfLog ("[NetAdapter] Tamamlandi: " + $count + " adapter Apply edildi, RSS/LSO/Checksum offloadlari Disabled.") } catch {}
+                    if ($dbg) { try { WpfLog ("[NetAdapter] Tamamlandi: " + $count + " adapter Apply edildi, RSS/LSO/Checksum offloadlari Disabled.") } catch {} }
                 ';
                 UndoCommand='
                     # Reset-NetAdapterAdvancedProperty -RegistryKeyword parameter set i YOK (sadece -DisplayName var).
@@ -2214,7 +2221,9 @@ function Get-Default-Tweaks {
                     $adapterInfo = @($adapters | Select-Object Name, InterfaceType, Status)
                     $adapterNames = @($adapterInfo | Select-Object -ExpandProperty Name)
                     $hasWiFi = @($adapterInfo | Where-Object { $_.InterfaceType -eq 71 }).Count -gt 0
-                    try { WpfLog ("[NetAdapter Undo] " + $adapterNames.Count + " NIC default degerine donduruluyor (Wi-Fi var mi: " + $hasWiFi + ")") } catch {}
+                    # v1.2.19: Debug Mode toggle (default OFF, log temiz)
+                    $dbg = $false; try { $dbg = [bool]$chkDebug.IsChecked } catch {}
+                    if ($dbg) { try { WpfLog ("[NetAdapter Undo] " + $adapterNames.Count + " NIC default degerine donduruluyor (Wi-Fi var mi: " + $hasWiFi + ")") } catch {} }
                     foreach ($a in $adapters) {
                         $okCnt = 0
                         foreach ($d in $defaults) {
@@ -2223,7 +2232,7 @@ function Get-Default-Tweaks {
                                 $okCnt++
                             } catch {}
                         }
-                        try { WpfLog ("[NetAdapter Undo] " + $a.Name + " (Status=" + $a.Status + "): " + $okCnt + " property default degerine donduruldu") } catch {}
+                        if ($dbg) { try { WpfLog ("[NetAdapter Undo] " + $a.Name + " (Status=" + $a.Status + "): " + $okCnt + " property default degerine donduruldu") } catch {} }
                     }
                     if ($adapterNames.Count -gt 0) {
                         try { $adapterNames | ForEach-Object { Restart-NetAdapter -Name $_ -Confirm:$false -ErrorAction SilentlyContinue } } catch {}
@@ -2265,7 +2274,9 @@ function Get-Default-Tweaks {
                             $wrote++
                         }
                     }
-                    Write-Host "[TCPNoDelay] $wrote NIC interface uzeri (TcpAckFrequency + TCPNoDelay + TcpDelAckTicks)."
+                    # v1.2.19: Debug Mode toggle (default OFF). Write-Host -> WpfLog (PS2EXE de UI panel e gormesi icin)
+                    $dbg = $false; try { $dbg = [bool]$chkDebug.IsChecked } catch {}
+                    if ($dbg) { try { WpfLog ("[TCPNoDelay] " + $wrote + " NIC interface uzeri (TcpAckFrequency + TCPNoDelay + TcpDelAckTicks)") } catch {} }
                 ';
                 UndoCommand='
                     # v1.2.16: Status=Up filter kaldirildi (Wi-Fi laptop fix).
@@ -6810,12 +6821,11 @@ function Apply-System-Tweaks {
     foreach ($t in $toDisable) { Process-TweakItem $t $true }
     foreach ($t in $toEnable) { Process-TweakItem $t $false }
 
-    # --- v1.2.16: APPLY DOGRULAMA — her tweak gercekten istenen state'te mi kontrol et ---
-    # Kullanici bildirimi: "Ag Adaptoru Offload + TCP NoDelay birlikte Apply -> ikisi de kapaniyor".
-    # Sebep: DetectScript'lerden biri Wi-Fi Disconnected durumunda false donerse switch otomatik
-    # kapaniyor. Bu log Apply sonrasi her tweak'in gercek state'ini gosterir, kullanici hangisinin
-    # neden basarisiz oldugunu (Apply mi DetectScript mi) net gorebilir.
-    if (($toEnable.Count + $toDisable.Count) -gt 0) {
+    # v1.2.19: Dogrulama log'u Debug Mode toggle'a baglandi (default OFF). Kullanici Debug Mode'u
+    # acarsa Apply sonrasi her tweak'in gercek state'ini gorebilir — bug raporu icin degerli.
+    # Default OFF cunku log temiz kalsin. Toplu ozet de Debug Mode icinde.
+    $isDbgApply = $false; try { $isDbgApply = [bool]$chkDebug.IsChecked } catch {}
+    if ($isDbgApply -and ($toEnable.Count + $toDisable.Count) -gt 0) {
         WpfLog "--- DOGRULAMA (Apply sonrasi gercek state) ---"
         $okCnt = 0; $failCnt = 0
         foreach ($t in $toEnable) {
