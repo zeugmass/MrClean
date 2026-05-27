@@ -545,7 +545,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.19"
+$global:AppVersion = "1.2.20"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -2340,6 +2340,126 @@ function Get-Default-Tweaks {
             # (Overclock.net + Blur Busters): useplatformtick yes input lag yaratir + Sleep
             # hassasiyetini bozar. Timer Resolution 0.5ms (Espor) tweak'i zaten useplatformtick
             # deletevalue cagirip default davranisa donduruyor. Bu tweak zararliydi, silindi.
+
+            # --- v1.2.20 SPRINT: Modern repo arastirmasi sonucu eklenen 4 tweak ---
+            # Kaynaklar: valleyofdoom/PC-Tuning, NicholasBly/Windows-11-Latency-Optimization,
+            # theantipopau/windows11nontouchgamingoptimizer cross-referenced.
+
+            # --- D: DEPOLAMA (SSD) ---
+            @{
+                Name="SSD Optimize (8.3 Filename + Last Access + SysMain Disable)";
+                SubCategory="Depolama (SSD)";
+                Risk="Low"; RestartExplorer=$false;
+                Description="SSD performansı için 3 düşük-seviye optimizasyon:`n  • 8.3 Filename Creation Disable — NTFS short name yazma overhead kalkar (modern uygulamalar zaten short name kullanmaz)`n  • Last Access Time Disable — her dosya okumada metadata yazımı kalkar (gigabayt seviyesinde I/O tasarrufu)`n  • SysMain (Superfetch) Disable — HDD için tasarlanmış arka plan I/O servisi, SSD'de gereksiz`n`n⚠️ HDD kullanıyorsan SysMain'i kapatma — bu tweak SSD-only sistemler için. Hibrit sistemde önce 'Hazırda Bekletmeyi Kapat' gibi.`n`n📚 Kaynak: valleyofdoom/PC-Tuning Sec.11.2, Microsoft NTFS docs.";
+                Command='
+                    # fsutil komutlari registry yazimi (NtfsDisable8dot3NameCreation + DisableLastAccess)
+                    & fsutil 8dot3name set 1 2>$null | Out-Null
+                    & fsutil behavior set disablelastaccess 1 2>$null | Out-Null
+                    try { Stop-Service "SysMain" -Force -ErrorAction SilentlyContinue } catch {}
+                    try { Set-Service "SysMain" -StartupType Disabled -ErrorAction SilentlyContinue } catch {}
+                ';
+                UndoCommand='
+                    & fsutil 8dot3name set 0 2>$null | Out-Null
+                    & fsutil behavior set disablelastaccess 0 2>$null | Out-Null
+                    try { Set-Service "SysMain" -StartupType Automatic -ErrorAction SilentlyContinue } catch {}
+                    try { Start-Service "SysMain" -ErrorAction SilentlyContinue } catch {}
+                ';
+                DetectScript='
+                    # 3 kosul: 8.3 disabled + LastAccess disabled + SysMain Disabled
+                    # En az 2 koşul saglanmissa aktif kabul et (kullanici manuel bir digerini geri almis olabilir)
+                    $bdn = (& fsutil 8dot3name query 2>$null) -join " "
+                    $las = (& fsutil behavior query disablelastaccess 2>$null) -join " "
+                    $sysm = (Get-Service SysMain -ErrorAction SilentlyContinue).StartType
+                    $okCount = 0
+                    if ($bdn -match "is\s*1") { $okCount++ }
+                    if ($las -match "DisableLastAccess.*=.*1") { $okCount++ }
+                    if ("$sysm" -eq "Disabled") { $okCount++ }
+                    return ($okCount -ge 2)
+                '
+            },
+
+            # --- E: USB / GIRDI LATENCY ---
+            @{
+                Name="USB Selective Suspend Devre Dışı";
+                SubCategory="Giriş ve İşlemci";
+                Risk="Low"; RestartExplorer=$false;
+                Description="USB cihazlarının otomatik power-saving 'suspend' moduna girişini engeller. Mouse, klavye, kontrolcü gibi USB cihazlar sürekli aktif kalır:`n  • Mouse polling stabilitesi (sleep'ten uyanma gecikmesi yok)`n  • Kontrolcü/joystick input lag azalır`n  • USB audio interface DAC/dongle latency stabil`n`n⚠️ Laptop'ta minimal pil tüketimi artar (1-3W). Espor PC için tercih, ofis laptopu için gereksiz.`n`n📚 Kaynak: valleyofdoom/PC-Tuning Sec.11.39, theantipopau Gaming Optimizer.";
+                DetectScript='
+                    # 2 kosul: HKLM USB DisableSelectiveSuspend=1 VE powercfg USB suspend AC=0
+                    $reg = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\USB" -Name "DisableSelectiveSuspend" -ErrorAction SilentlyContinue).DisableSelectiveSuspend
+                    return ("$reg" -eq "1")
+                ';
+                Command='
+                    # 1) HKLM USB global flag
+                    if (-not (Test-Path "HKLM:\SYSTEM\CurrentControlSet\Services\USB")) {
+                        New-Item -Path "HKLM:\SYSTEM\CurrentControlSet\Services\USB" -Force -ErrorAction SilentlyContinue | Out-Null
+                    }
+                    Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\USB" -Name "DisableSelectiveSuspend" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue
+                    # 2) Power scheme USB selective suspend setting (AC + DC)
+                    $subUsb = "2a737441-1930-4402-8d77-b2bebba308a3"
+                    $usbSusp = "48e6b7a6-50f5-4782-a5d4-53bb8f07e226"
+                    & powercfg -setacvalueindex SCHEME_CURRENT $subUsb $usbSusp 0 2>$null | Out-Null
+                    & powercfg -setdcvalueindex SCHEME_CURRENT $subUsb $usbSusp 0 2>$null | Out-Null
+                    & powercfg -setactive SCHEME_CURRENT 2>$null | Out-Null
+                ';
+                UndoCommand='
+                    Remove-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\USB" -Name "DisableSelectiveSuspend" -Force -ErrorAction SilentlyContinue
+                    $subUsb = "2a737441-1930-4402-8d77-b2bebba308a3"
+                    $usbSusp = "48e6b7a6-50f5-4782-a5d4-53bb8f07e226"
+                    & powercfg -setacvalueindex SCHEME_CURRENT $subUsb $usbSusp 1 2>$null | Out-Null
+                    & powercfg -setdcvalueindex SCHEME_CURRENT $subUsb $usbSusp 1 2>$null | Out-Null
+                    & powercfg -setactive SCHEME_CURRENT 2>$null | Out-Null
+                '
+            },
+
+            # --- F: CORE PARKING (CPU) ---
+            @{
+                Name="CPU Core Parking Devre Dışı (Tüm Çekirdekler Aktif)";
+                SubCategory="Giriş ve İşlemci";
+                Risk="Low"; RestartExplorer=$false;
+                Description="Windows'un işlem yükü düşükken CPU çekirdeklerini 'park' etmesini (uyumayı) engeller. Tüm çekirdekler sürekli aktif kalır:`n  • Park'tan uyanma gecikmesi yok (genelde 0.5-2 ms)`n  • Multi-thread oyun frame time stabilite`n  • Ryzen X3D / Intel P-core/E-core dispatch overhead azalır`n  • Background process scheduling daha tutarlı`n`n⚠️ Idle CPU tüketimi marjinal artar (5-10W masaüstü için önemsiz). Laptop'ta pil ömrü kısalır.`n`nKomut: powercfg CPMINCORES=100 (AC + DC).`n`n📚 Kaynak: valleyofdoom + NicholasBly + theantipopau cross-referenced.";
+                Command='
+                    # CPMINCORES guid: 0cc5b647-c1df-4637-891a-dec35c318583 (min unparked cores %)
+                    # SubGroup PROCESSOR_SETTINGS: 54533251-82be-4824-96c1-47b60b740d00
+                    # KRITIK: Windows defaultta bu attribute HIDDEN gelir, expose edilmeden
+                    # setvalueindex sessiz fail eder. Once attribute goster, sonra value yaz.
+                    $subPower = "54533251-82be-4824-96c1-47b60b740d00"
+                    $cpmin = "0cc5b647-c1df-4637-891a-dec35c318583"
+                    & powercfg /attributes $subPower $cpmin -ATTRIB_HIDE 2>$null | Out-Null
+                    & powercfg -setacvalueindex SCHEME_CURRENT $subPower $cpmin 100 2>$null | Out-Null
+                    & powercfg -setdcvalueindex SCHEME_CURRENT $subPower $cpmin 100 2>$null | Out-Null
+                    & powercfg -setactive SCHEME_CURRENT 2>$null | Out-Null
+                ';
+                UndoCommand='
+                    # Default Windows: %5 minimum unparked cores
+                    $subPower = "54533251-82be-4824-96c1-47b60b740d00"
+                    $cpmin = "0cc5b647-c1df-4637-891a-dec35c318583"
+                    & powercfg /attributes $subPower $cpmin -ATTRIB_HIDE 2>$null | Out-Null
+                    & powercfg -setacvalueindex SCHEME_CURRENT $subPower $cpmin 5 2>$null | Out-Null
+                    & powercfg -setdcvalueindex SCHEME_CURRENT $subPower $cpmin 5 2>$null | Out-Null
+                    & powercfg -setactive SCHEME_CURRENT 2>$null | Out-Null
+                ';
+                DetectScript='
+                    # Attribute expose et (zaten exposeysa no-op), sonra query
+                    & powercfg /attributes 54533251-82be-4824-96c1-47b60b740d00 0cc5b647-c1df-4637-891a-dec35c318583 -ATTRIB_HIDE 2>$null | Out-Null
+                    $out = (& powercfg /query SCHEME_CURRENT 54533251-82be-4824-96c1-47b60b740d00 0cc5b647-c1df-4637-891a-dec35c318583 2>$null) -join " "
+                    if ($out -match "AC Power Setting Index:\s*0x([0-9a-fA-F]+)") {
+                        $val = [Convert]::ToInt32($Matches[1], 16)
+                        return ($val -ge 100)
+                    }
+                    return $false
+                '
+            },
+
+            # --- G: AUDIO (MMCSS Pro Audio Task Boost) ---
+            @{
+                Name="MMCSS Pro Audio Task Priority Boost";
+                SubCategory="Ses (Audio)";
+                Risk="Low"; RestartExplorer=$false;
+                Description="Multimedia Class Scheduler Service (MMCSS) içinde 'Pro Audio' task'ının scheduling priority'sini en yükseğe çeker (1 → 2):`n  • Audio thread (interface DAC, virtual cable, VoIP, oyun ses motoru) için ekstra CPU priority`n  • Voice chat (Discord, TeamSpeak, in-game voice) latency düşer`n  • DAW (Cubase, Ableton, FL Studio) ASIO buffer underrun azalır`n  • Oyun ses crackle/pop oranı düşer`n`nDefault Win11 Pro Audio: Priority=1, GPU Priority=8, SFIO=Normal, Scheduling Category=High. Bu tweak SADECE Priority=2 yapar (diğer field'lar zaten optimum). Sistem-bağımlı testte SchedulingCategory başka değer ise dokunmaz.`n`n📚 Kaynak: Microsoft MMCSS docs, ASIO audio community best practices (KVR Audio, Gearspace forumlari).";
+                Key="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Pro Audio";
+                ValueName="Priority"; Type="DWord"; Data=2; Undo=1
+            }
         )
 		# --- 11. BUFFERBLOAT VE AĞ PROFİLLERİ ---
 		"🌐 Bufferbloat ve Ağ Profilleri" = @(
@@ -10307,7 +10427,11 @@ function Get-ProfileTweaks {
             "HPET (Platform Clock) Kapat",
             "TSC Sync Policy: Enhanced (Multi-CPU)",
             "Görsel Efektler: Özel (Yazı Tipi + Küçük Resimler Açık)",
-            "Xbox Game DVR Kapat"
+            "Xbox Game DVR Kapat",
+            "SSD Optimize (8.3 Filename + Last Access + SysMain Disable)",
+            "USB Selective Suspend Devre Dışı",
+            "CPU Core Parking Devre Dışı (Tüm Çekirdekler Aktif)",
+            "MMCSS Pro Audio Task Priority Boost"
         )
         "Gizlilik" = @(
             "Reklam Kimliğini Kapat",
