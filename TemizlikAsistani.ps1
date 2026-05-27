@@ -545,7 +545,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.20"
+$global:AppVersion = "1.2.21"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -2350,7 +2350,7 @@ function Get-Default-Tweaks {
                 Name="SSD Optimize (8.3 Filename + Last Access + SysMain Disable)";
                 SubCategory="Depolama (SSD)";
                 Risk="Low"; RestartExplorer=$false;
-                Description="SSD performansı için 3 düşük-seviye optimizasyon:`n  • 8.3 Filename Creation Disable — NTFS short name yazma overhead kalkar (modern uygulamalar zaten short name kullanmaz)`n  • Last Access Time Disable — her dosya okumada metadata yazımı kalkar (gigabayt seviyesinde I/O tasarrufu)`n  • SysMain (Superfetch) Disable — HDD için tasarlanmış arka plan I/O servisi, SSD'de gereksiz`n`n⚠️ HDD kullanıyorsan SysMain'i kapatma — bu tweak SSD-only sistemler için. Hibrit sistemde önce 'Hazırda Bekletmeyi Kapat' gibi.`n`n📚 Kaynak: valleyofdoom/PC-Tuning Sec.11.2, Microsoft NTFS docs.";
+                Description="SSD performansı için 3 düşük-seviye optimizasyon:`n  • 8.3 Filename Creation Disable — NTFS short name yazma overhead kalkar (modern uygulamalar zaten short name kullanmaz)`n  • Last Access Time Disable — her dosya okumada metadata yazımı kalkar (gigabayt seviyesinde I/O tasarrufu)`n  • SysMain (Superfetch) Disable — HDD için tasarlanmış arka plan I/O servisi, SSD'de gereksiz`n`n✅ NVMe + SATA SSD ikisi de OK — hatta NVMe için DAHA İYİ:`n  • 8.3 + Last Access NTFS filesystem-level tweak, storage tipinden bağımsız (NVMe = SATA SSD = HDD aynı NTFS overhead)`n  • SysMain NVMe'de DAHA da gereksiz — NVMe kontrolcü kendi internal cache (SLC, DRAM) yapar, SysMain ile double-cache olur. NVMe random read 200K+ IOPS, prefetch anlamsız hızlı.`n`n⚠️ SADECE HDD kullanıyorsan SysMain'i kapatma — HDD'de prefetch işe yarar. SSD-only veya NVMe-only sistemde tweak güvenli. Hibrit (SSD + HDD): genelde sistem SSD'de olduğu için SysMain disable OK.`n`n📚 Kaynak: valleyofdoom/PC-Tuning Sec.11.2, Microsoft NTFS docs, NVMe Storage Spec 1.4 + SLC cache best practices.";
                 Command='
                     # fsutil komutlari registry yazimi (NtfsDisable8dot3NameCreation + DisableLastAccess)
                     & fsutil 8dot3name set 1 2>$null | Out-Null
