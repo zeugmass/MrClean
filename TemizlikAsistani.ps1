@@ -347,6 +347,16 @@ public class TimerRes {
         return current / 10000.0;
     }
 
+    // v1.2.22: Platform en ince ulasilabilir timer resolution (ms). NtQueryTimerResolution'da
+    // "max" = en kucuk hns degeri = donanimin inebildigi en dusuk ms. NtSetTimerResolution bu
+    // degerin ALTINI sessizce buna yuvarlar (ornek modern Win11'de 0.5ms). Auto-Tune tarama
+    // araligini bu sinira clamp etmek + kullaniciyi bilgilendirmek icin kullanilir.
+    public static double QueryMaxMs() {
+        uint min, max, current;
+        NtQueryTimerResolution(out min, out max, out current);
+        return max / 10000.0;
+    }
+
     // Tek Sleep(1) cagrisi yap, QueryPerformanceCounter ile gercek olcum (ms) dondur.
     // MeasureSleep.exe tarzi delta hesabi icin temel ozellik.
     public static double MeasureOnce() {
@@ -545,7 +555,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.21"
+$global:AppVersion = "1.2.22"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -1358,6 +1368,60 @@ function Get-Default-Tweaks {
                     Start-Process "ms-settings:privacy-backgroundapps" -ErrorAction SilentlyContinue
                 ';
                 RestartExplorer=$false
+            },
+
+            # --- v1.2.22 SPRINT: C paketi (4 ek privacy/telemetri tweak) ---
+
+            @{
+                Name="Cloud Clipboard Devre Disi (Win+V Senkronizasyonu Kapat)";
+                SubCategory="Genel";
+                Risk="Low"; RestartExplorer=$false;
+                Description="Windows 11 'Cloud Clipboard' ozelligi (Win+V) kullanicinin clipboard'unu Microsoft cloud uzerinden cihazlar arasi senkronize eder. Bu tweak senkronu kapatir, panodaki bilgi cihazda kalir.`n`n• Default Win11: aktif (kullanici acmadiysa pasif ama policy senkronlamayi engellemiyor)`n• Bu tweak: AllowClipboardHistory=0 (Group Policy ile zorla disable)`n`n✅ Privacy: hassas veriler (sifre, kart no) yanlislikla cloud'a gitmez`n✅ Bandwidth tasarrufu (minimal)`n⚠️ Cihazlar arasi yapistirma artik calismaz";
+                Batch=@(
+                    @{ Key="HKLM:\SOFTWARE\Policies\Microsoft\Windows\System"; ValueName="AllowClipboardHistory"; Type="DWord"; Data=0; Undo="DELETE_VALUE" },
+                    @{ Key="HKLM:\SOFTWARE\Policies\Microsoft\Windows\System"; ValueName="AllowCrossDeviceClipboard"; Type="DWord"; Data=0; Undo="DELETE_VALUE" },
+                    @{ Key="HKCU:\Software\Microsoft\Clipboard"; ValueName="EnableClipboardHistory"; Type="DWord"; Data=0; Undo=1 }
+                )
+            },
+
+            @{
+                Name="Connected Devices Platform (CDP) Servisini Kapat";
+                SubCategory="Telemetri";
+                Risk="Medium"; RestartExplorer=$false;
+                Description="Windows 'Connected Devices Platform' (CDP) servisi cihazlar arasi telemetri ve senkron uretir: Your Phone / Phone Link, Microsoft Hesabi cross-device experience, telefon-PC bilgi paylasimi. Bu tweak servisi durdurup Disabled yapar.`n`n⚠️ KAPATILDIKTAN SONRA:`n  • Phone Link / Your Phone uygulamasi calismaz`n  • Sesli arama PC uzerinden alinamaz`n  • Telefon-PC dosya paylasimi yapilamaz`n`n✅ Privacy: cross-device telemetri durur`n✅ Servis arka planda CPU + RAM tuketimi azalir (~30-80 MB)`n`nServis adi: CDPSvc";
+                Command='
+                    try { Stop-Service "CDPSvc" -Force -ErrorAction SilentlyContinue } catch {}
+                    try { Set-Service "CDPSvc" -StartupType Disabled -ErrorAction SilentlyContinue } catch {}
+                ';
+                UndoCommand='
+                    try { Set-Service "CDPSvc" -StartupType Automatic -ErrorAction SilentlyContinue } catch {}
+                    try { Start-Service "CDPSvc" -ErrorAction SilentlyContinue } catch {}
+                ';
+                DetectScript='
+                    $s = Get-Service -Name "CDPSvc" -ErrorAction SilentlyContinue
+                    return ($s -and $s.StartType -eq "Disabled")
+                '
+            },
+
+            @{
+                Name="Tailored Experiences (Kisisellestirilmis Deneyimler) Kapat";
+                SubCategory="Telemetri";
+                Risk="Low"; RestartExplorer=$false;
+                Description="Microsoft tanilama verisi kullanarak 'kisisellestirilmis ipucu, reklam, oneri' uretir. Bu tweak kapatir, Settings > Gizlilik > Tanilama icinde manuel acilamaz hale gelir (Group Policy lock).`n`n• Default: kullaniciya secim sunulur`n• Bu tweak: Group Policy ile lockup, kullanici secemez`n`n✅ Reklam icerigi azalir (Start menu, Settings, Search)`n✅ Telemetri veri kullanim alanlari azalir";
+                Batch=@(
+                    @{ Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Privacy"; ValueName="TailoredExperiencesWithDiagnosticDataEnabled"; Type="DWord"; Data=0; Undo=1 },
+                    @{ Key="HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent"; ValueName="DisableTailoredExperiencesWithDiagnosticData"; Type="DWord"; Data=1; Undo="DELETE_VALUE" }
+                )
+            },
+
+            @{
+                Name="LLMNR Devre Disi (DNS Multicast Privacy + Guvenlik)";
+                SubCategory="Ag (Network Privacy)";
+                Risk="Low"; RestartExplorer=$false;
+                Description="Link-Local Multicast Name Resolution (LLMNR) protokolunu kapatir. LLMNR DNS bulamadiginda yerel agda multicast soru yayar — bu privacy ve guvenlik ihlali:`n`n• LLMNR Poisoning saldirisi: Saldirgan yerel agdan sahte cevap verir, kullanici kimligini ele gecirir (Responder.py gibi araclar)`n• Hostname yerel ag uzerinden goz onunde, ag taramasi ile keshif kolaylasir`n`n✅ Modern uygulamalar zaten LLMNR'a ihtiyac duymaz (DNS yeterli)`n✅ Privacy + guvenlik kazanci`n✅ Bandwidth tasarrufu (multicast packets azalir)`n⚠️ Cok eski (Win XP-tipi) yerel ag setup'larinda hostname bulma sorun yaratabilir — modern ev/ofis aginda etkisiz";
+                Batch=@(
+                    @{ Key="HKLM:\SOFTWARE\Policies\Microsoft\Windows NT\DNSClient"; ValueName="EnableMulticast"; Type="DWord"; Data=0; Undo="DELETE_VALUE" }
+                )
             }
         )
 
@@ -2451,6 +2515,26 @@ function Get-Default-Tweaks {
                 '
             },
 
+            # --- v1.2.22 SPRINT: A paketi (Hardware GPU Scheduling + Modern Standby S3) ---
+
+            # --- H: GPU / DISPLAY ---
+            @{
+                Name="Hardware Accelerated GPU Scheduling Aç (HAGS)";
+                SubCategory="GPU / Display";
+                Risk="Low"; RestartExplorer=$false; RequiresReboot=$true;
+                Description="Windows 11 22H2+ icin Hardware Accelerated GPU Scheduling'i zorla acar. WDDM 2.7+ destekli GPU'larda (NVIDIA RTX 20+ / AMD RDNA1+ / Intel Arc) DPC bypass yapar — GPU scheduling kernel'den driver'a tasinir, latency dusur, frame pacing iyilesir.`n`n• Default Win11: 1 (sistem karar verir, bazen kapatir)`n• Bu tweak: 2 (zorlanmis ON)`n`n⚠️ REBOOT GEREKLI (Apply sonrasi otomatik dialog)`n⚠️ Eski GPU veya WDDM 2.7+ desteklemeyen driver'da etkisiz (ama zararsiz — sistem ignore eder)`n✅ NVIDIA RTX 30/40/50 + AMD RDNA2+ + Intel Arc icin tavsiye`n✅ Anti-cheat uyumlu`n`n📚 Kaynak: NicholasBly TL;DR, theantipopau Gaming Optimizer, Microsoft DirectX docs.";
+                Key="HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers"; ValueName="HwSchMode"; Type="DWord"; Data=2; Undo=1
+            },
+
+            # --- I: MODERN STANDBY (S0ix -> S3 SLEEP) ---
+            @{
+                Name="Modern Standby Devre Disi (S0ix -> S3 Sleep)";
+                SubCategory="Donanim (Güç)";
+                Risk="Medium"; RestartExplorer=$false; RequiresReboot=$true;
+                Description="Windows 11 laptop'larda default 'Modern Standby' (S0ix) yerine klasik S3 sleep modunu zorlar. Modern Standby surekli arka planda calisir (network senkronizasyon, mail check), DPC latency yaratir, oyun frame time stutter sebebidir.`n`n• Default Win11 laptop: CsEnabled=1 (Modern Standby aktif)`n• Bu tweak: CsEnabled=0 (S3 sleep modu)`n`n⚠️ KRITIK: BIOS S3 desteklemeli! Eger laptop'unuzun BIOS'unda sadece S0ix varsa (yeni Snapdragon X / bazi yeni Intel/AMD laptop'lar), bu tweak sistem uyku modunu BOZAR — sistem hic uyumaz veya kapanmaz.`n`n🧪 Test: tweak Apply edip yeniden baslat, ardindan Baslat > Guc > Uyut deneyin. Sistem normal uyuyor + uyaniyorsa S3 calisiyor. Sorun varsa Undo edin (CsEnabled=1).`n`n✅ Masaustu PC: zaten S3 kullanir, bu tweak gereksiz (etkisiz)`n✅ Laptop (S3 destekli): DPC latency dusur, pil omru artar, gercek deep sleep saglanir`n❌ Yeni laptop (S0ix-only): SISTEM SLEEP'I BOZAR\n\n📚 Kaynak: Microsoft Power Management docs, valleyofdoom + Reddit/r/Windows11 community.";
+                Key="HKLM:\SYSTEM\CurrentControlSet\Control\Power"; ValueName="PlatformAoAcOverride"; Type="DWord"; Data=0; Undo="DELETE_VALUE"
+            },
+
             # --- G: AUDIO (MMCSS Pro Audio Task Boost) ---
             @{
                 Name="MMCSS Pro Audio Task Priority Boost";
@@ -3225,10 +3309,11 @@ $xaml = @"
                                         FontWeight="Bold" VerticalAlignment="Center" IsEnabled="False"/>
                             </Grid>
 
-                            <!-- PİNG PANELİ VE AKTİF DNS -->
+                            <!-- PİNG PANELİ + AKTİF DNS + CONNECTION MONITOR (v1.2.22) -->
                             <Border Grid.Row="1" Background="#1A1A2A" CornerRadius="6" Padding="10,6" Margin="0,0,0,8" BorderBrush="#2E2E5E" BorderThickness="1">
                                 <Grid>
                                     <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                         <RowDefinition Height="Auto"/>
                                     </Grid.RowDefinitions>
@@ -3244,14 +3329,26 @@ $xaml = @"
                                         <TextBlock x:Name="txtPingCF" Text="Cloudflare —" Foreground="#666" FontSize="11" Margin="0,0,10,0" VerticalAlignment="Center"/>
                                         <TextBlock x:Name="txtPingGW" Text="Ağ Geçidi —" Foreground="#666" FontSize="11" VerticalAlignment="Center"/>
                                     </StackPanel>
-                                    
+
                                     <!-- 2. Satır: Aktif DNS Göstergesi -->
-                                    <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,4">
                                         <TextBlock Text="🛡️ Aktif DNS:" Foreground="#888" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                         <TextBlock x:Name="txtDashDNS" Text="Yükleniyor..." Foreground="#4CC2FF" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                     </StackPanel>
 
-                                    <Button x:Name="btnPingTest" Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Content="📡 Test Et" Height="32" Padding="15,0" Background="#1E3A5C" Foreground="#4CC2FF" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                    <!-- 3. Satır: Connection Monitor (real-time bandwidth + canli ping) -->
+                                    <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <TextBlock Text="📡 Aktif:" Foreground="#888" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBlock Text="↓" Foreground="#27AE60" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                        <TextBlock x:Name="txtDashDownload" Text="—" Foreground="#27AE60" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <TextBlock Text="↑" Foreground="#FFB347" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,2,0"/>
+                                        <TextBlock x:Name="txtDashUpload" Text="—" Foreground="#FFB347" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <TextBlock Text=" · GW: " Foreground="#888" FontSize="11" VerticalAlignment="Center"/>
+                                        <TextBlock x:Name="txtDashLivePing" Text="—" Foreground="#4CC2FF" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <TextBlock x:Name="txtDashNic" Text="" Foreground="#666" FontSize="10" FontStyle="Italic" VerticalAlignment="Center"/>
+                                    </StackPanel>
+
+                                    <Button x:Name="btnPingTest" Grid.Row="0" Grid.RowSpan="3" Grid.Column="1" Content="📡 Test Et" Height="32" Padding="15,0" Background="#1E3A5C" Foreground="#4CC2FF" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="10,0,0,0"/>
                                 </Grid>
                             </Border>
 
@@ -3346,7 +3443,8 @@ $xaml = @"
                                     <Button x:Name="btnResetWinHttpProxy" Content="📡 WinHTTP Sıfırla" Background="#333" Foreground="White" Height="35" Margin="3" ToolTip="WinHTTP sistem proxy ayarlarını sıfırla (Windows Update, Defender, Store)"/>
                                     <Button x:Name="btnTimerResTest" Content="⏱️ Timer Test" Background="#333" Foreground="White" Height="35" Margin="3" ToolTip="Timer Resolution canlı test + Otomatik İnce Ayar Benchmark (valleyofdoom/SwiftyPop algoritması)"/>
                                     <Button x:Name="btnActivityLog" Content="📜 Aktivite Log" Background="#333" Foreground="White" Height="35" Margin="3" ToolTip="Apply / Undo geçmişi — son 100 işlem, tek tek veya toplu geri alma"/>
-                                    <Button x:Name="btnBenchmark" Content="⚖️ Benchmark" Background="#444488" Foreground="White" Height="35" Margin="3" FontWeight="Bold" ToolTip="9 metrik performans ölçümü — tweak öncesi/sonrası snapshot al, karşılaştır (Timer, Ping, DNS, Disk 4K, DPC, RAM)"/>
+                                    <Button x:Name="btnBenchmark" Content="⚖️ Benchmark" Background="#444488" Foreground="White" Height="35" Margin="3" FontWeight="Bold" ToolTip="6 metrik performans ölçümü — tweak öncesi/sonrası snapshot al, karşılaştır (Timer, Ping, DNS, DPC, RAM)"/>
+                                    <Button x:Name="btnDefenderExc" Content="🛡️ Defender Exc." Background="#6B4F00" Foreground="White" Height="35" Margin="3" FontWeight="Bold" ToolTip="Windows Defender Exclusion Manager — oyun klasörlerini AV scan'inden hariç tut (Steam/Epic/EA/Riot/Battle.net/Ubisoft/GOG auto-detect)"/>
                                     <Button x:Name="btnSfcScan" Content="🔍 SFC Scan" Background="#006600" Foreground="White" Height="35" Margin="3" FontWeight="Bold" ToolTip="System File Checker ile sistem dosyalarını onar (sfc /scannow)"/>
                                 </UniformGrid>
                             </Border>
@@ -4661,6 +4759,7 @@ $btnResetWinHttpProxy = $Win.FindName('btnResetWinHttpProxy')
 $btnTimerResTest = $Win.FindName('btnTimerResTest')
 $btnActivityLog = $Win.FindName('btnActivityLog')
 $btnBenchmark = $Win.FindName('btnBenchmark')
+$btnDefenderExc = $Win.FindName('btnDefenderExc')
 $btnSfcScan = $Win.FindName('btnSfcScan')
 $tvShellBags = $Win.FindName('tvShellBags'); $tvWinget = $Win.FindName('tvWinget')
 
@@ -6882,7 +6981,11 @@ function Apply-System-Tweaks {
         
         # Reboot warning gerektiren tweak kategorileri — ancak tweak'in SkipRebootDialog=$true
         # flag'i varsa bypass et (ornek: Timer Resolution helper instant aktif olur, reboot gereksiz).
+        # v1.2.22: $tweakItem.RequiresReboot=$true tek-bayrak ile spesifik tweak tetikleyebilir
+        # (yeni tweak ekleyenler SubCategory pattern bekleyip detection logic guncellemek yerine
+        # direkt flag koyar — future-proof). HAGS + Modern Standby buna ornek.
         if ((-not $tweakItem.SkipRebootDialog) -and (
+            $tweakItem.RequiresReboot -eq $true -or
             $tweakItem.Group -eq "NetProfile" -or
             $tweakItem.SubCategory -match "Giriş ve İşlemci" -or
             $tweakItem.SubCategory -match "Ağ ve Ping" -or
@@ -9862,7 +9965,11 @@ function Refresh-Tools-Menu {
     $itemDrv.Header = "📦 Sürücüleri Yedekle (Export)"
     $itemDrv.Add_Click($script:ExportDriversBlock.GetNewClosure())
     $ctxToolsMenu.Items.Add($itemDrv) | Out-Null
-    
+
+    # v1.2.22: DNS Benchmark Tools menusunden KALDIRILDI — Tools menu popup'tan ShowDialog
+    # cagrilirken TypeMismatchException oluyordu (deferred dispatch + Owner kaldirma cozemedi).
+    # DNS Benchmark artik Bench panel icindeki "🔎 DNS Benchmark" butonundan acilir.
+
     $ctxToolsMenu.Items.Add((New-Object System.Windows.Controls.Separator)) | Out-Null
     
     # 3. BÖLÜM: YÖNET BUTONU
@@ -10431,7 +10538,8 @@ function Get-ProfileTweaks {
             "SSD Optimize (8.3 Filename + Last Access + SysMain Disable)",
             "USB Selective Suspend Devre Dışı",
             "CPU Core Parking Devre Dışı (Tüm Çekirdekler Aktif)",
-            "MMCSS Pro Audio Task Priority Boost"
+            "MMCSS Pro Audio Task Priority Boost",
+            "Hardware Accelerated GPU Scheduling Aç (HAGS)"
         )
         "Gizlilik" = @(
             "Reklam Kimliğini Kapat",
@@ -10449,7 +10557,11 @@ function Get-ProfileTweaks {
             "Uygulama Tanılama (Diagnostics) Erişimi Kapat",
             "Arka Plan Uygulamalarını Kapat (Sistem Politikası)",
             "Cortana ve Cloud Aramayı Tamamen Kapat",
-            "Yerel olarak uygun içerik Kapat"
+            "Yerel olarak uygun içerik Kapat",
+            "Cloud Clipboard Devre Disi (Win+V Senkronizasyonu Kapat)",
+            "Connected Devices Platform (CDP) Servisini Kapat",
+            "Tailored Experiences (Kisisellestirilmis Deneyimler) Kapat",
+            "LLMNR Devre Disi (DNS Multicast Privacy + Guvenlik)"
         )
         "Hiz" = @(
             "Görsel Efektler: Özel (Yazı Tipi + Küçük Resimler Açık)",
@@ -13660,6 +13772,8 @@ function Show-BenchmarkPanel {
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="8"/>
                 <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="8"/>
@@ -13669,8 +13783,9 @@ function Show-BenchmarkPanel {
             <Button x:Name="btnRelabel" Grid.Column="2" Style="{StaticResource BBtn}" Content="✏️ Etiket Degistir" Background="#3A3A3A" Width="150" Height="32" IsEnabled="False"/>
             <Button x:Name="btnDelBench" Grid.Column="4" Style="{StaticResource BBtn}" Content="🗑️ Sil" Background="#A00000" Width="80" Height="32" IsEnabled="False"/>
             <Button x:Name="btnGuide" Grid.Column="6" Style="{StaticResource BBtn}" Content="📋 Metrik Rehberi" Background="#2E5E2E" Width="160" Height="32" ToolTip="Hangi tweak hangi metriği etkilemesi beklenir — referans tablo"/>
-            <Button x:Name="btnBRefresh" Grid.Column="8" Style="{StaticResource BBtn}" Content="♻ Yenile" Background="#3A3A3A" Width="100" Height="32"/>
-            <Button x:Name="btnBClose" Grid.Column="10" Style="{StaticResource BBtn}" Content="Kapat" Background="#3A3A3A" Width="100" Height="32"/>
+            <Button x:Name="btnDnsBenchOpen" Grid.Column="8" Style="{StaticResource BBtn}" Content="🔎 DNS Benchmark" Background="#0066AA" Width="160" Height="32" ToolTip="7 popüler DNS server hız karşılaştırması — en hızlısını Apply et"/>
+            <Button x:Name="btnBRefresh" Grid.Column="10" Style="{StaticResource BBtn}" Content="♻ Yenile" Background="#3A3A3A" Width="100" Height="32"/>
+            <Button x:Name="btnBClose" Grid.Column="12" Style="{StaticResource BBtn}" Content="Kapat" Background="#3A3A3A" Width="100" Height="32"/>
         </Grid>
     </Grid>
 </Window>
@@ -13691,6 +13806,7 @@ function Show-BenchmarkPanel {
         $btnRelabel  = $winB.FindName('btnRelabel')
         $btnDel      = $winB.FindName('btnDelBench')
         $btnGuide    = $winB.FindName('btnGuide')
+        $btnDnsOpen  = $winB.FindName('btnDnsBenchOpen')
         $btnRefresh  = $winB.FindName('btnBRefresh')
         $btnClose    = $winB.FindName('btnBClose')
 
@@ -13818,6 +13934,7 @@ function Show-BenchmarkPanel {
         })
 
         $btnGuide.Add_Click({ Show-BenchMetricGuide })
+        $btnDnsOpen.Add_Click({ Show-DnsBenchmark })
         $btnRefresh.Add_Click({ Refresh-BenchList })
         $btnClose.Add_Click({ $winB.Close() })
 
@@ -13964,6 +14081,944 @@ function Invoke-SingleActivityReverse {
         return @{ Ok = $true; Reason = "" }
     } catch {
         return @{ Ok = $false; Reason = $_.Exception.Message }
+    }
+}
+
+# =========================================================
+# DNS BENCHMARK (v1.2.22)
+# 7 populer DNS server + ISP DNS karsilastir, Resolve-DnsName ile median lookup time olc,
+# en hizliyi otomatik vurgula, "Apply" ile mevcut DNS ayarini degistir.
+# =========================================================
+
+function Get-DnsServersToTest {
+    return @(
+        @{ Name="Cloudflare";              Primary="1.1.1.1";        Secondary="1.0.0.1";          Vendor="Cloudflare (Gizlilik + Hizli)" }
+        @{ Name="Google";                  Primary="8.8.8.8";        Secondary="8.8.4.4";          Vendor="Google Public DNS" }
+        @{ Name="Quad9";                   Primary="9.9.9.9";        Secondary="149.112.112.112";  Vendor="Quad9 (Malware Block)" }
+        @{ Name="AdGuard DNS";             Primary="94.140.14.14";   Secondary="94.140.15.15";     Vendor="AdGuard (Reklam Bloku)" }
+        @{ Name="CleanBrowsing Security";  Primary="185.228.168.9";  Secondary="185.228.169.9";    Vendor="CleanBrowsing" }
+        @{ Name="DNS.WATCH";               Primary="84.200.69.80";   Secondary="84.200.70.40";     Vendor="DNS.WATCH (Almanya)" }
+        @{ Name="Comodo Secure DNS";       Primary="8.26.56.26";     Secondary="8.20.247.20";      Vendor="Comodo SecureDNS" }
+        # NOT: OpenDNS (208.67.222.222) cikarildi - varsayilan sorgu icin Cisco hesabi/yapilandirma
+        # gerekiyor, blank sorguda timeout veriyordu. DNS0.eu (193.110.81.0) cikarildi - servis
+        # Aralik 2024'te KAPANDI (justgeek.fr/fermeture-dns0eu). Ikisi de olu-server timeout'u ile
+        # benchmark'i ~40sn yavaslatiyordu. Kalan 7 server hepsi canli -> ~1-2 sn.
+    )
+}
+
+function Get-IspDns {
+    # Mevcut aktif NIC'lerin DNS server adreslerini topla (ISP DNS veya kullanici-set)
+    $servers = New-Object System.Collections.Generic.List[string]
+    try {
+        $adapters = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq "Up" -and $_.InterfaceType -in @(6, 71) }
+        foreach ($a in $adapters) {
+            try {
+                $dns = (Get-DnsClientServerAddress -InterfaceIndex $a.InterfaceIndex -AddressFamily IPv4 -ErrorAction Stop).ServerAddresses
+                foreach ($d in $dns) {
+                    if ($d -and -not $servers.Contains($d)) { [void]$servers.Add($d) }
+                }
+            } catch {}
+        }
+    } catch {}
+    return @($servers)
+}
+
+function Test-DnsServer {
+    param(
+        [Parameter(Mandatory=$true)][string]$DnsIp,
+        [Parameter(Mandatory=$true)][array]$Domains,
+        [int]$WarmupCount = 1
+    )
+    $times = New-Object System.Collections.Generic.List[double]
+    $errCnt = 0
+    # Warmup — ilk lookup cache populasyonu icin atla
+    for ($w = 0; $w -lt $WarmupCount; $w++) {
+        try { $null = Resolve-DnsName -Name $Domains[0] -Type A -Server $DnsIp -DnsOnly -NoHostsFile -QuickTimeout -ErrorAction Stop } catch {}
+    }
+    foreach ($d in $Domains) {
+        $sw = [System.Diagnostics.Stopwatch]::StartNew()
+        try {
+            $null = Resolve-DnsName -Name $d -Type A -Server $DnsIp -DnsOnly -NoHostsFile -QuickTimeout -ErrorAction Stop
+            $sw.Stop()
+            [void]$times.Add($sw.Elapsed.TotalMilliseconds)
+        } catch {
+            $sw.Stop()
+            $errCnt++
+        }
+    }
+    if ($times.Count -eq 0) {
+        return @{ Ok=$false; AvgMs=99999; MedianMs=99999; MinMs=-1; MaxMs=-1; ErrorCount=$errCnt; SuccessCount=0; Total=$Domains.Count }
+    }
+    $sorted = $times | Sort-Object
+    $n = $sorted.Count
+    $median = if ($n % 2 -eq 1) { $sorted[[int][Math]::Floor($n/2)] } else { ($sorted[$n/2 - 1] + $sorted[$n/2]) / 2 }
+    return @{
+        Ok=$true
+        AvgMs    = [Math]::Round(($times | Measure-Object -Average).Average, 1)
+        MedianMs = [Math]::Round($median, 1)
+        MinMs    = [Math]::Round(($times | Measure-Object -Minimum).Minimum, 1)
+        MaxMs    = [Math]::Round(($times | Measure-Object -Maximum).Maximum, 1)
+        ErrorCount = $errCnt
+        SuccessCount = $times.Count
+        Total = $Domains.Count
+    }
+}
+
+function Set-PreferredDns {
+    param(
+        [Parameter(Mandatory=$true)][string]$PrimaryIp,
+        [string]$SecondaryIp = ""
+    )
+    $count = 0
+    try {
+        $adapters = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq "Up" -and $_.InterfaceType -in @(6, 71) }
+        $addrs = @($PrimaryIp)
+        if ($SecondaryIp -and $SecondaryIp -ne "") { $addrs += $SecondaryIp }
+        foreach ($a in $adapters) {
+            try {
+                & netsh interface ipv4 set dnsservers name="$($a.Name)" source=static address=$PrimaryIp register=primary validate=no 2>&1 | Out-Null
+                if ($SecondaryIp -and $SecondaryIp -ne "") {
+                    & netsh interface ipv4 add dnsservers name="$($a.Name)" address=$SecondaryIp index=2 validate=no 2>&1 | Out-Null
+                }
+                $count++
+            } catch {}
+        }
+    } catch {}
+    & ipconfig /flushdns 2>&1 | Out-Null
+    return $count
+}
+
+function Show-DnsBenchmark {
+    # v1.2.22 WPF + PARALEL RUNSPACE rewrite.
+    # NOT (kok neden gecmisi): Onceki crash ("Bagimsiz degisken turleri eslesmiyor") WPF/WinForms
+    # ile alakali DEGILDI. Suclu "@(arr) + @($genericList)" deseniydi; Generic.List[object] ile
+    # array (+) birlestirme, scriptblock DELEGATE (buton click) olarak calisinca PSToObjectArrayBinder
+    # crash veriyordu. Cozum: tek ArrayList + (+) operatoru yok. Bu surumde de bu kurala uyulur.
+    #
+    # PARALEL: Eski surum DNS serverlari SIRAYLA test ediyordu; cevap vermeyen (olu) server basina
+    # ~15-20 sn timeout bekleniyordu (ornek OpenDNS/DNS0.eu bloklu ise toplam +30-40 sn). Yeni surum
+    # her server icin ayri runspace acar (paralel), toplam sure ~ en yavas tek server. Dispatcher
+    # pump (DispatcherPriority.Background) ile UI donmaz, progress bar canli ilerler.
+    try {
+        $script:DnsBenchResults = @()
+        $domains = @("google.com","cloudflare.com","github.com","stackoverflow.com","wikipedia.org","microsoft.com","amazon.com","reddit.com","youtube.com","apple.com")
+
+        # Runspace icinde calisacak DNS olcum scriptblock'u (kendi runspace'inde Test-DnsServer
+        # fonksiyonuna erisimi olmadigindan mantik buraya gomulu — Test-DnsServer ile birebir ayni).
+        $dnsTestScript = {
+            param($DnsIp, $Domains, $WarmupCount)
+            $times = New-Object System.Collections.Generic.List[double]
+            $errCnt = 0
+            for ($w = 0; $w -lt $WarmupCount; $w++) {
+                try { $null = Resolve-DnsName -Name $Domains[0] -Type A -Server $DnsIp -DnsOnly -NoHostsFile -QuickTimeout -ErrorAction Stop } catch {}
+            }
+            foreach ($d in $Domains) {
+                $sw = [System.Diagnostics.Stopwatch]::StartNew()
+                try {
+                    $null = Resolve-DnsName -Name $d -Type A -Server $DnsIp -DnsOnly -NoHostsFile -QuickTimeout -ErrorAction Stop
+                    $sw.Stop(); [void]$times.Add($sw.Elapsed.TotalMilliseconds)
+                } catch { $sw.Stop(); $errCnt++ }
+            }
+            if ($times.Count -eq 0) {
+                return @{ Ok=$false; AvgMs=99999; MedianMs=99999; MinMs=-1; MaxMs=-1; ErrorCount=$errCnt; SuccessCount=0; Total=$Domains.Count }
+            }
+            $sortedT = $times | Sort-Object
+            $n = $sortedT.Count
+            $median = if ($n % 2 -eq 1) { $sortedT[[int][Math]::Floor($n/2)] } else { ($sortedT[$n/2 - 1] + $sortedT[$n/2]) / 2 }
+            return @{
+                Ok=$true
+                AvgMs    = [Math]::Round(($times | Measure-Object -Average).Average, 1)
+                MedianMs = [Math]::Round($median, 1)
+                MinMs    = [Math]::Round(($times | Measure-Object -Minimum).Minimum, 1)
+                MaxMs    = [Math]::Round(($times | Measure-Object -Maximum).Maximum, 1)
+                ErrorCount = $errCnt; SuccessCount = $times.Count; Total = $Domains.Count
+            }
+        }
+
+        $xamlDns = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="🔎 DNS Benchmark - En Hizli DNS Server" Height="640" Width="980"
+        Background="#181818" WindowStartupLocation="CenterOwner"
+        WindowStyle="ToolWindow" ResizeMode="CanResize" MinWidth="780" MinHeight="500">
+    <Window.Resources>
+        <Style x:Key="DBtn" TargetType="Button">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,3"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False"><Setter TargetName="bd" Property="Opacity" Value="0.55"/></Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Opacity" Value="0.88"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="🔎 DNS Benchmark" Foreground="#FFFFFF" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
+        <TextBlock Grid.Row="1" Foreground="#888" FontSize="11" Margin="0,0,0,10" TextWrapping="Wrap"
+                   Text="7 populer DNS server + ISP/mevcut DNS karsilastirma. Her server icin 10 domain test (Resolve-DnsName). Tum serverlar PARALEL test edilir (hizli). Sonuc median'a gore sirali, en hizli ustte (yesil). Cevap vermeyen serverlar en altta (kirmizi). 'Uygula' ile secili DNS tum aktif NIC'lere yazilir."/>
+
+        <Grid Grid.Row="2" Margin="0,0,0,10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="btnBench" Grid.Column="0" Style="{StaticResource DBtn}" Content="&gt;&gt; Benchmark Baslat" Background="#0066AA" Width="200" Height="32" FontWeight="Bold"/>
+            <ProgressBar x:Name="pbDns" Grid.Column="1" Height="18" Margin="12,0,0,0" Background="#1F1F1F" Foreground="#0066AA" BorderBrush="#444" Minimum="0" Maximum="100" Value="0" VerticalAlignment="Center"/>
+        </Grid>
+
+        <TextBlock Grid.Row="3" x:Name="lblStat" Foreground="#888" FontSize="11" Margin="0,0,0,8" Text="Hazir - Bench baslatmak icin yukaridaki butona tikla"/>
+
+        <Border Grid.Row="4" Background="#1F1F1F" CornerRadius="5" BorderBrush="#2E2E2E" BorderThickness="1">
+            <ListView x:Name="lvDns" Background="Transparent" BorderThickness="0" Foreground="White">
+                <ListView.View>
+                    <GridView>
+                        <GridView.ColumnHeaderContainerStyle>
+                            <Style TargetType="GridViewColumnHeader">
+                                <Setter Property="Background" Value="#2A2A2A"/>
+                                <Setter Property="Foreground" Value="#DDD"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter Property="Height" Value="28"/>
+                            </Style>
+                        </GridView.ColumnHeaderContainerStyle>
+                        <GridViewColumn Header="#"           Width="44"  DisplayMemberBinding="{Binding Rank}"/>
+                        <GridViewColumn Header="DNS Server"  Width="280" DisplayMemberBinding="{Binding Vendor}"/>
+                        <GridViewColumn Header="Primary IP"  Width="140" DisplayMemberBinding="{Binding Primary}"/>
+                        <GridViewColumn Header="Median (ms)" Width="100" DisplayMemberBinding="{Binding MedianDisp}"/>
+                        <GridViewColumn Header="Avg (ms)"    Width="90"  DisplayMemberBinding="{Binding AvgDisp}"/>
+                        <GridViewColumn Header="Min / Max"   Width="120" DisplayMemberBinding="{Binding MinMaxDisp}"/>
+                        <GridViewColumn Header="Basari"      Width="80"  DisplayMemberBinding="{Binding SuccessDisp}"/>
+                    </GridView>
+                </ListView.View>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="Foreground" Value="#E8E8E8"/>
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="Padding" Value="2,3"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding RowKind}" Value="best">
+                                <Setter Property="Background" Value="#2E5E2E"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="FontWeight" Value="Bold"/>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding RowKind}" Value="dead">
+                                <Setter Property="Foreground" Value="#DC5050"/>
+                            </DataTrigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#0E3A5A"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ListView.ItemContainerStyle>
+            </ListView>
+        </Border>
+
+        <Grid Grid.Row="5" Margin="0,10,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="btnApply" Grid.Column="0" Style="{StaticResource DBtn}" Content="Secili DNS'i Uygula" Background="#2E5E2E" Width="180" Height="32" IsEnabled="False"/>
+            <Button x:Name="btnClose" Grid.Column="2" Style="{StaticResource DBtn}" Content="Kapat" Background="#3A3A3A" Width="100" Height="32"/>
+        </Grid>
+    </Grid>
+</Window>
+"@
+
+        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlDns)
+        $winDns = [Windows.Markup.XamlReader]::Load($reader)
+        try { $winDns.Owner = $Win } catch {}
+
+        $btnBench = $winDns.FindName('btnBench')
+        $pbDns    = $winDns.FindName('pbDns')
+        $lblStat  = $winDns.FindName('lblStat')
+        $lvDns    = $winDns.FindName('lvDns')
+        $btnApply = $winDns.FindName('btnApply')
+        $btnClose = $winDns.FindName('btnClose')
+
+        $btnBench.Add_Click({
+            try {
+                $btnBench.IsEnabled = $false
+                $btnApply.IsEnabled = $false
+                $lvDns.ItemsSource = $null
+                $pbDns.Value = 0
+                $script:DnsBenchResults = @()
+
+                # Sunucu listesi + ISP/mevcut DNS — tek ArrayList, (+) operatoru YOK (delegate crash onlemi)
+                $servers = @(Get-DnsServersToTest)
+                $ispDns  = @(Get-IspDns)
+                $allServers = New-Object System.Collections.ArrayList
+                foreach ($s in $servers) { [void]$allServers.Add($s) }
+                foreach ($ip in $ispDns) {
+                    $found = $false
+                    foreach ($s in $servers) { if ($s.Primary -eq $ip -or $s.Secondary -eq $ip) { $found = $true; break } }
+                    if (-not $found) {
+                        [void]$allServers.Add(@{ Name="ISP/Mevcut"; Primary=$ip; Secondary=""; Vendor="ISP DNS / Mevcut (auto-detect)" })
+                    }
+                }
+
+                $lblStat.Text = "Test basliyor: $($allServers.Count) DNS server PARALEL test ediliyor (x $($domains.Count) domain)..."
+                $winDns.Dispatcher.Invoke([action]{}, [System.Windows.Threading.DispatcherPriority]::Background)
+
+                # PARALEL: her server icin ayri runspace (dedicated pool, server sayisi kadar)
+                $iss  = [System.Management.Automation.Runspaces.InitialSessionState]::CreateDefault()
+                $pool = [runspacefactory]::CreateRunspacePool(1, [Math]::Min([Math]::Max($allServers.Count,1), 16), $iss, $Host)
+                $pool.Open()
+                $jobs = New-Object System.Collections.ArrayList
+                foreach ($s in $allServers) {
+                    $ps = [powershell]::Create(); $ps.RunspacePool = $pool
+                    [void]$ps.AddScript($dnsTestScript).AddArgument($s.Primary).AddArgument($domains).AddArgument(1)
+                    $h = $ps.BeginInvoke()
+                    [void]$jobs.Add(@{ PS=$ps; Handle=$h; Server=$s })
+                }
+
+                # Bekleme + UI pump (donmaz, progress canli)
+                $done = 0
+                while ($done -lt $jobs.Count) {
+                    $done = 0
+                    foreach ($j in $jobs) { if ($j.Handle.IsCompleted) { $done++ } }
+                    $pbDns.Value = [int](($done / $jobs.Count) * 100)
+                    $lblStat.Text = "$done / $($jobs.Count) server tamamlandi..."
+                    $winDns.Dispatcher.Invoke([action]{}, [System.Windows.Threading.DispatcherPriority]::Background)
+                    Start-Sleep -Milliseconds 50
+                }
+
+                # Sonuclari topla
+                $results = New-Object System.Collections.ArrayList
+                foreach ($j in $jobs) {
+                    $r = $null
+                    try { $out = $j.PS.EndInvoke($j.Handle); if ($out -and $out.Count -gt 0) { $r = $out[0] } } catch {}
+                    if (-not $r) { $r = @{ Ok=$false; AvgMs=99999; MedianMs=99999; MinMs=-1; MaxMs=-1; SuccessCount=0; Total=$domains.Count } }
+                    $s = $j.Server
+                    [void]$results.Add([PSCustomObject]@{
+                        Vendor=$s.Vendor; Primary=$s.Primary; Secondary=$s.Secondary
+                        MedianMs=[double]$r.MedianMs; AvgMs=$r.AvgMs; MinMs=$r.MinMs; MaxMs=$r.MaxMs
+                        SuccessCount=$r.SuccessCount; Total=$r.Total; OkFlag=$r.Ok
+                    })
+                    try { $j.PS.Dispose() } catch {}
+                }
+                try { $pool.Close(); $pool.Dispose() } catch {}
+
+                # Siralama: calisanlar median'a gore artan, olular en altta. (+) operatoru iki duz
+                # array uzerinde — guvenli (Generic.List degil).
+                $okList = New-Object System.Collections.ArrayList
+                $failList = New-Object System.Collections.ArrayList
+                foreach ($r in $results) { if ($r.OkFlag) { [void]$okList.Add($r) } else { [void]$failList.Add($r) } }
+                $okSorted = @(); $failSorted = @()
+                if ($okList.Count -gt 0)   { $okSorted   = @($okList   | Sort-Object -Property MedianMs) }
+                if ($failList.Count -gt 0) { $failSorted = @($failList | Sort-Object -Property MedianMs) }
+                $sorted = @($okSorted) + @($failSorted)
+                $script:DnsBenchResults = $sorted
+
+                # Goruntu modelleri (ItemsSource icin)
+                $items = New-Object System.Collections.ArrayList
+                $rank = 0
+                foreach ($r in $sorted) {
+                    $rank++
+                    $kind = if (-not $r.OkFlag) { "dead" } elseif ($rank -eq 1) { "best" } else { "normal" }
+                    [void]$items.Add([PSCustomObject]@{
+                        Rank        = $rank
+                        Vendor      = $r.Vendor
+                        Primary     = $r.Primary
+                        Secondary   = $r.Secondary
+                        MedianDisp  = $(if ($r.OkFlag) { "$($r.MedianMs)" } else { "-" })
+                        AvgDisp     = $(if ($r.OkFlag) { "$($r.AvgMs)" } else { "-" })
+                        MinMaxDisp  = $(if ($r.OkFlag) { "$($r.MinMs) / $($r.MaxMs)" } else { "-" })
+                        SuccessDisp = "$($r.SuccessCount)/$($r.Total)"
+                        RowKind     = $kind
+                    })
+                }
+                $lvDns.ItemsSource = $items
+                $pbDns.Value = 100
+
+                if ($sorted.Count -gt 0 -and $sorted[0].OkFlag) {
+                    $lblStat.Text = "Tamamlandi. En hizli: $($sorted[0].Vendor) ($($sorted[0].Primary)) - median $($sorted[0].MedianMs) ms"
+                    if ($lvDns.Items.Count -gt 0) { $lvDns.SelectedIndex = 0; $btnApply.IsEnabled = $true }
+                } else {
+                    $lblStat.Text = "Tamamlandi - hicbir server yanit vermedi (ag/firewall DNS portunu blokluyor olabilir)."
+                }
+                $btnBench.IsEnabled = $true
+            } catch {
+                $lblStat.Text = "Hata: $($_.Exception.Message)"
+                WpfLog ("DnsBenchmark click hata: " + $_.Exception.Message)
+                WpfLog ("  Stack: " + $_.ScriptStackTrace)
+                $btnBench.IsEnabled = $true
+            }
+        })
+
+        $btnApply.Add_Click({
+            try {
+                $sel = $lvDns.SelectedItem
+                if (-not $sel) { return }
+                $primary = [string]$sel.Primary
+                $secondary = [string]$sel.Secondary
+                $vendor = [string]$sel.Vendor
+                $msg = "DNS degistirilecek:`n`n  Primary: $primary"
+                if ($secondary -and $secondary -ne "") { $msg += "`n  Secondary: $secondary" }
+                $msg += "`n  Server: $vendor`n`nTum aktif NIC'lere yazilir + DNS cache flush. Devam?"
+                $resp = [System.Windows.MessageBox]::Show($msg, "DNS Apply - Onay", "YesNo", "Question")
+                if ($resp -ne "Yes") { return }
+                $count = Set-PreferredDns -PrimaryIp $primary -SecondaryIp $secondary
+                [System.Windows.MessageBox]::Show("DNS uygulandi.`n`n  $count NIC guncellendi`n  DNS cache flush yapildi`n`nDashboard 'Aktif DNS' gostergesi 5-10 sn icinde guncellenir.", "Basarili") | Out-Null
+            } catch {
+                WpfLog ("DnsBenchmark apply hata: " + $_.Exception.Message)
+            }
+        })
+
+        $btnClose.Add_Click({ $winDns.Close() })
+
+        [void]$winDns.ShowDialog()
+    } catch {
+        WpfLog ("DnsBenchmark Hata: " + $_.Exception.Message)
+        if ($_.Exception.InnerException) { WpfLog ("  Inner: " + $_.Exception.InnerException.Message) }
+    }
+}
+
+# =========================================================
+# DEFENDER EXCLUSION MANAGER (v1.2.22)
+# 6 game launcher icin auto-detect (Steam, Epic, EA Desktop, Riot, Battle.net, Ubisoft, GOG Galaxy)
+# + manuel klasor ekleme + mevcut exclusion'lari yonet (kaldir).
+# Defender on-access scan kapatilan game klasoru icin load time ve runtime performans artar.
+# =========================================================
+
+# --- Per-launcher game detection helpers ---
+
+function Get-SteamGames {
+    $results = New-Object System.Collections.Generic.List[object]
+    $steamPath = $null
+    try { $steamPath = (Get-ItemProperty -Path "HKLM:\SOFTWARE\WOW6432Node\Valve\Steam" -Name "InstallPath" -ErrorAction SilentlyContinue).InstallPath } catch {}
+    if (-not $steamPath) {
+        try { $steamPath = (Get-ItemProperty -Path "HKCU:\Software\Valve\Steam" -Name "SteamPath" -ErrorAction SilentlyContinue).SteamPath } catch {}
+    }
+    if (-not $steamPath -or -not (Test-Path $steamPath)) { return @() }
+
+    $libraries = New-Object System.Collections.Generic.List[string]
+    [void]$libraries.Add($steamPath)
+    $libVdf = Join-Path $steamPath "steamapps\libraryfolders.vdf"
+    if (Test-Path $libVdf) {
+        try {
+            $vdfText = Get-Content $libVdf -Raw
+            $regexMatches = [regex]::Matches($vdfText, '"path"\s+"([^"]+)"')
+            foreach ($m in $regexMatches) {
+                $libPath = $m.Groups[1].Value -replace '\\\\', '\'
+                if ($libPath -ne $steamPath -and (Test-Path $libPath)) { [void]$libraries.Add($libPath) }
+            }
+        } catch {}
+    }
+
+    foreach ($lib in $libraries) {
+        $commonPath = Join-Path $lib "steamapps\common"
+        if (Test-Path $commonPath) {
+            Get-ChildItem $commonPath -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                [void]$results.Add([PSCustomObject]@{
+                    Name = $_.Name; Path = $_.FullName; Launcher = "Steam"
+                })
+            }
+        }
+    }
+    return $results
+}
+
+function Get-EpicGames {
+    $results = New-Object System.Collections.Generic.List[object]
+    $manifestsPath = "C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests"
+    if (-not (Test-Path $manifestsPath)) { return @() }
+    Get-ChildItem $manifestsPath -Filter "*.item" -ErrorAction SilentlyContinue | ForEach-Object {
+        try {
+            $json = Get-Content $_.FullName -Raw -ErrorAction Stop | ConvertFrom-Json
+            if ($json.InstallLocation -and (Test-Path $json.InstallLocation)) {
+                $gname = if ($json.DisplayName) { $json.DisplayName } else { $json.AppName }
+                [void]$results.Add([PSCustomObject]@{
+                    Name = $gname; Path = $json.InstallLocation; Launcher = "Epic Games"
+                })
+            }
+        } catch {}
+    }
+    return $results
+}
+
+function Get-EADesktopGames {
+    # EA Desktop / EA App default install path: "C:\Program Files\EA Games\<GameName>"
+    # Eski Origin: "C:\Program Files (x86)\Origin Games\"
+    # Plus registry: HKLM\SOFTWARE\WOW6432Node\Electronic Arts altinda "Install Dir"
+    $results = New-Object System.Collections.Generic.List[object]
+    $eaPaths = @(
+        "C:\Program Files\EA Games",
+        "C:\Program Files (x86)\EA Games",
+        "C:\Program Files (x86)\Origin Games",
+        "${env:ProgramFiles}\EA Games"
+    )
+    foreach ($p in $eaPaths) {
+        if (Test-Path $p) {
+            Get-ChildItem $p -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                [void]$results.Add([PSCustomObject]@{
+                    Name = $_.Name; Path = $_.FullName; Launcher = "EA Desktop"
+                })
+            }
+        }
+    }
+    # Registry-based detection (her game ayrı subkey)
+    try {
+        $eaKeys = Get-ChildItem "HKLM:\SOFTWARE\WOW6432Node\Electronic Arts" -ErrorAction SilentlyContinue
+        foreach ($k in $eaKeys) {
+            $installDir = (Get-ItemProperty -Path $k.PSPath -Name "Install Dir" -ErrorAction SilentlyContinue)."Install Dir"
+            if ($installDir -and (Test-Path $installDir)) {
+                [void]$results.Add([PSCustomObject]@{
+                    Name = $k.PSChildName; Path = $installDir; Launcher = "EA Desktop"
+                })
+            }
+        }
+    } catch {}
+    # Unique by path
+    return @($results | Sort-Object Path -Unique)
+}
+
+function Get-RiotGames {
+    $results = New-Object System.Collections.Generic.List[object]
+    $riotPaths = @(
+        "C:\Riot Games",
+        "${env:ProgramFiles}\Riot Games",
+        "C:\Program Files (x86)\Riot Games"
+    )
+    foreach ($p in $riotPaths) {
+        if (Test-Path $p) {
+            Get-ChildItem $p -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -notmatch "^Riot Client" } | ForEach-Object {
+                [void]$results.Add([PSCustomObject]@{
+                    Name = $_.Name; Path = $_.FullName; Launcher = "Riot Games"
+                })
+            }
+        }
+    }
+    return $results
+}
+
+function Get-BattleNetGames {
+    # v1.2.22 fix: Battle.net oyunlari launcher KLASORUNUN ICINDE DEGIL, ayri klasorlerde kurulur
+    # (orn: C:\Program Files (x86)\Diablo IV\, Overwatch\, Hearthstone\ vb.). Onceki folder-loop
+    # "C:\Program Files (x86)\Battle.net\*" launcher'in kendi alt klasorlerini (.battle.net,
+    # Battle.net.15882) yanlislikla "game" olarak gosteriyordu. Sadece registry-based detection.
+    $results = New-Object System.Collections.Generic.List[object]
+
+    # 1) Blizzard Entertainment per-game registry (Diablo, Overwatch, WoW, Hearthstone, StarCraft, etc.)
+    try {
+        $bnetKeys = Get-ChildItem "HKLM:\SOFTWARE\WOW6432Node\Blizzard Entertainment" -ErrorAction SilentlyContinue
+        foreach ($k in $bnetKeys) {
+            $installDir = (Get-ItemProperty -Path $k.PSPath -ErrorAction SilentlyContinue).InstallPath
+            # Battle.net launcher / Agent / BlizzardError gibi yardimci subkey'leri atla
+            if ($installDir -and (Test-Path $installDir) -and ($k.PSChildName -notmatch "(?i)^Battle\.net$|^Agent$|^BlizzardError|^Battle\.net Launcher$")) {
+                [void]$results.Add([PSCustomObject]@{
+                    Name = $k.PSChildName; Path = $installDir; Launcher = "Battle.net"
+                })
+            }
+        }
+    } catch {}
+
+    # 2) Windows Uninstall registry — Publisher matched (Blizzard, Activision, etc.)
+    $regPaths = @(
+        "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*",
+        "HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*"
+    )
+    foreach ($p in $regPaths) {
+        try {
+            Get-ItemProperty $p -ErrorAction SilentlyContinue | Where-Object {
+                $_.Publisher -match "(?i)Blizzard" -and
+                $_.InstallLocation -and (Test-Path $_.InstallLocation) -and
+                $_.DisplayName -and $_.DisplayName -notmatch "(?i)^Battle\.net|^Blizzard App$|Launcher"
+            } | ForEach-Object {
+                [void]$results.Add([PSCustomObject]@{
+                    Name = $_.DisplayName.Trim()
+                    Path = $_.InstallLocation.TrimEnd('\')
+                    Launcher = "Battle.net"
+                })
+            }
+        } catch {}
+    }
+
+    return @($results | Sort-Object Path -Unique)
+}
+
+function Get-UbisoftGames {
+    $results = New-Object System.Collections.Generic.List[object]
+    $ubiPaths = @(
+        "C:\Program Files (x86)\Ubisoft\Ubisoft Game Launcher\games",
+        "C:\Program Files\Ubisoft\Ubisoft Game Launcher\games"
+    )
+    foreach ($p in $ubiPaths) {
+        if (Test-Path $p) {
+            Get-ChildItem $p -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+                [void]$results.Add([PSCustomObject]@{
+                    Name = $_.Name; Path = $_.FullName; Launcher = "Ubisoft Connect"
+                })
+            }
+        }
+    }
+    try {
+        $ubiInstalls = Get-ChildItem "HKLM:\SOFTWARE\WOW6432Node\Ubisoft\Launcher\Installs" -ErrorAction SilentlyContinue
+        foreach ($k in $ubiInstalls) {
+            $installDir = (Get-ItemProperty -Path $k.PSPath -Name "InstallDir" -ErrorAction SilentlyContinue).InstallDir
+            if ($installDir -and (Test-Path $installDir)) {
+                $name = Split-Path $installDir -Leaf
+                [void]$results.Add([PSCustomObject]@{
+                    Name = $name; Path = $installDir; Launcher = "Ubisoft Connect"
+                })
+            }
+        }
+    } catch {}
+    return @($results | Sort-Object Path -Unique)
+}
+
+function Get-GogGames {
+    $results = New-Object System.Collections.Generic.List[object]
+    try {
+        $gogKeys = Get-ChildItem "HKLM:\SOFTWARE\WOW6432Node\GOG.com\Games" -ErrorAction SilentlyContinue
+        foreach ($k in $gogKeys) {
+            $props = Get-ItemProperty -Path $k.PSPath -ErrorAction SilentlyContinue
+            $installPath = $props.path
+            $gameName = $props.gameName
+            if ($installPath -and (Test-Path $installPath)) {
+                $finalName = if ($gameName) { $gameName } else { (Split-Path $installPath -Leaf) }
+                [void]$results.Add([PSCustomObject]@{
+                    Name = $finalName; Path = $installPath; Launcher = "GOG Galaxy"
+                })
+            }
+        }
+    } catch {}
+    return @($results | Sort-Object Path -Unique)
+}
+
+# --- Top-level orchestrator ---
+function Get-AllDetectedGames {
+    $all = New-Object System.Collections.Generic.List[object]
+    try { @(Get-SteamGames)      | ForEach-Object { [void]$all.Add($_) } } catch {}
+    try { @(Get-EpicGames)       | ForEach-Object { [void]$all.Add($_) } } catch {}
+    try { @(Get-EADesktopGames)  | ForEach-Object { [void]$all.Add($_) } } catch {}
+    try { @(Get-RiotGames)       | ForEach-Object { [void]$all.Add($_) } } catch {}
+    try { @(Get-BattleNetGames)  | ForEach-Object { [void]$all.Add($_) } } catch {}
+    try { @(Get-UbisoftGames)    | ForEach-Object { [void]$all.Add($_) } } catch {}
+    try { @(Get-GogGames)        | ForEach-Object { [void]$all.Add($_) } } catch {}
+    # Unique by path (cross-launcher duplicate engelle)
+    return @($all | Sort-Object Path -Unique)
+}
+
+# --- Defender exclusion API wrapper ---
+
+function Get-DefenderExclusions {
+    try { return @((Get-MpPreference -ErrorAction Stop).ExclusionPath) } catch { return @() }
+}
+
+function Add-DefenderExclusion {
+    param([Parameter(Mandatory=$true)][string]$Path)
+    try { Add-MpPreference -ExclusionPath $Path -ErrorAction Stop; return $true } catch { return $false }
+}
+
+function Remove-DefenderExclusion {
+    param([Parameter(Mandatory=$true)][string]$Path)
+    try { Remove-MpPreference -ExclusionPath $Path -ErrorAction Stop; return $true } catch { return $false }
+}
+
+# --- UI Modal ---
+
+function Show-DefenderExclusionManager {
+    $xamlDE = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="🛡️ Windows Defender Exclusion Manager" Height="720" Width="1100"
+        Background="#181818" WindowStartupLocation="CenterOwner"
+        WindowStyle="ToolWindow" ResizeMode="CanResize" MinWidth="900" MinHeight="500">
+    <Window.Resources>
+        <Style x:Key="DEBtn" TargetType="Button">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="3" SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="8,3"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False"><Setter TargetName="bd" Property="Opacity" Value="0.55"/></Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="bd" Property="Opacity" Value="0.88"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="🛡️ Windows Defender Exclusion Manager" Foreground="#FFFFFF" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
+        <TextBlock Grid.Row="1" Foreground="#888" FontSize="11" Margin="0,0,0,10" TextWrapping="Wrap">
+            <Run Text="Oyun klasörlerini Defender on-access scan'inden hariç tutar — load time + runtime performans artışı."/><LineBreak/>
+            <Run Text="Auto-detect: Steam, Epic Games, EA Desktop, Riot Games, Battle.net, Ubisoft Connect, GOG Galaxy. Manuel klasör de eklenebilir."/><LineBreak/>
+            <Run Text="⚠️ Sadece güvendiğiniz oyun klasörlerini ekleyin — exclude edilen klasördeki malware Defender'a görünmez!" Foreground="#FFB347" FontStyle="Italic"/>
+        </TextBlock>
+
+        <!-- LAUNCHER FILTER -->
+        <Border Grid.Row="2" Background="#1F1F1F" CornerRadius="5" Padding="10" Margin="0,0,0,10">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Launcher filtresi:" Foreground="#CCC" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <CheckBox x:Name="cbSteam"     Content="Steam"           IsChecked="True" Foreground="White" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <CheckBox x:Name="cbEpic"      Content="Epic Games"      IsChecked="True" Foreground="White" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <CheckBox x:Name="cbEA"        Content="EA Desktop"      IsChecked="True" Foreground="White" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <CheckBox x:Name="cbRiot"     Content="Riot Games"       IsChecked="True" Foreground="White" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <CheckBox x:Name="cbBnet"     Content="Battle.net"       IsChecked="True" Foreground="White" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <CheckBox x:Name="cbUbi"      Content="Ubisoft Connect"  IsChecked="True" Foreground="White" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <CheckBox x:Name="cbGog"      Content="GOG Galaxy"       IsChecked="True" Foreground="White" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <!-- GAMES LIST -->
+        <Border Grid.Row="3" Background="#1F1F1F" CornerRadius="5" BorderBrush="#2E2E2E" BorderThickness="1">
+            <ListView x:Name="lvGames" Background="Transparent" BorderThickness="0" Foreground="White" SelectionMode="Extended">
+                <ListView.View>
+                    <GridView>
+                        <GridView.ColumnHeaderContainerStyle>
+                            <Style TargetType="GridViewColumnHeader">
+                                <Setter Property="Background" Value="#2A2A2A"/>
+                                <Setter Property="Foreground" Value="#DDD"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter Property="Height" Value="28"/>
+                            </Style>
+                        </GridView.ColumnHeaderContainerStyle>
+                        <GridViewColumn Header="Oyun" Width="280" DisplayMemberBinding="{Binding Name}"/>
+                        <GridViewColumn Header="Launcher" Width="130" DisplayMemberBinding="{Binding Launcher}"/>
+                        <GridViewColumn Header="Yol" Width="450" DisplayMemberBinding="{Binding Path}"/>
+                        <GridViewColumn Header="Defender Durumu" Width="160" DisplayMemberBinding="{Binding StatusIcon}"/>
+                    </GridView>
+                </ListView.View>
+                <ListView.ItemContainerStyle>
+                    <Style TargetType="ListViewItem">
+                        <Setter Property="Background" Value="Transparent"/>
+                        <Setter Property="Foreground" Value="#E8E8E8"/>
+                        <Setter Property="Padding" Value="2,4"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="#0E3A5A"/></Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#252525"/></Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ListView.ItemContainerStyle>
+            </ListView>
+        </Border>
+
+        <TextBlock Grid.Row="4" x:Name="txtDEStat" Foreground="#888" FontSize="11" Margin="0,8,0,0" TextWrapping="Wrap"/>
+
+        <Grid Grid.Row="5" Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="btnDERescan"  Grid.Column="0" Style="{StaticResource DEBtn}" Content="🔄 Yeniden Tara"        Background="#3A3A3A" Width="130" Height="32"/>
+            <Button x:Name="btnDEAdd"     Grid.Column="2" Style="{StaticResource DEBtn}" Content="✅ Seçilenleri Exclude Et" Background="#2E5E2E" Width="200" Height="32" IsEnabled="False"/>
+            <Button x:Name="btnDERemove"  Grid.Column="4" Style="{StaticResource DEBtn}" Content="❌ Exclusion Kaldır"      Background="#A00000" Width="160" Height="32" IsEnabled="False"/>
+            <Button x:Name="btnDEManual"  Grid.Column="6" Style="{StaticResource DEBtn}" Content="📁 Manuel Klasör Ekle"   Background="#3A3A3A" Width="180" Height="32"/>
+            <Button x:Name="btnDEList"    Grid.Column="8" Style="{StaticResource DEBtn}" Content="📋 Mevcut Exclusions"     Background="#3A3A3A" Width="170" Height="32"/>
+            <Button x:Name="btnDEClose"   Grid.Column="10" Style="{StaticResource DEBtn}" Content="Kapat"                   Background="#3A3A3A" Width="100" Height="32"/>
+        </Grid>
+    </Grid>
+</Window>
+"@
+
+    try {
+        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlDE)
+        $winDE = [Windows.Markup.XamlReader]::Load($reader)
+        $winDE.Owner = $Win
+
+        $lv         = $winDE.FindName('lvGames')
+        $cbSteam    = $winDE.FindName('cbSteam')
+        $cbEpic     = $winDE.FindName('cbEpic')
+        $cbEA       = $winDE.FindName('cbEA')
+        $cbRiot     = $winDE.FindName('cbRiot')
+        $cbBnet     = $winDE.FindName('cbBnet')
+        $cbUbi      = $winDE.FindName('cbUbi')
+        $cbGog      = $winDE.FindName('cbGog')
+        $btnRescan  = $winDE.FindName('btnDERescan')
+        $btnAdd     = $winDE.FindName('btnDEAdd')
+        $btnRemove  = $winDE.FindName('btnDERemove')
+        $btnManual  = $winDE.FindName('btnDEManual')
+        $btnList    = $winDE.FindName('btnDEList')
+        $btnClose   = $winDE.FindName('btnDEClose')
+        $txtStat    = $winDE.FindName('txtDEStat')
+
+        $script:DEAllGames = @()
+        $script:DEExclusions = @()
+
+        function Refresh-DEList {
+            $txtStat.Text = "Taraniyor..."
+            Do-Events
+            $script:DEAllGames = @(Get-AllDetectedGames)
+            $script:DEExclusions = @(Get-DefenderExclusions)
+            Apply-DEFilter
+        }
+
+        function Apply-DEFilter {
+            $lv.Items.Clear()
+            $allow = @{}
+            if ($cbSteam.IsChecked) { $allow["Steam"] = $true }
+            if ($cbEpic.IsChecked)  { $allow["Epic Games"] = $true }
+            if ($cbEA.IsChecked)    { $allow["EA Desktop"] = $true }
+            if ($cbRiot.IsChecked)  { $allow["Riot Games"] = $true }
+            if ($cbBnet.IsChecked)  { $allow["Battle.net"] = $true }
+            if ($cbUbi.IsChecked)   { $allow["Ubisoft Connect"] = $true }
+            if ($cbGog.IsChecked)   { $allow["GOG Galaxy"] = $true }
+
+            $shown = 0; $excluded = 0
+            foreach ($g in $script:DEAllGames) {
+                if (-not $allow.ContainsKey($g.Launcher)) { continue }
+                $isExc = $false
+                foreach ($e in $script:DEExclusions) {
+                    if ($e -and $g.Path -and ($e.TrimEnd('\').ToLower() -eq $g.Path.TrimEnd('\').ToLower())) {
+                        $isExc = $true; break
+                    }
+                }
+                $statusIcon = if ($isExc) { "✅ Excluded" } else { "—" }
+                $g | Add-Member -NotePropertyName "StatusIcon" -NotePropertyValue $statusIcon -Force
+                $g | Add-Member -NotePropertyName "IsExcluded" -NotePropertyValue $isExc -Force
+                $lv.Items.Add($g) | Out-Null
+                $shown++
+                if ($isExc) { $excluded++ }
+            }
+            $txtStat.Text = "$shown oyun gosteriliyor (toplam tespit: $($script:DEAllGames.Count)) · $excluded tanesi zaten Defender exclusion listesinde · Sistem toplam exclusion: $($script:DEExclusions.Count)"
+        }
+
+        $cbSteam.Add_Click({ Apply-DEFilter })
+        $cbEpic.Add_Click({ Apply-DEFilter })
+        $cbEA.Add_Click({ Apply-DEFilter })
+        $cbRiot.Add_Click({ Apply-DEFilter })
+        $cbBnet.Add_Click({ Apply-DEFilter })
+        $cbUbi.Add_Click({ Apply-DEFilter })
+        $cbGog.Add_Click({ Apply-DEFilter })
+
+        $lv.Add_SelectionChanged({
+            $cnt = $lv.SelectedItems.Count
+            $btnAdd.IsEnabled = ($cnt -gt 0)
+            $btnRemove.IsEnabled = ($cnt -gt 0)
+            if ($cnt -gt 0) {
+                $btnAdd.Content = "✅ Seçilenleri Exclude Et ($cnt)"
+                $btnRemove.Content = "❌ Exclusion Kaldır ($cnt)"
+            } else {
+                $btnAdd.Content = "✅ Seçilenleri Exclude Et"
+                $btnRemove.Content = "❌ Exclusion Kaldır"
+            }
+        })
+
+        $btnRescan.Add_Click({ Refresh-DEList })
+
+        $btnAdd.Add_Click({
+            $sels = @($lv.SelectedItems)
+            if ($sels.Count -eq 0) { return }
+            $msg = "$($sels.Count) klasör Defender exclusion listesine eklenecek:`n`n"
+            foreach ($s in $sels | Select-Object -First 5) { $msg += "  + $($s.Path)`n" }
+            if ($sels.Count -gt 5) { $msg += "  ... ve $($sels.Count - 5) daha`n" }
+            $msg += "`n⚠️ Exclude edilen klasördeki dosyalar Defender tarafından TARANMAYACAK. Sadece güvendiğiniz oyun klasörlerini ekleyin.`n`nDevam edilsin mi?"
+            $resp = [System.Windows.MessageBox]::Show($msg, "Defender Exclusion - Onay", "YesNo", "Question")
+            if ($resp -ne 'Yes') { return }
+
+            $ok = 0; $fail = 0
+            foreach ($s in $sels) {
+                if (Add-DefenderExclusion -Path $s.Path) { $ok++ } else { $fail++ }
+            }
+            [System.Windows.MessageBox]::Show("Tamamlandi:`n`n  ✅ Eklendi: $ok`n  ❌ Hata: $fail`n`n(Defender icin admin yetkisi gerekir, program zaten admin calistirilmali)", "Sonuc") | Out-Null
+            Refresh-DEList
+        })
+
+        $btnRemove.Add_Click({
+            $sels = @($lv.SelectedItems)
+            if ($sels.Count -eq 0) { return }
+            # Sadece zaten excluded olanlar uzerinde calis
+            $toRemove = @($sels | Where-Object { $_.IsExcluded })
+            if ($toRemove.Count -eq 0) {
+                [System.Windows.MessageBox]::Show("Secilen oyunlardan hicbiri Defender exclusion listesinde DEGIL. Once 'Exclude Et' butonuyla ekleyin.", "Bilgi") | Out-Null
+                return
+            }
+            $msg = "$($toRemove.Count) klasor Defender exclusion listesinden cikarilacak:`n`n"
+            foreach ($s in $toRemove | Select-Object -First 5) { $msg += "  - $($s.Path)`n" }
+            if ($toRemove.Count -gt 5) { $msg += "  ... ve $($toRemove.Count - 5) daha`n" }
+            $msg += "`nDevam edilsin mi?"
+            $resp = [System.Windows.MessageBox]::Show($msg, "Defender Exclusion Kaldir - Onay", "YesNo", "Warning")
+            if ($resp -ne 'Yes') { return }
+
+            $ok = 0; $fail = 0
+            foreach ($s in $toRemove) {
+                if (Remove-DefenderExclusion -Path $s.Path) { $ok++ } else { $fail++ }
+            }
+            [System.Windows.MessageBox]::Show("Tamamlandi:`n`n  ✅ Kaldirildi: $ok`n  ❌ Hata: $fail", "Sonuc") | Out-Null
+            Refresh-DEList
+        })
+
+        $btnManual.Add_Click({
+            $dlg = New-Object System.Windows.Forms.FolderBrowserDialog
+            $dlg.Description = "Defender Exclusion icin klasor sec"
+            $dlg.ShowNewFolderButton = $false
+            if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+                $folderPath = $dlg.SelectedPath
+                $resp = [System.Windows.MessageBox]::Show(("'{0}' klasoru Defender exclusion listesine eklenecek. Devam?" -f $folderPath), "Manuel Klasor - Onay", "YesNo", "Question")
+                if ($resp -eq 'Yes') {
+                    if (Add-DefenderExclusion -Path $folderPath) {
+                        [System.Windows.MessageBox]::Show("Eklendi: $folderPath", "Basarili") | Out-Null
+                        Refresh-DEList
+                    } else {
+                        [System.Windows.MessageBox]::Show("Eklenemedi (admin yetkisi yok mu?). Detay icin log'a bakin.", "Hata", "OK", "Error") | Out-Null
+                    }
+                }
+            }
+        })
+
+        $btnList.Add_Click({
+            $excs = @(Get-DefenderExclusions)
+            if ($excs.Count -eq 0) {
+                [System.Windows.MessageBox]::Show("Sistemde Defender exclusion yok.", "Bilgi") | Out-Null
+                return
+            }
+            $msg = "Toplam $($excs.Count) Defender exclusion var:`n`n"
+            foreach ($e in $excs | Select-Object -First 30) { $msg += "  • $e`n" }
+            if ($excs.Count -gt 30) { $msg += "`n... ve $($excs.Count - 30) tane daha (UI'da gormek icin Auto-Detect ile cikan listede bakin)" }
+            [System.Windows.MessageBox]::Show($msg, "Mevcut Exclusion'lar") | Out-Null
+        })
+
+        $btnClose.Add_Click({ $winDE.Close() })
+
+        Refresh-DEList
+        $winDE.ShowDialog() | Out-Null
+    } catch {
+        WpfLog ("DefenderExclusion Hata: " + $_.Exception.Message)
+        [System.Windows.MessageBox]::Show(("Defender Exclusion Manager acilamadi: {0}" -f $_.Exception.Message), "Hata", "OK", "Error") | Out-Null
     }
 }
 
@@ -14782,12 +15837,17 @@ function Show-TimerResolutionTest {
         [void][TimerRes]::MeasureOnce()
 
         # 15 ornegi hizli topla — sample arasi UI dokunma YOK
+        # v1.2.22 KRITIK BUG FIX: eski kod [Math]::Max(0, $sleptMs - 1.0) idi. PowerShell
+        # [Math]::Max(0, double) cagrisinda INT overload'u seciyor (ilk arg int literal '0'),
+        # sonucu int'e truncate edip 0.37ms gibi gercek delta'lari 0'a kirpiyordu -> "delta hep
+        # 0.0000" bug'i. Cozum: clamp tamamen kaldirildi, [Math]::Abs ile mutlak sapma (Sleep
+        # erken de gec de uyanabilir; bizi ilgilendiren 1.0ms hedeften MUTLAK uzaklik = jitter).
         $deltas = New-Object System.Collections.Generic.List[double]
         $slepts = New-Object System.Collections.Generic.List[double]
         $resMs = [TimerRes]::QueryMs()
         for ($i = 0; $i -lt 15; $i++) {
             $sleptMs = [TimerRes]::MeasureOnce()
-            $delta   = [Math]::Max(0, $sleptMs - 1.0)
+            $delta   = [Math]::Abs($sleptMs - 1.0)
             $slepts.Add($sleptMs) | Out-Null
             $deltas.Add($delta) | Out-Null
         }
@@ -14795,24 +15855,30 @@ function Show-TimerResolutionTest {
         # Olcum bitti — priority'i NORMAL'a geri al (sistem stutterlanmasin)
         [void][TimerRes]::SetNormalPriority()
 
-        # Tum ornekler bittikten sonra UI'a batch yaz
+        # Tum ornekler bittikten sonra UI'a batch yaz. Delta mikrosaniye (us) gosterilir —
+        # sub-ms farklar ms'te 4 hane bile gorunmuyordu, us (x1000) ile net.
         for ($i = 0; $i -lt 15; $i++) {
-            $line = ("Resolution: {0:N4}ms, Sleep(1) slept {1:N4}ms (delta: {2:N4})" -f $resMs, $slepts[$i], $deltas[$i])
+            $line = ("Resolution: {0:N4}ms | Sleep(1) slept {1:N4}ms | sapma {2:N1} us" -f $resMs, $slepts[$i], ($deltas[$i] * 1000.0))
             $lstLog.Items.Add($line) | Out-Null
         }
 
         $avg = ($deltas | Measure-Object -Average).Average
         $stddev = & $script:GetStddev -Values $deltas.ToArray()
+        $avgUs = $avg * 1000.0
+        $stdUs = $stddev * 1000.0
         $resNow = [TimerRes]::QueryMs()
-        if ($resNow -lt 0.6 -and $avg -lt 0.3) {
+        # NOT: Sleep(1) timer 0.5ms iken tipik 1.0-1.5ms uyur (bir sonraki tick'e yuvarlanir).
+        # "Sapma" 1.0ms hedeften mutlak uzaklik; jitter (stddev) asil onemli metrik. Esikler buna
+        # gore: timer 0.5ms aktifse sapma genelde <0.5ms ve stddev dusuk olur.
+        if ($resNow -lt 0.6) {
             $lblSummary.Foreground = [System.Windows.Media.Brushes]::LimeGreen
-            $lblSummary.Text = ("✅ Timer 0.5ms aktif — ortalama delta {0:N4}ms, stddev {1:N4}ms (mukemmel)" -f $avg, $stddev)
-        } elseif ($resNow -lt 1.2 -and $avg -lt 0.6) {
+            $lblSummary.Text = ("✅ Timer 0.5ms aktif (en ince donanim sinirinda) — ortalama sapma {0:N1} us, jitter (stddev) {1:N1} us. Dusuk jitter = stabil zamanlama." -f $avgUs, $stdUs)
+        } elseif ($resNow -lt 1.2) {
             $lblSummary.Foreground = [System.Windows.Media.Brushes]::Gold
-            $lblSummary.Text = ("⚠️ Timer ~1ms — ortalama delta {0:N4}ms, stddev {1:N4}ms. 0.5ms tweak aktif degil veya hold cikis yapmis." -f $avg, $stddev)
+            $lblSummary.Text = ("⚠️ Timer ~1ms — ortalama sapma {0:N1} us, jitter {1:N1} us. 0.5ms tweak aktif degil veya hold cikis yapmis." -f $avgUs, $stdUs)
         } else {
             $lblSummary.Foreground = [System.Windows.Media.Brushes]::OrangeRed
-            $lblSummary.Text = ("❌ Timer yuksek (sistem varsayilanina yakin) — ortalama delta {0:N4}ms, stddev {1:N4}ms. Tweaks > Espor > Timer Resolution 0.5ms tweak ini aktif et." -f $avg, $stddev)
+            $lblSummary.Text = ("❌ Timer yuksek (sistem varsayilanina yakin) — ortalama sapma {0:N1} us, jitter {1:N1} us. Tweaks > Espor > Timer Resolution 0.5ms tweak ini aktif et." -f $avgUs, $stdUs)
         }
         $timer.Start()
     })
@@ -14826,7 +15892,25 @@ function Show-TimerResolutionTest {
         $endV     = $trtCfg.AutoTuneEndMs
         $incV     = $trtCfg.AutoTuneIncrementMs
         $sampleN  = $trtCfg.AutoTuneSampleCount
+
+        # v1.2.22: Donanim sinirina clamp. Platform en ince ulasilabilir resolution (ornek Win11
+        # modern = 0.5ms). Bu degerin ALTINDAKI tarama anlamsiz cunku NtSetTimerResolution
+        # sessizce yukari yuvarliyor -> ayni 0.5ms'i 50 kez test edip "hepsi ayni" sonucu cikiyor.
+        $hwMaxMs = 0.5
+        try { $hwMaxMs = [TimerRes]::QueryMaxMs() } catch {}
+        $clampMsg = ""
+        if ($endV -lt $hwMaxMs) {
+            # Tum aralik donanim sinirinin altinda — taramayi tek anlamli degere (donanim siniri) cek
+            $clampMsg = ("`n⚠️ Donanimin en ince timer resolution'i {0:N4} ms. Tarama araligin ({1:N4}-{2:N4} ms) tamamen bunun ALTINDA — Windows hepsini {0:N4} ms'e yuvarlardi (ayni sonuc). Tarama {0:N4} ms tek degerine ayarlandi." -f $hwMaxMs, $startV, $endV)
+            $startV = $hwMaxMs; $endV = $hwMaxMs
+        } elseif ($startV -lt $hwMaxMs) {
+            # Baslangic altinda ama bitis ustunde — baslangici donanim sinirina cek
+            $clampMsg = ("`n⚠️ Donanim siniri {0:N4} ms. Baslangic degeri ({1:N4} ms) bunun altindaydi — {0:N4} ms'e cekildi (altindaki degerler ayni sonucu verirdi)." -f $hwMaxMs, $trtCfg.AutoTuneStartMs)
+            $startV = $hwMaxMs
+        }
+
         $countV   = [int]([Math]::Floor(($endV - $startV) / $incV) + 1)
+        if ($countV -lt 1) { $countV = 1 }
         $totalSamples = $countV * $sampleN
         $estimatedSec = [Math]::Round($countV * (0.5 + ($sampleN * 0.001) + 0.05), 1)
 
@@ -14841,8 +15925,10 @@ function Show-TimerResolutionTest {
                ("• Tarama aralığı: {0:N4} - {1:N4} ms ({2:N4} step = {3} değer)`n" -f $startV, $endV, $incV, $countV) +
                ("• Her değer için {0} örnek Sleep(1) ölçümü (toplam {1} örnek)`n" -f $sampleN, $totalSamples) +
                ("• Tahmini süre: ~{0} saniye`n" -f $estimatedSec) +
-               "• Algoritma: en düşük ortalama delta, eşitse en düşük standart sapma`n" +
-               "  (Kaynak: valleyofdoom/TimerResolution + SwiftyPop/TimerResBenchmark)`n`n"
+               "• Algoritma: en düşük ortalama sapma, eşitse en düşük jitter (stddev)`n" +
+               "  (Kaynak: valleyofdoom/TimerResolution + SwiftyPop/TimerResBenchmark)`n" +
+               "ℹ️ NOT: Idle (yüksüz) ölçümde sub-ms farklar gürültü seviyesindedir; gerçek ayrım CPU yükü altında 🔥 Stress Bench ile ortaya çıkar.`n" +
+               $clampMsg + "`n"
         if ($hasHelper) {
             $msg += "⚠️ Mevcut Timer Resolution helper'i tespit edildi. Test sırasında geçici durdurulacak — sonra otomatik geri yüklenmez. Benchmark bittiğinde 'Optimal ile Başlat' butonu ile yeni değerle helper'ı yeniden kuracaksın.`n`n"
         }
@@ -14876,8 +15962,8 @@ function Show-TimerResolutionTest {
         $brdOptimal.Visibility = "Collapsed"
         $lblSummary.Foreground = [System.Windows.Media.Brushes]::Gold
         $lblSummary.Text = ("🔬 Benchmark çalışıyor — {0} değer × {1} örnek (~{2} sn), lütfen bekle..." -f $countV, $sampleN, $estimatedSec)
-        $lstLog.Items.Add("ResolutionMs       Avg(delta)         Stddev") | Out-Null
-        $lstLog.Items.Add("-----------------------------------------------") | Out-Null
+        $lstLog.Items.Add("Istenen ms   Gercek ms   Avg sapma(us)   Jitter(us)") | Out-Null
+        $lstLog.Items.Add("----------------------------------------------------------") | Out-Null
 
         # Parametreler yukarida $trtCfg ile zaten okundu. Sabit: settle delay (500ms).
         $settleMs = 500   # valleyofdoom orijinal 1000ms — biz 500ms (yeterli stabilizasyon, sabit)
@@ -14888,8 +15974,10 @@ function Show-TimerResolutionTest {
         $results = New-Object System.Collections.Generic.List[object]
         $current = $startV
         while ($current -le ($endV + 0.0001)) {
-            # 1) Bu resolution'u set et + settle
-            [TimerRes]::Set($current) | Out-Null
+            # 1) Bu resolution'u set et + settle. Set() GERCEK uygulanan degeri dondurur —
+            # donanim sinirinin altini yukari yuvarlar (0.4 istenince 0.5 doner). Tabloda hem
+            # istenen hem gercek deger gosterilir ki kullanici neden ayni sonuc geldigini gorsun.
+            $actual = [TimerRes]::Set($current)
             Start-Sleep -Milliseconds $settleMs
             Do-Events  # settle sonrasi UI refresh OK (sample loop oncesi)
 
@@ -14897,20 +15985,22 @@ function Show-TimerResolutionTest {
             [void][TimerRes]::MeasureOnce()
 
             # 2b) N kez ornek al — sample arasi UI dokunma YOK (kritik: UI interferansi
-            # Sleep delta'sini bozar)
+            # Sleep delta'sini bozar). BUG FIX: Max(0,..) int-truncate -> Abs mutlak sapma.
             $deltas = New-Object System.Collections.Generic.List[double]
             for ($s = 0; $s -lt $sampleN; $s++) {
                 $sleptMs = [TimerRes]::MeasureOnce()
-                $delta = [Math]::Max(0, $sleptMs - 1.0)
+                $delta = [Math]::Abs($sleptMs - 1.0)
                 $deltas.Add($delta) | Out-Null
             }
 
-            # 3) Avg + Stddev hesapla
+            # 3) Avg + Stddev hesapla (us cinsinden gosterilir)
             $avg = ($deltas | Measure-Object -Average).Average
             $stddev = & $script:GetStddev -Values $deltas.ToArray()
 
-            $results.Add([PSCustomObject]@{ Resolution = $current; Avg = $avg; Stddev = $stddev }) | Out-Null
-            $line = ("{0,8:N4} ms     {1,8:N4}        {2,8:N4}" -f $current, $avg, $stddev)
+            # Optimal secimi GERCEK degere gore yapilmali (istenen degil) — ayni gercek degere
+            # yuvarlanan satirlar arasinda en stabil olani sec.
+            $results.Add([PSCustomObject]@{ Resolution = $actual; Requested = $current; Avg = $avg; Stddev = $stddev }) | Out-Null
+            $line = ("{0,8:N4}    {1,8:N4}    {2,10:N1}    {3,9:N1}" -f $current, $actual, ($avg * 1000.0), ($stddev * 1000.0))
             $lstLog.Items.Add($line) | Out-Null
             if ($lstLog.Items.Count -gt 0) {
                 $lstLog.ScrollIntoView($lstLog.Items[$lstLog.Items.Count - 1])
@@ -14944,7 +16034,7 @@ function Show-TimerResolutionTest {
 
         if ($optimal) {
             $script:TRTOptimalMs = $optimal.Resolution
-            $lblOptimal.Text = ("✅ OPTIMAL: {0:N4} ms   (avg {1:N4} ms, stddev {2:N4} ms)`nBu değer test edilen 6 değer arasında en düşük delta + en stabil ölçümü verdi." -f $optimal.Resolution, $optimal.Avg, $optimal.Stddev)
+            $lblOptimal.Text = ("✅ OPTIMAL: {0:N4} ms   (ortalama sapma {1:N1} us, jitter {2:N1} us)`nBu değer test edilen {3} değer arasında en düşük sapma + en stabil (düşük jitter) ölçümü verdi." -f $optimal.Resolution, ($optimal.Avg * 1000.0), ($optimal.Stddev * 1000.0), $results.Count)
             $brdOptimal.Visibility = "Visible"
             $lblSummary.Foreground = [System.Windows.Media.Brushes]::LimeGreen
             $lblSummary.Text = "Benchmark tamamlandı. Aktif etmek için 'Optimal ile Başlat' butonuna bas (helper scheduled task yaratır/günceller, user logon trigger'lı)."
@@ -14981,13 +16071,25 @@ function Show-TimerResolutionTest {
         # Artik tum mantiksal thread'leri (-1 ana program icin reserve) kullaniyoruz → CPU%80-100.
         $stressThreadCount = [Math]::Max(2, $cpuCount - 1)
 
+        # v1.2.22 BUG FIX: Onay mesaji eskiden HARDCODED idi ("6 resolution 0.500-0.510, 50 sn") —
+        # kullanicinin ⚙️ Ayarlar'da kaydettigi degerleri YOK SAYIYORDU (gercek benchmark dogru
+        # calisiyordu ama mesaj yaniltiyordu). Artik mesaj Get-TRTSettings'ten dinamik uretilir.
+        $cfgMsg     = Get-TRTSettings
+        $msgStart   = $cfgMsg.AutoTuneStartMs
+        $msgEnd     = $cfgMsg.AutoTuneEndMs
+        $msgInc     = $cfgMsg.AutoTuneIncrementMs
+        $msgDur     = $cfgMsg.StressDurationSec
+        $msgCount   = [int]([Math]::Floor(($msgEnd - $msgStart) / $msgInc) + 1)
+        if ($msgCount -lt 1) { $msgCount = 1 }
+        $msgTotalMin = [Math]::Round(($msgCount * $msgDur) / 60.0, 1)
+
         $msg = "Stress Benchmark calistirilacak.`n`n" +
-               "• $stressThreadCount background thread'de yogun CPU yuku (~%80-100 CPU)`n" +
-               "• 6 resolution degeri test edilecek (0.500 - 0.510)`n" +
-               "• Her resolution icin 50 saniye sample alinacak`n" +
-               "• Toplam sure: ~5-6 dakika`n" +
+               ("• {0} background thread'de yogun CPU yuku (~%80-100 CPU)`n" -f $stressThreadCount) +
+               ("• {0} resolution degeri test edilecek ({1:N4} - {2:N4} ms, {3:N4} adim)`n" -f $msgCount, $msgStart, $msgEnd, $msgInc) +
+               ("• Her resolution icin {0} saniye sample alinacak`n" -f $msgDur) +
+               ("• Toplam sure: ~{0} dakika`n" -f $msgTotalMin) +
                "• Sistem stress sirasinda yavaslayacak — bu normal`n" +
-               "• Algoritma: en dusuk ortalama delta, esitse en dusuk stddev (valleyofdoom)`n`n"
+               "• Algoritma: en dusuk ortalama sapma, esitse en dusuk jitter (valleyofdoom)`n`n"
         if ($hasHelper) {
             $msg += "⚠️ Mevcut helper gecici durdurulacak — sonra otomatik geri yuklenmez,`n" +
                     "  'Optimal ile Baslat' butonu ile yeni deger uygulayabilirsin.`n`n"
@@ -15053,11 +16155,20 @@ function Show-TimerResolutionTest {
         $endV             = $trtCfg.AutoTuneEndMs
         $incV             = $trtCfg.AutoTuneIncrementMs
         $durationPerResMs = $trtCfg.StressDurationSec * 1000
+
+        # v1.2.22: Donanim sinirina clamp (Auto-Tune ile ayni mantik) — donanim altindaki
+        # tarama anlamsiz (Windows yukari yuvarlar).
+        $hwMaxMs = 0.5
+        try { $hwMaxMs = [TimerRes]::QueryMaxMs() } catch {}
+        if ($endV -lt $hwMaxMs) { $startV = $hwMaxMs; $endV = $hwMaxMs }
+        elseif ($startV -lt $hwMaxMs) { $startV = $hwMaxMs }
+
         $totalCount       = [int]([Math]::Floor(($endV - $startV) / $incV) + 1)
+        if ($totalCount -lt 1) { $totalCount = 1 }
 
         $lstLog.Items.Add(("Stress Benchmark — {0} thread CPU yuku, her resolution {1} sn" -f $stressThreadCount, $trtCfg.StressDurationSec)) | Out-Null
-        $lstLog.Items.Add("ResolutionMs    Avg(delta)      Stddev       SampleCount") | Out-Null
-        $lstLog.Items.Add("------------------------------------------------------------") | Out-Null
+        $lstLog.Items.Add("Istenen ms   Gercek ms   Avg sapma(us)   Jitter(us)   Sample") | Out-Null
+        $lstLog.Items.Add("------------------------------------------------------------------") | Out-Null
 
         $results = New-Object System.Collections.Generic.List[object]
         $current = $startV
@@ -15067,7 +16178,7 @@ function Show-TimerResolutionTest {
             $lblSummary.Text = ("🔥 Test ediliyor: {0:N4} ms ({1}/{2}) — stress aktif, ~{3} sn..." -f $current, $idx, $totalCount, $trtCfg.StressDurationSec)
             Do-Events
 
-            [TimerRes]::Set($current) | Out-Null
+            $actual = [TimerRes]::Set($current)
             Start-Sleep -Milliseconds 500
             [void][TimerRes]::MeasureOnce()  # warmup
 
@@ -15076,7 +16187,7 @@ function Show-TimerResolutionTest {
             $lastUiTick = 0
             while ($sw.ElapsedMilliseconds -lt $durationPerResMs) {
                 $sleptMs = [TimerRes]::MeasureOnce()
-                $delta = [Math]::Max(0.0, $sleptMs - 1.0)
+                $delta = [Math]::Abs($sleptMs - 1.0)
                 $deltas.Add($delta) | Out-Null
                 # Her ~1 saniyede UI thread'i bir kez serbest birak (pencere "yanit vermiyor"
                 # gozukmesin). 1 sn arasi 1 Do-Events Sleep delta sini bozmaz.
@@ -15091,8 +16202,8 @@ function Show-TimerResolutionTest {
             $stddev = & $script:GetStddev -Values $deltas.ToArray()
             $count = $deltas.Count
 
-            $results.Add([PSCustomObject]@{ Resolution = $current; Avg = $avg; Stddev = $stddev; SampleCount = $count }) | Out-Null
-            $line = ("{0,8:N4} ms    {1,8:N4}       {2,8:N4}      {3,8}" -f $current, $avg, $stddev, $count)
+            $results.Add([PSCustomObject]@{ Resolution = $actual; Requested = $current; Avg = $avg; Stddev = $stddev; SampleCount = $count }) | Out-Null
+            $line = ("{0,8:N4}    {1,8:N4}    {2,10:N1}    {3,9:N1}    {4,7}" -f $current, $actual, ($avg * 1000.0), ($stddev * 1000.0), $count)
             $lstLog.Items.Add($line) | Out-Null
             $lstLog.ScrollIntoView($lstLog.Items[$lstLog.Items.Count - 1])
             Do-Events
@@ -15137,7 +16248,7 @@ function Show-TimerResolutionTest {
 
         if ($optimal) {
             $script:TRTOptimalMs = $optimal.Resolution
-            $lblOptimal.Text = ("✅ STRESS BENCHMARK OPTIMAL: {0:N4} ms   (avg {1:N4} ms, stddev {2:N4} ms, {3} sample / value)`nCPU yuk altinda olculmus — gercek oyun senaryosu icin en gercekci sonuc." -f $optimal.Resolution, $optimal.Avg, $optimal.Stddev, $optimal.SampleCount)
+            $lblOptimal.Text = ("✅ STRESS BENCHMARK OPTIMAL: {0:N4} ms   (ortalama sapma {1:N1} us, jitter {2:N1} us, {3} sample / value)`nCPU yuk altinda olculmus — gercek oyun senaryosu icin en gercekci sonuc." -f $optimal.Resolution, ($optimal.Avg * 1000.0), ($optimal.Stddev * 1000.0), $optimal.SampleCount)
             $brdOptimal.Visibility = "Visible"
             $lblSummary.Foreground = [System.Windows.Media.Brushes]::LimeGreen
             $lblSummary.Text = "Stress benchmark tamamlandi. Optimal'i uygulamak icin 'Optimal ile Baslat' butonu."
@@ -16867,10 +17978,16 @@ $btnActivityLog.Add_Click({
     Show-ActivityLog
 })
 
-# v1.2.10: Performans Benchmark — 9 metrikli olcum suite (timer/ping/dns/disk/dpc/ram).
+# v1.2.10: Performans Benchmark — 6 metrikli olcum suite (timer/ping/dns/dpc/ram/system).
 # Tweak Apply oncesi+sonrasi snapshot alip karsilastirma ile gercek etkiyi gosterir.
 $btnBenchmark.Add_Click({
     Show-BenchmarkPanel
+})
+
+# v1.2.22: Defender Exclusion Manager — 6 game launcher auto-detect (Steam/Epic/EA Desktop/Riot/Battle.net/Ubisoft/GOG).
+# Oyun klasorlerini Defender on-access scan'inden harict tutar -> load time + runtime performans.
+$btnDefenderExc.Add_Click({
+    Show-DefenderExclusionManager
 })
 
 $btnSfcScan.Add_Click({
@@ -17075,6 +18192,11 @@ $btnPingTest    = $Win.FindName('btnPingTest')
 $txtPingGoogle  = $Win.FindName('txtPingGoogle')
 $txtDashDNS = $Win.FindName('txtDashDNS')
 $txtPingCF      = $Win.FindName('txtPingCF')
+# v1.2.22: Connection Monitor — real-time bandwidth + canli ping (Dashboard panel)
+$txtDashDownload = $Win.FindName('txtDashDownload')
+$txtDashUpload   = $Win.FindName('txtDashUpload')
+$txtDashLivePing = $Win.FindName('txtDashLivePing')
+$txtDashNic      = $Win.FindName('txtDashNic')
 $txtPingGW      = $Win.FindName('txtPingGW')
 # --- PİNG / LATENCİ TESTİ ---
 $btnPingTest.Add_Click({
@@ -18652,6 +19774,75 @@ $Win.Add_Loaded({
 
     # 5. Auto-update kontrol (async, UI bloklamaz)
     Test-AppUpdate
+
+    # 6. v1.2.22: Connection Monitor — Dashboard'da real-time bandwidth + canli ping (1sn refresh)
+    # Sadece Dashboard sekmesinde aktif (CPU tasarrufu icin diger sekmelerde skip)
+    $script:CmPrevSample = $null   # Bandwidth delta hesabi icin onceki snapshot
+    $script:CmPing = New-Object System.Net.NetworkInformation.Ping
+    $script:CmTimer = New-Object System.Windows.Threading.DispatcherTimer
+    $script:CmTimer.Interval = [TimeSpan]::FromSeconds(1)
+    $script:CmTimer.Add_Tick({
+        # Sadece Dashboard sekmesinde aktif
+        try { if (-not $tabDashboard.IsSelected) { return } } catch { return }
+        try {
+            # Aktif (en yuksek throughput) NIC bul
+            $adapter = $null
+            try {
+                $adapter = Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object {
+                    $_.Status -eq "Up" -and $_.InterfaceType -in @(6, 71) -and
+                    $_.PhysicalMediaType -ne "Unspecified" -and
+                    $_.InterfaceDescription -notmatch "(?i)VPN|Virtual|Tunnel|Loopback|TAP|WAN Miniport|Hyper-V|Bluetooth"
+                } | Select-Object -First 1
+            } catch {}
+
+            if (-not $adapter) {
+                $txtDashDownload.Text = "—"; $txtDashUpload.Text = "—"; $txtDashNic.Text = "(NIC yok)"
+                return
+            }
+
+            $cur = $null
+            try {
+                $stats = Get-NetAdapterStatistics -Name $adapter.Name -ErrorAction Stop
+                $cur = @{ Rx = [double]$stats.ReceivedBytes; Tx = [double]$stats.SentBytes; T = (Get-Date); Name = $adapter.Name }
+            } catch { return }
+
+            if ($script:CmPrevSample) {
+                $elapsedSec = ($cur.T - $script:CmPrevSample.T).TotalSeconds
+                if ($elapsedSec -gt 0.1 -and $script:CmPrevSample.Name -eq $cur.Name) {
+                    $dRx = ($cur.Rx - $script:CmPrevSample.Rx) / $elapsedSec
+                    $dTx = ($cur.Tx - $script:CmPrevSample.Tx) / $elapsedSec
+                    if ($dRx -lt 0) { $dRx = 0 }
+                    if ($dTx -lt 0) { $dTx = 0 }
+                    # Otomatik birim secimi (KB/s vs MB/s)
+                    $fmtDown = if ($dRx -ge 1MB) { "{0:N1} MB/s" -f ($dRx / 1MB) } elseif ($dRx -ge 1KB) { "{0:N1} KB/s" -f ($dRx / 1KB) } else { "{0:N0} B/s" -f $dRx }
+                    $fmtUp   = if ($dTx -ge 1MB) { "{0:N1} MB/s" -f ($dTx / 1MB) } elseif ($dTx -ge 1KB) { "{0:N1} KB/s" -f ($dTx / 1KB) } else { "{0:N0} B/s" -f $dTx }
+                    $txtDashDownload.Text = $fmtDown
+                    $txtDashUpload.Text = $fmtUp
+                }
+            }
+            $script:CmPrevSample = $cur
+            $nicShort = if ($adapter.Name.Length -gt 18) { $adapter.Name.Substring(0, 18) + "..." } else { $adapter.Name }
+            $txtDashNic.Text = "($nicShort)"
+
+            # Canli ping — gateway (async, 500ms timeout)
+            try {
+                $gw = (Get-NetIPConfiguration -InterfaceIndex $adapter.InterfaceIndex -ErrorAction SilentlyContinue).IPv4DefaultGateway.NextHop
+                if ($gw) {
+                    $reply = $script:CmPing.Send($gw, 500)
+                    if ($reply.Status -eq 'Success') {
+                        $rt = $reply.RoundtripTime
+                        $color = if ($rt -lt 20) { "#27AE60" } elseif ($rt -lt 60) { "#FFB347" } else { "#E74C3C" }
+                        $txtDashLivePing.Text = "$rt ms"
+                        $txtDashLivePing.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString($color)
+                    } else {
+                        $txtDashLivePing.Text = "timeout"
+                        $txtDashLivePing.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#E74C3C")
+                    }
+                }
+            } catch {}
+        } catch {}
+    })
+    $script:CmTimer.Start()
 })
 $Win.ShowDialog() | Out-Null
 
