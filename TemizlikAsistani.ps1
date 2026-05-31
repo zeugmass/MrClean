@@ -555,7 +555,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.22"
+$global:AppVersion = "1.2.23"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -2999,6 +2999,9 @@ function Load-Repair-Tree {
     try {
         # 1. SİSTEM ONARIM
         $nodeSysRep = New-TreeItem 'Sistem Dosyası Onarımı' 'ROOT'
+        $itemSfc = New-TreeItem 'SFC Scan (Sistem Dosyalarını Onar)' 'CMD_REALTIME:sfc /scannow'
+        try { Attach-ToolTip $itemSfc.Header.Children[0] "System File Checker — bozuk Windows sistem dosyalarini tarar ve onarir. 5-15 dk surebilir, ilerleme log panelinde gosterilir." } catch {}
+        $nodeSysRep.Items.Add($itemSfc) | Out-Null
         $nodeSysRep.Items.Add((New-TreeItem 'DISM RestoreHealth (İmaj Onarımı)' 'CMD_REALTIME:Dism /Online /Cleanup-Image /RestoreHealth')) | Out-Null
         $nodeSysRep.IsExpanded = $true
         $tvRepair.Items.Add($nodeSysRep) | Out-Null
@@ -3008,7 +3011,12 @@ function Load-Repair-Tree {
         $nodeNet.Items.Add((New-TreeItem 'DNS Önbelleğini Temizle (Flush DNS)' 'CMD_REALTIME:ipconfig /flushdns')) | Out-Null
         $nodeNet.Items.Add((New-TreeItem 'ARP ve NetBIOS Temizle (Önbellek)' 'CMD_REALTIME:arp -d * & nbtstat -R & nbtstat -RR')) | Out-Null
         $nodeNet.Items.Add((New-TreeItem 'Windows Güvenlik Duvarını Sıfırla' 'CMD_REALTIME:netsh advfirewall reset')) | Out-Null
-        $nodeNet.Items.Add((New-TreeItem 'Ağ Sürücülerini Kaldır ve Sıfırla (Hard Reset / Netcfg)' 'CMD_REALTIME:netcfg -d')) | Out-Null
+        $itemWinHttp = New-TreeItem 'WinHTTP Sistem Proxy Sıfırla' 'CMD_REALTIME:netsh winhttp reset proxy'
+        try { Attach-ToolTip $itemWinHttp.Header.Children[0] "Sistem-seviyesi proxy ayarini sifirlar (Windows Update, Defender, Store). Tarayici proxy ayarlarina dokunmaz. Malware/VPN sonrasi temizlik icin." } catch {}
+        $nodeNet.Items.Add($itemWinHttp) | Out-Null
+        $itemNetcfg = New-TreeItem 'Ağ Sürücülerini Kaldır ve Sıfırla (Hard Reset / Netcfg)' 'CMD_REALTIME:netcfg -d'
+        try { Attach-ToolTip $itemNetcfg.Header.Children[0] "NUKLEER secenek — TUM ag adaptorlerini, protokolleri ve bilesenleri KALDIRIR, Windows yeniden kurar. REBOOT ZORUNLU. Sadece alttaki 'Ag Sifirla' butonu ise yaramadiysa son care olarak kullan. Statik IP / VPN config kaybolabilir." } catch {}
+        $nodeNet.Items.Add($itemNetcfg) | Out-Null
         $nodeNet.IsExpanded = $true
         $tvRepair.Items.Add($nodeNet) | Out-Null
     } catch {
@@ -3437,15 +3445,30 @@ $xaml = @"
                             
                             <!-- Alt Butonlar -->
                             <Border Grid.Row="1" Background="#222" CornerRadius="5" Padding="5" Margin="0,10,0,0">
-                                <UniformGrid Rows="2" Columns="4">
-                                    <Button x:Name="btnFixUpdate" Content="🛠️ Update Onar" Background="#E68A00" Foreground="White" Height="35" Margin="3" FontWeight="Bold" ToolTip="Windows Update servisini sıfırla ve yeniden başlat"/>
-                                    <Button x:Name="btnResetNet" Content="🌐 Ağ Sıfırla" Background="#333" Foreground="White" Height="35" Margin="3" ToolTip="Ağ ayarlarını (DNS, IP, WinSock) sıfırla — 5 adımlı DHCP DNS fix dahil"/>
-                                    <Button x:Name="btnResetWinHttpProxy" Content="📡 WinHTTP Sıfırla" Background="#333" Foreground="White" Height="35" Margin="3" ToolTip="WinHTTP sistem proxy ayarlarını sıfırla (Windows Update, Defender, Store)"/>
-                                    <Button x:Name="btnTimerResTest" Content="⏱️ Timer Test" Background="#333" Foreground="White" Height="35" Margin="3" ToolTip="Timer Resolution canlı test + Otomatik İnce Ayar Benchmark (valleyofdoom/SwiftyPop algoritması)"/>
-                                    <Button x:Name="btnActivityLog" Content="📜 Aktivite Log" Background="#333" Foreground="White" Height="35" Margin="3" ToolTip="Apply / Undo geçmişi — son 100 işlem, tek tek veya toplu geri alma"/>
-                                    <Button x:Name="btnBenchmark" Content="⚖️ Benchmark" Background="#444488" Foreground="White" Height="35" Margin="3" FontWeight="Bold" ToolTip="6 metrik performans ölçümü — tweak öncesi/sonrası snapshot al, karşılaştır (Timer, Ping, DNS, DPC, RAM)"/>
-                                    <Button x:Name="btnDefenderExc" Content="🛡️ Defender Exc." Background="#6B4F00" Foreground="White" Height="35" Margin="3" FontWeight="Bold" ToolTip="Windows Defender Exclusion Manager — oyun klasörlerini AV scan'inden hariç tut (Steam/Epic/EA/Riot/Battle.net/Ubisoft/GOG auto-detect)"/>
-                                    <Button x:Name="btnSfcScan" Content="🔍 SFC Scan" Background="#006600" Foreground="White" Height="35" Margin="3" FontWeight="Bold" ToolTip="System File Checker ile sistem dosyalarını onar (sfc /scannow)"/>
+                                <StackPanel>
+                                    <TextBlock Text="⚡ Anında çalışan onarımlar (tek tık — çok adımlı işlemler):" Foreground="#888" FontSize="11" Margin="3,2,3,6"/>
+                                    <UniformGrid Rows="1" Columns="2">
+                                        <Button x:Name="btnFixUpdate" Content="🛠️ Update Onar" Background="#E68A00" Foreground="White" Height="38" Margin="3" FontWeight="Bold" ToolTip="Windows Update onarımı: servisleri (wuauserv, bits, cryptSvc) sıfırla + SoftwareDistribution/catroot2 önbelleğini temizle + policy düzelt. 'Update çalışmıyor' sorunları için."/>
+                                        <Button x:Name="btnResetNet" Content="🌐 Ağ Sıfırla (Yumuşak)" Background="#0066AA" Foreground="White" Height="38" Margin="3" FontWeight="Bold" ToolTip="YUMUŞAK sıfırlama — TCP/IP + WinSock + DNS ayarlarını sıfırlar (5 adım). SÜRÜCÜLERE DOKUNMAZ. Günlük ağ sorunları için ilk denenecek. Ağaçtaki 'Netcfg' bundan çok daha sert (nükleer)."/>
+                                    </UniformGrid>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </TabItem>
+                    <TabItem Header="Araçlar" x:Name="tabTools">
+                        <Grid Margin="10,0,5,5">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Grid.Row="0" Foreground="#888" FontSize="12" TextWrapping="Wrap" Margin="4,4,4,10"
+                                       Text="🛠️ Tanılama ve yardımcı araçlar. Tweak'lerin etkisini ölç, sistem sağlığını izle, geçmişi yönet."/>
+                            <Border Grid.Row="1" Background="#222" CornerRadius="5" Padding="10" VerticalAlignment="Top">
+                                <UniformGrid Rows="2" Columns="2">
+                                    <Button x:Name="btnBenchmark" Content="⚖️ Benchmark" Background="#444488" Foreground="White" Height="44" Margin="4" FontWeight="Bold" FontSize="13" ToolTip="6 metrik performans ölçümü — tweak öncesi/sonrası snapshot al, karşılaştır (Timer, Ping, DNS, DPC, RAM)"/>
+                                    <Button x:Name="btnTimerResTest" Content="⏱️ Timer Testi" Background="#2E5E2E" Foreground="White" Height="44" Margin="4" FontWeight="Bold" FontSize="13" ToolTip="Timer Resolution canlı test + Otomatik İnce Ayar + Stress Bench (valleyofdoom/SwiftyPop algoritması)"/>
+                                    <Button x:Name="btnActivityLog" Content="📜 Aktivite Log" Background="#333" Foreground="White" Height="44" Margin="4" FontSize="13" ToolTip="Apply / Undo geçmişi — son 100 işlem, tek tek veya toplu geri alma"/>
+                                    <Button x:Name="btnDefenderExc" Content="🛡️ Defender Exc." Background="#6B4F00" Foreground="White" Height="44" Margin="4" FontWeight="Bold" FontSize="13" ToolTip="Windows Defender Exclusion Manager — oyun klasörlerini AV scan'inden hariç tut (Steam/Epic/EA/Riot/Battle.net/Ubisoft/GOG auto-detect)"/>
                                 </UniformGrid>
                             </Border>
                         </Grid>
@@ -17912,8 +17935,8 @@ $btnResetNet.Add_Click({
     }
 })
 
-# v1.2.8: WinHTTP Sistem Proxy Sıfırla (kullanıcı tarayıcı proxy ayarlarına dokunmaz, sadece sistem-seviyesi)
-$btnResetWinHttpProxy.Add_Click({
+# v1.2.8: WinHTTP — v1.2.23'te Onarim agacina tasindi, buton kaldirildi. Handler null-guard ile korunur.
+if ($btnResetWinHttpProxy) { $btnResetWinHttpProxy.Add_Click({
     $msg = "WinHTTP sistem proxy ayarları sıfırlanacak.`n`n" +
            "✅ Etkiler: Windows Update, Defender, Store, telemetri gibi sistem-seviyesi HTTP istekleri (WinHTTP katmanı) artık doğrudan internete çıkar — proxy bypass edilir.`n" +
            "❌ Etkilemez: Edge/Chrome/Firefox gibi tarayıcı proxy ayarları (WinINET katmanı ayrıdır, Settings > Ağ > Proxy bölümünden yönetilir).`n`n" +
@@ -17965,7 +17988,7 @@ $btnResetWinHttpProxy.Add_Click({
             WpfLog "❌ HATA: $($_.Exception.Message)"
         }
     }
-})
+}) }
 
 # v1.2.9: Timer Resolution Test butonu — MeasureSleep tarzi olcum modal
 $btnTimerResTest.Add_Click({
@@ -17990,8 +18013,8 @@ $btnDefenderExc.Add_Click({
     Show-DefenderExclusionManager
 })
 
-$btnSfcScan.Add_Click({
-    # --- ARAYÜZ HAZIRLIĞI ---
+if ($btnSfcScan) { $btnSfcScan.Add_Click({
+    # --- ARAYÜZ HAZIRLIĞI --- (v1.2.23: SFC Onarim agacina tasindi, buton kaldirildi, null-guard)
     $btnSfcScan.IsEnabled = $false
     $btnSfcScan.Content = "⏳ %0"
     $txtLog.Text = ""
@@ -18135,7 +18158,7 @@ $btnSfcScan.Add_Click({
         $pbMain.IsIndeterminate = $false
         $pbMain.Value = 0
     }
-})
+}) }
 
 # Seçim Butonları
 if ($btnSelectAll) { $btnSelectAll.Add_Click({ foreach ($tree in @($tvBrowser, $tvSystem, $tvApps, $tvShellBags)) { if ($tree) { foreach ($it in $tree.Items) { (Get-CheckFromItem $it).IsChecked = $true; Sync-Children $it $true } } } }) }
