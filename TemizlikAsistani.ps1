@@ -555,7 +555,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.23"
+$global:AppVersion = "1.2.24"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -3368,6 +3368,7 @@ $xaml = @"
                                     <StackPanel>
                                         <TextBlock Text="🖥️ İşletim Sistemi" Foreground="#4CC2FF" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
                                         <TextBlock x:Name="txtDashOS" Text="Yükleniyor..." Foreground="White" FontSize="13" TextWrapping="Wrap"/>
+                                        <TextBlock x:Name="txtDashWinVer" Text="" Foreground="#999" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                     </StackPanel>
                                 </Border>
 
@@ -3415,6 +3416,17 @@ $xaml = @"
                                         <TextBlock Text="💾 C: Diski ve Sağlık" Foreground="#A020F0" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
                                         <TextBlock x:Name="txtDashDisk" Text="Yükleniyor..." Foreground="White" FontSize="13" TextWrapping="Wrap"/>
                                         <ProgressBar x:Name="pbDashDisk" Height="6" Margin="0,10,0,0" Background="#333" Foreground="#A020F0" BorderThickness="0" Maximum="100"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- SİSTEM & GÜVENLİK (v1.2.24) -->
+                                <Border Background="#222" CornerRadius="8" Padding="15" Margin="5" BorderBrush="#333" BorderThickness="1">
+                                    <StackPanel>
+                                        <TextBlock Text="🛡️ Sistem &amp; Güvenlik" Foreground="#5CD6A0" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
+                                        <TextBlock x:Name="txtDashSecurity" Text="Yükleniyor..." Foreground="White" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,3"/>
+                                        <TextBlock x:Name="txtDashUptime" Text="" Foreground="#CCC" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,3"/>
+                                        <TextBlock x:Name="txtDashLastUpdate" Text="" Foreground="#CCC" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,3"/>
+                                        <Button x:Name="btnSysSecDetail" Content="🔍 Detay" HorizontalAlignment="Right" Margin="0,2,0,0" Height="24" Padding="12,0" FontSize="11" Background="#2A6E54" Foreground="White" FontWeight="Bold" BorderThickness="0" ToolTip="Defender, güvenlik duvarı, BitLocker, sistem kimliği, son güncellemeler — detaylı ve kopyalanabilir liste"/>
                                     </StackPanel>
                                 </Border>
 
@@ -4757,6 +4769,11 @@ $txtDashRAM = $Win.FindName('txtDashRAM')
 $pbDashRAM = $Win.FindName('pbDashRAM')
 $txtDashGPU = $Win.FindName('txtDashGPU')
 $txtDashDisk = $Win.FindName('txtDashDisk')
+$txtDashWinVer = $Win.FindName('txtDashWinVer')
+$txtDashUptime = $Win.FindName('txtDashUptime')
+$txtDashSecurity = $Win.FindName('txtDashSecurity')
+$txtDashLastUpdate = $Win.FindName('txtDashLastUpdate')
+$btnSysSecDetail = $Win.FindName('btnSysSecDetail')
 $pbDashDisk = $Win.FindName('pbDashDisk')
 
 # --- BAŞLANGIÇ YÖNETİCİSİ KONTROLLERİ ---
@@ -12785,9 +12802,13 @@ function Load-DashboardData {
         if ($cached.RAM_Val -gt 85) { $pbDashRAM.Foreground = [System.Windows.Media.Brushes]::Red }
         $txtDashDisk.Text = $cached.Disk_Text
         $pbDashDisk.Value = $cached.Disk_Val
-        if ($cached.Disk_Val -gt 90 -or $cached.Smart -match "Kritik") { 
-            $pbDashDisk.Foreground = [System.Windows.Media.Brushes]::Red 
+        if ($cached.Disk_Val -gt 90 -or $cached.Smart -match "Kritik") {
+            $pbDashDisk.Foreground = [System.Windows.Media.Brushes]::Red
         }
+        if ($txtDashWinVer)     { $txtDashWinVer.Text     = [string]$cached.WinFullVer }
+        if ($txtDashUptime)     { $txtDashUptime.Text     = [string]$cached.Uptime }
+        if ($txtDashSecurity)   { $txtDashSecurity.Text   = [string]$cached.Security }
+        if ($txtDashLastUpdate) { $txtDashLastUpdate.Text = [string]$cached.LastUpdate }
         $txtDashSubHeader.Text = "✅ Önbellekten yüklendi. (Son tarama: $($global:DashCacheTime.ToString('HH:mm:ss')))"
         if ($btnHardwareDetail) { $btnHardwareDetail.IsEnabled = $true }
         return
@@ -12807,7 +12828,7 @@ function Load-DashboardData {
         $regPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
         $displayVersion = (Get-ItemProperty -Path $regPath -Name "DisplayVersion" -ErrorAction SilentlyContinue).DisplayVersion
         if (-not $displayVersion) { $displayVersion = (Get-ItemProperty -Path $regPath -Name "ReleaseId" -ErrorAction SilentlyContinue).ReleaseId }
-        $osName = "$($os.Caption) ($displayVersion)"
+        $osName = "$($os.Caption)"
         
         # --- 2. CPU ---
         $cpu = Get-CimInstance Win32_Processor -CimSession $cim | Select-Object -First 1
@@ -12952,8 +12973,75 @@ function Load-DashboardData {
             if ($dnsList.Count -gt 0) { $activeDns = ($dnsList | Select-Object -Unique) -join ", " }
         } catch {}
 
-        # CimSession'ı kapat
-        if ($cim) { Remove-CimSession $cim -ErrorAction SilentlyContinue }
+        # --- 13. WINDOWS TAM SURUM (v1.2.24): Edition + DisplayVersion + Build.UBR ---
+        $winFullVer = ""
+        try {
+            $prodName = (Get-ItemProperty -Path $regPath -Name "ProductName" -ErrorAction SilentlyContinue).ProductName
+            $buildNum = (Get-ItemProperty -Path $regPath -Name "CurrentBuildNumber" -ErrorAction SilentlyContinue).CurrentBuildNumber
+            $ubr      = (Get-ItemProperty -Path $regPath -Name "UBR" -ErrorAction SilentlyContinue).UBR
+            # Win11 ProductName hala "Windows 10..." diyebilir; build >= 22000 ise Windows 11 olarak duzelt
+            if ($buildNum -and [int]$buildNum -ge 22000 -and $prodName -match "Windows 10") {
+                $prodName = $prodName -replace "Windows 10", "Windows 11"
+            }
+            $buildStr = if ($ubr) { "$buildNum.$ubr" } else { "$buildNum" }
+            # txtDashOS zaten "Caption (DisplayVersion)" gosteriyor; burada sadece build satiri (tekrar olmasin)
+            $winFullVer = "Sürüm $displayVersion  ·  Build $buildStr"
+        } catch { $winFullVer = "" }
+
+        # --- 14. CALISMA SURESI / UPTIME (v1.2.24) ---
+        $uptimeStr = ""
+        try {
+            $bootTime = $os.LastBootUpTime
+            if ($bootTime -is [string]) { $bootTime = [Management.ManagementDateTimeConverter]::ToDateTime($bootTime) }
+            $up = (Get-Date) - $bootTime
+            $parts = @()
+            if ($up.Days -gt 0)  { $parts += "$($up.Days) gun" }
+            if ($up.Hours -gt 0) { $parts += "$($up.Hours) saat" }
+            $parts += "$($up.Minutes) dk"
+            $uptimeStr = "⏱️ Çalışma Süresi: " + ($parts -join " ") 
+        } catch {}
+
+        # --- 15. SISTEM TURU + SECURE BOOT + TPM (v1.2.24) ---
+        $secStr = ""
+        try {
+            # Firmware turu: UEFI vs Legacy BIOS
+            $fwType = "?"
+            try { if ($env:firmware_type) { $fwType = $env:firmware_type } } catch {}
+            if ($fwType -notmatch "UEFI|Legacy") {
+                # Fallback: SecureBoot key varsa UEFI demektir
+                if (Test-Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecureBoot\State") { $fwType = "UEFI" } else { $fwType = "Legacy BIOS" }
+            }
+            # Secure Boot durumu (locale-independent registry)
+            $sbState = "Bilinmiyor"
+            try {
+                $sbVal = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecureBoot\State" -Name "UEFISecureBootEnabled" -ErrorAction SilentlyContinue).UEFISecureBootEnabled
+                if ($null -ne $sbVal) { $sbState = if ([int]$sbVal -eq 1) { "Acik" } else { "Kapali" } }
+            } catch {}
+            # TPM (CIM — Get-Tpm yavas/yetki isteyebilir)
+            $tpmStr = "Yok"
+            try {
+                $tpm = Get-CimInstance -CimSession $cim -Namespace "root\cimv2\Security\MicrosoftTpm" -ClassName Win32_Tpm -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($tpm) {
+                    $spec = ($tpm.SpecVersion -split ",")[0].Trim()
+                    $tpmStr = if ($tpm.IsEnabled_InitialValue) { "TPM $spec (aktif)" } else { "TPM $spec (pasif)" }
+                }
+            } catch {}
+            $secStr = "🔒 [$fwType]  -  Secure Boot: [$sbState]  -  $tpmStr"
+        } catch {}
+
+        # --- 16. SON WINDOWS UPDATE (v1.2.24) ---
+        $lastUpdStr = ""
+        try {
+            $hf = Get-CimInstance -CimSession $cim -ClassName Win32_QuickFixEngineering -ErrorAction SilentlyContinue |
+                  Where-Object { $_.InstalledOn } | Sort-Object InstalledOn -Descending | Select-Object -First 1
+            if ($hf) {
+                $instDate = $hf.InstalledOn
+                $daysAgo = [Math]::Round(((Get-Date) - $instDate).TotalDays)
+                $lastUpdStr = "🔄 Son Güncelleme: $($hf.HotFixID) · $($instDate.ToString('dd.MM.yyyy'))"
+            } else {
+                $lastUpdStr = "🔄 Son Güncelleme: bilgi yok"
+            }
+        } catch { $lastUpdStr = "🔄 Son Güncelleme: okunamadı" }
 
         # CimSession'ı kapat
         if ($cim) { Remove-CimSession $cim -ErrorAction SilentlyContinue }
@@ -12977,6 +13065,11 @@ function Load-DashboardData {
             MbInfo     = $mbInfo
             GpuDetail  = $gpuDetail
             DiskDetail = $diskDetail
+
+            WinFullVer = $winFullVer
+            Uptime     = $uptimeStr
+            Security   = $secStr
+            LastUpdate = $lastUpdStr
         }
     })
 
@@ -13033,6 +13126,12 @@ function Load-DashboardData {
 					$pbDashDisk.Foreground = [System.Windows.Media.Brushes]::MediumPurple # Disk için görsel ayrım
 				}
 				
+				# Sistem & Güvenlik kartı (v1.2.24)
+				if ($txtDashWinVer)     { $txtDashWinVer.Text     = [string]$result.WinFullVer }
+				if ($txtDashUptime)     { $txtDashUptime.Text     = [string]$result.Uptime }
+				if ($txtDashSecurity)   { $txtDashSecurity.Text   = [string]$result.Security }
+				if ($txtDashLastUpdate) { $txtDashLastUpdate.Text = [string]$result.LastUpdate }
+
 				$txtDashSubHeader.Text = "✅ Sistem verileri başarıyla güncellendi."
 				$txtDashSubHeader.Foreground = [System.Windows.Media.Brushes]::Gray
 				
@@ -14104,6 +14203,211 @@ function Invoke-SingleActivityReverse {
         return @{ Ok = $true; Reason = "" }
     } catch {
         return @{ Ok = $false; Reason = $_.Exception.Message }
+    }
+}
+
+# =========================================================
+# SISTEM & GUVENLIK DETAY (v1.2.24)
+# Genel Bakis kartindaki "Detay" butonu acar. Lazy-load: pencere acilinca async runspace tum
+# veriyi ceker (Defender/BitLocker yavas olabilir, UI donmasin). Sonuc kopyalanabilir TextBox'ta.
+# Donanim DEGIL (o Show-HardwareDetail'de) — guvenlik + sistem kimligi + bakim odakli.
+# =========================================================
+function Show-SystemSecurityDetail {
+    try {
+        $xamlSS = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="🛡️ Sistem ve Güvenlik Detayı" Height="640" Width="720"
+        Background="#181818" WindowStartupLocation="CenterOwner"
+        WindowStyle="ToolWindow" ResizeMode="CanResize" MinWidth="560" MinHeight="460">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Row="0" Text="🛡️ Sistem ve Güvenlik Detayı" Foreground="#5CD6A0" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+        <Border Grid.Row="1" Background="#1F1F1F" CornerRadius="5" BorderBrush="#2E2E2E" BorderThickness="1">
+            <TextBox x:Name="txtSSBody" Background="Transparent" Foreground="#E8E8E8" BorderThickness="0"
+                     FontFamily="Consolas" FontSize="13" Padding="12" IsReadOnly="True"
+                     TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
+                     VerticalContentAlignment="Top" Text="Veriler toplanıyor, lütfen bekleyin..."/>
+        </Border>
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
+            <Button x:Name="btnSSCopy" Content="📋 Tümünü Kopyala" Width="160" Height="32" Margin="0,0,8,0" Background="#0066AA" Foreground="White" BorderThickness="0" FontWeight="Bold"/>
+            <Button x:Name="btnSSClose" Content="Kapat" Width="100" Height="32" Background="#3A3A3A" Foreground="White" BorderThickness="0"/>
+        </StackPanel>
+    </Grid>
+</Window>
+"@
+        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlSS)
+        $winSS = [Windows.Markup.XamlReader]::Load($reader)
+        try { $winSS.Owner = $Win } catch {}
+        $txtSSBody  = $winSS.FindName('txtSSBody')
+        $btnSSCopy  = $winSS.FindName('btnSSCopy')
+        $btnSSClose = $winSS.FindName('btnSSClose')
+
+        $btnSSCopy.Add_Click({ try { [System.Windows.Clipboard]::SetText($txtSSBody.Text) } catch {} })
+        $btnSSClose.Add_Click({ $winSS.Close() })
+
+        # Veri toplama scriptblock'u (async runspace — Defender/BitLocker yavas olabilir)
+        $collectScript = {
+            $sb = New-Object System.Text.StringBuilder
+            $add = { param($line) [void]$sb.AppendLine($line) }
+
+            # ===== GENEL =====
+            [void]$sb.AppendLine("=== SISTEM OZETI ===")
+            try {
+                $os = Get-CimInstance Win32_OperatingSystem -ErrorAction SilentlyContinue
+                $cs = Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue
+                $reg = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion"
+                $dv  = (Get-ItemProperty $reg -Name DisplayVersion -ErrorAction SilentlyContinue).DisplayVersion
+                $bn  = (Get-ItemProperty $reg -Name CurrentBuildNumber -ErrorAction SilentlyContinue).CurrentBuildNumber
+                $ubr = (Get-ItemProperty $reg -Name UBR -ErrorAction SilentlyContinue).UBR
+                [void]$sb.AppendLine("Isletim Sistemi : $($os.Caption)")
+                [void]$sb.AppendLine("Surum / Build   : $dv  (Build $bn.$ubr)")
+                $instDate = $os.InstallDate
+                if ($instDate) {
+                    $age = [Math]::Round(((Get-Date) - $instDate).TotalDays)
+                    [void]$sb.AppendLine("Kurulum Tarihi  : $($instDate.ToString('dd.MM.yyyy'))  ($age gun once)")
+                }
+                $boot = $os.LastBootUpTime
+                if ($boot) {
+                    $up = (Get-Date) - $boot
+                    [void]$sb.AppendLine("Calisma Suresi  : $($up.Days) gun $($up.Hours) saat $($up.Minutes) dk  (acilis: $($boot.ToString('dd.MM.yyyy HH:mm')))")
+                }
+            } catch {}
+
+            # ===== SISTEM KIMLIGI =====
+            [void]$sb.AppendLine("")
+            [void]$sb.AppendLine("=== SISTEM KIMLIGI ===")
+            try {
+                [void]$sb.AppendLine("Bilgisayar Adi  : $env:COMPUTERNAME")
+                [void]$sb.AppendLine("Kullanici       : $env:USERNAME")
+                $cs2 = Get-CimInstance Win32_ComputerSystem -ErrorAction SilentlyContinue
+                if ($cs2) {
+                    $grp = if ($cs2.PartOfDomain) { "Domain: $($cs2.Domain)" } else { "Workgroup: $($cs2.Workgroup)" }
+                    [void]$sb.AppendLine("Ag Uyeligi      : $grp")
+                    [void]$sb.AppendLine("Uretici / Model : $($cs2.Manufacturer) $($cs2.Model)")
+                }
+                $tz = (Get-CimInstance Win32_TimeZone -ErrorAction SilentlyContinue).Caption
+                if ($tz) { [void]$sb.AppendLine("Saat Dilimi     : $tz") }
+                try {
+                    $cult = (Get-Culture).DisplayName
+                    [void]$sb.AppendLine("Sistem Dili     : $cult")
+                } catch {}
+                [void]$sb.AppendLine("PowerShell      : $($PSVersionTable.PSVersion.ToString())")
+                try {
+                    $netRel = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\NET Framework Setup\NDP\v4\Full" -Name Release -ErrorAction SilentlyContinue).Release
+                    if ($netRel) { [void]$sb.AppendLine(".NET Framework  : Release $netRel") }
+                } catch {}
+            } catch {}
+
+            # ===== GUVENLIK =====
+            [void]$sb.AppendLine("")
+            [void]$sb.AppendLine("=== GUVENLIK ===")
+            # Firmware + Secure Boot
+            try {
+                $fw = if ($env:firmware_type) { $env:firmware_type } elseif (Test-Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecureBoot\State") { "UEFI" } else { "Legacy BIOS" }
+                $sbv = (Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\SecureBoot\State" -Name UEFISecureBootEnabled -ErrorAction SilentlyContinue).UEFISecureBootEnabled
+                $sbs = if ($null -ne $sbv) { if ([int]$sbv -eq 1) { "Acik" } else { "Kapali" } } else { "Bilinmiyor" }
+                [void]$sb.AppendLine("Firmware        : $fw")
+                [void]$sb.AppendLine("Secure Boot     : $sbs")
+            } catch {}
+            # TPM
+            try {
+                $tpm = Get-CimInstance -Namespace "root\cimv2\Security\MicrosoftTpm" -ClassName Win32_Tpm -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($tpm) {
+                    $spec = ($tpm.SpecVersion -split ",")[0].Trim()
+                    $st = if ($tpm.IsEnabled_InitialValue) { "aktif" } else { "pasif" }
+                    [void]$sb.AppendLine("TPM             : $spec ($st)")
+                } else { [void]$sb.AppendLine("TPM             : Yok / algilanmadi") }
+            } catch {}
+            # UAC
+            try {
+                $lua = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" -Name EnableLUA -ErrorAction SilentlyContinue).EnableLUA
+                [void]$sb.AppendLine("UAC             : $(if ([int]$lua -eq 1) { 'Acik' } else { 'Kapali' })")
+            } catch {}
+            # Windows Defender
+            try {
+                $mp = Get-MpComputerStatus -ErrorAction SilentlyContinue
+                if ($mp) {
+                    [void]$sb.AppendLine("Defender RT     : $(if ($mp.RealTimeProtectionEnabled) { 'Acik' } else { 'Kapali / 3.parti AV' })")
+                    [void]$sb.AppendLine("Imza Tarihi     : $(if ($mp.AntivirusSignatureLastUpdated) { $mp.AntivirusSignatureLastUpdated.ToString('dd.MM.yyyy HH:mm') } else { '?' })")
+                    $qs = $mp.QuickScanEndTime
+                    [void]$sb.AppendLine("Son Hizli Tarama: $(if ($qs) { $qs.ToString('dd.MM.yyyy HH:mm') } else { 'kayit yok' })")
+                }
+            } catch {}
+            # Firewall
+            try {
+                $fps = Get-NetFirewallProfile -ErrorAction SilentlyContinue
+                if ($fps) {
+                    $line = ($fps | ForEach-Object { "$($_.Name)=$(if ($_.Enabled) { 'Acik' } else { 'Kapali' })" }) -join "  "
+                    [void]$sb.AppendLine("Guvenlik Duvari : $line")
+                }
+            } catch {}
+            # BitLocker C:
+            try {
+                $bl = Get-BitLockerVolume -MountPoint "C:" -ErrorAction SilentlyContinue
+                if ($bl) { [void]$sb.AppendLine("BitLocker (C:)  : $($bl.ProtectionStatus) / $($bl.VolumeStatus)") }
+                else { [void]$sb.AppendLine("BitLocker (C:)  : Kapali / desteklenmiyor") }
+            } catch { [void]$sb.AppendLine("BitLocker (C:)  : Kapali / desteklenmiyor") }
+
+            # ===== BAKIM =====
+            [void]$sb.AppendLine("")
+            [void]$sb.AppendLine("=== BAKIM ve GUNCELLEME ===")
+            try {
+                $hfs = Get-CimInstance Win32_QuickFixEngineering -ErrorAction SilentlyContinue |
+                       Where-Object { $_.InstalledOn } | Sort-Object InstalledOn -Descending | Select-Object -First 5
+                if ($hfs) {
+                    [void]$sb.AppendLine("Son 5 Guncelleme:")
+                    foreach ($h in $hfs) { [void]$sb.AppendLine("  - $($h.HotFixID)  ($($h.InstalledOn.ToString('dd.MM.yyyy')))") }
+                } else { [void]$sb.AppendLine("Guncellemeler   : kayit okunamadi") }
+            } catch {}
+            try {
+                $pf = Get-CimInstance Win32_PageFileUsage -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($pf) { [void]$sb.AppendLine("Pagefile        : $($pf.Name)  ($([Math]::Round($pf.AllocatedBaseSize/1024,1)) GB)") }
+            } catch {}
+            try {
+                $srEnabled = $false
+                $srVal = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SystemRestore" -Name RPSessionInterval -ErrorAction SilentlyContinue).RPSessionInterval
+                $rp = Get-ComputerRestorePoint -ErrorAction SilentlyContinue | Sort-Object CreationTime -Descending | Select-Object -First 1
+                if ($rp) {
+                    $rpDate = [Management.ManagementDateTimeConverter]::ToDateTime($rp.CreationTime)
+                    [void]$sb.AppendLine("Sistem Geri Yukleme: Acik (son nokta: $($rpDate.ToString('dd.MM.yyyy HH:mm')))")
+                } else {
+                    [void]$sb.AppendLine("Sistem Geri Yukleme: nokta yok / kapali")
+                }
+            } catch { [void]$sb.AppendLine("Sistem Geri Yukleme: okunamadi") }
+
+            return $sb.ToString()
+        }
+
+        # Async calistir — UI donmasin
+        $ssRs = [powershell]::Create()
+        [void]$ssRs.AddScript($collectScript)
+        $ssHandle = $ssRs.BeginInvoke()
+
+        $ssTimer = New-Object System.Windows.Threading.DispatcherTimer
+        $ssTimer.Interval = [TimeSpan]::FromMilliseconds(200)
+        $ssTimer.Add_Tick({
+            if (-not $ssHandle.IsCompleted) { return }
+            $ssTimer.Stop()
+            try {
+                $out = $ssRs.EndInvoke($ssHandle)
+                $text = if ($out -and $out.Count -gt 0) { [string]($out | Select-Object -Last 1) } else { "Veri toplanamadi." }
+                $txtSSBody.Text = $text
+            } catch {
+                $txtSSBody.Text = "Hata: $($_.Exception.Message)"
+            } finally {
+                try { $ssRs.Dispose() } catch {}
+            }
+        }.GetNewClosure())
+        $ssTimer.Start()
+
+        [void]$winSS.ShowDialog()
+    } catch {
+        WpfLog ("SystemSecurityDetail Hata: " + $_.Exception.Message)
     }
 }
 
@@ -18012,6 +18316,9 @@ $btnBenchmark.Add_Click({
 $btnDefenderExc.Add_Click({
     Show-DefenderExclusionManager
 })
+
+# v1.2.24: Sistem & Güvenlik Detay penceresi (Genel Bakış kartindaki Detay butonu)
+if ($btnSysSecDetail) { $btnSysSecDetail.Add_Click({ Show-SystemSecurityDetail }) }
 
 if ($btnSfcScan) { $btnSfcScan.Add_Click({
     # --- ARAYÜZ HAZIRLIĞI --- (v1.2.23: SFC Onarim agacina tasindi, buton kaldirildi, null-guard)
