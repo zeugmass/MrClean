@@ -555,7 +555,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.24"
+$global:AppVersion = "1.2.26"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -2515,7 +2515,7 @@ function Get-Default-Tweaks {
                 '
             },
 
-            # --- v1.2.22 SPRINT: A paketi (Hardware GPU Scheduling + Modern Standby S3) ---
+            # --- v1.2.22 SPRINT: Hardware GPU Scheduling ---
 
             # --- H: GPU / DISPLAY ---
             @{
@@ -2524,15 +2524,6 @@ function Get-Default-Tweaks {
                 Risk="Low"; RestartExplorer=$false; RequiresReboot=$true;
                 Description="Windows 11 22H2+ icin Hardware Accelerated GPU Scheduling'i zorla acar. WDDM 2.7+ destekli GPU'larda (NVIDIA RTX 20+ / AMD RDNA1+ / Intel Arc) DPC bypass yapar — GPU scheduling kernel'den driver'a tasinir, latency dusur, frame pacing iyilesir.`n`n• Default Win11: 1 (sistem karar verir, bazen kapatir)`n• Bu tweak: 2 (zorlanmis ON)`n`n⚠️ REBOOT GEREKLI (Apply sonrasi otomatik dialog)`n⚠️ Eski GPU veya WDDM 2.7+ desteklemeyen driver'da etkisiz (ama zararsiz — sistem ignore eder)`n✅ NVIDIA RTX 30/40/50 + AMD RDNA2+ + Intel Arc icin tavsiye`n✅ Anti-cheat uyumlu`n`n📚 Kaynak: NicholasBly TL;DR, theantipopau Gaming Optimizer, Microsoft DirectX docs.";
                 Key="HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers"; ValueName="HwSchMode"; Type="DWord"; Data=2; Undo=1
-            },
-
-            # --- I: MODERN STANDBY (S0ix -> S3 SLEEP) ---
-            @{
-                Name="Modern Standby Devre Disi (S0ix -> S3 Sleep)";
-                SubCategory="Donanim (Güç)";
-                Risk="Medium"; RestartExplorer=$false; RequiresReboot=$true;
-                Description="Windows 11 laptop'larda default 'Modern Standby' (S0ix) yerine klasik S3 sleep modunu zorlar. Modern Standby surekli arka planda calisir (network senkronizasyon, mail check), DPC latency yaratir, oyun frame time stutter sebebidir.`n`n• Default Win11 laptop: CsEnabled=1 (Modern Standby aktif)`n• Bu tweak: CsEnabled=0 (S3 sleep modu)`n`n⚠️ KRITIK: BIOS S3 desteklemeli! Eger laptop'unuzun BIOS'unda sadece S0ix varsa (yeni Snapdragon X / bazi yeni Intel/AMD laptop'lar), bu tweak sistem uyku modunu BOZAR — sistem hic uyumaz veya kapanmaz.`n`n🧪 Test: tweak Apply edip yeniden baslat, ardindan Baslat > Guc > Uyut deneyin. Sistem normal uyuyor + uyaniyorsa S3 calisiyor. Sorun varsa Undo edin (CsEnabled=1).`n`n✅ Masaustu PC: zaten S3 kullanir, bu tweak gereksiz (etkisiz)`n✅ Laptop (S3 destekli): DPC latency dusur, pil omru artar, gercek deep sleep saglanir`n❌ Yeni laptop (S0ix-only): SISTEM SLEEP'I BOZAR\n\n📚 Kaynak: Microsoft Power Management docs, valleyofdoom + Reddit/r/Windows11 community.";
-                Key="HKLM:\SYSTEM\CurrentControlSet\Control\Power"; ValueName="PlatformAoAcOverride"; Type="DWord"; Data=0; Undo="DELETE_VALUE"
             },
 
             # --- G: AUDIO (MMCSS Pro Audio Task Boost) ---
@@ -3461,7 +3452,7 @@ $xaml = @"
                                     <TextBlock Text="⚡ Anında çalışan onarımlar (tek tık — çok adımlı işlemler):" Foreground="#888" FontSize="11" Margin="3,2,3,6"/>
                                     <UniformGrid Rows="1" Columns="2">
                                         <Button x:Name="btnFixUpdate" Content="🛠️ Update Onar" Background="#E68A00" Foreground="White" Height="38" Margin="3" FontWeight="Bold" ToolTip="Windows Update onarımı: servisleri (wuauserv, bits, cryptSvc) sıfırla + SoftwareDistribution/catroot2 önbelleğini temizle + policy düzelt. 'Update çalışmıyor' sorunları için."/>
-                                        <Button x:Name="btnResetNet" Content="🌐 Ağ Sıfırla (Yumuşak)" Background="#0066AA" Foreground="White" Height="38" Margin="3" FontWeight="Bold" ToolTip="YUMUŞAK sıfırlama — TCP/IP + WinSock + DNS ayarlarını sıfırlar (5 adım). SÜRÜCÜLERE DOKUNMAZ. Günlük ağ sorunları için ilk denenecek. Ağaçtaki 'Netcfg' bundan çok daha sert (nükleer)."/>
+                                        <Button x:Name="btnResetNet" Content="🌐 Ağ Ayarlarını Sıfırla" Background="#0066AA" Foreground="White" Height="38" Margin="3" FontWeight="Bold" ToolTip="TCP/IP + WinSock + DNS ayarlarını sıfırlar (5 adım). Sürücülere DOKUNMAZ. Günlük ağ sorunları için ilk denenecek seçenek. Ağaçtaki 'Netcfg' bundan çok daha sert (tüm ağ sürücülerini kaldırır)."/>
                                     </UniformGrid>
                                 </StackPanel>
                             </Border>
@@ -3652,109 +3643,97 @@ $xaml = @"
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
 
-                            <!-- ÜST: KARA KUTU DURUM PANELİ (DÜZELTİLDİ) -->
-                            <Border Grid.Row="0" Background="#252526" CornerRadius="5" Padding="10" Margin="0,0,0,10" BorderBrush="#3E3E42" BorderThickness="1">
+                            <!-- ÜST: KARA KUTU DURUM PANELİ — başlık+buton üstte, açıklama tam genişlik altta -->
+                            <Border Grid.Row="0" Background="#252526" CornerRadius="5" Padding="12,10" Margin="0,0,0,10" BorderBrush="#3E3E42" BorderThickness="1">
                                 <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto"/> <!-- Başlık -->
-                                        <ColumnDefinition Width="Auto"/> <!-- İkon -->
-                                        <ColumnDefinition Width="*"/>    <!-- Metin (Esnek) -->
-                                        <ColumnDefinition Width="Auto"/> <!-- Buton -->
-                                    </Grid.ColumnDefinitions>
-                                    
-                                    <TextBlock Grid.Column="0" Text="🗃️ Sistem Kara Kutusu:" Foreground="#4CC2FF" FontSize="14" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                    
-                                    <Ellipse x:Name="shpBlackBoxStatus" Grid.Column="1" Width="12" Height="12" Fill="#888" Margin="0,0,6,0" VerticalAlignment="Center"/>
-                                    
-                                    <!-- TextWrapping="Wrap" eklendi, artık taşarsa alt satıra iner -->
-                                    <TextBlock x:Name="txtBlackBoxStatus" Grid.Column="2" Text="Durum kontrol ediliyor..." Foreground="#CCC" FontSize="13" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,10,0"/>
-
-                                    <Button x:Name="btnFixBlackBox" Grid.Column="3" Content="🔧 Kara Kutuyu Aç" Background="#A00" Foreground="White" FontWeight="Bold" Padding="15,5" VerticalAlignment="Center" Visibility="Collapsed" Tag="off"/>
-                                </Grid>
-                            </Border>
-
-                            <!-- ORTA: PROCESS WATCHER PANELİ -->
-                            <Border Grid.Row="1" Background="#1A2A1A" CornerRadius="5" Padding="8,7" Margin="0,0,0,8" BorderBrush="#2D5A2D" BorderThickness="1">
-                                <StackPanel>
-                                    <!-- Satır 1: Seçimler ve butonlar -->
-                                    <Grid>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
+                                    <Grid Grid.Row="0">
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="8"/>
-                                            <ColumnDefinition Width="170"/>
-                                            <ColumnDefinition Width="8"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="8"/>
-                                            <ColumnDefinition Width="170"/>
-                                            <ColumnDefinition Width="8"/>
                                             <ColumnDefinition Width="Auto"/>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="5"/>
-                                            <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="🎯 İzle:" Foreground="#90EE90" FontWeight="Bold" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="cbWatchProcess" Grid.Column="2" Height="26" VerticalContentAlignment="Center"/>
-                                        <TextBlock Grid.Column="4" Text="+" Foreground="#90EE90" FontWeight="Bold" FontSize="16" VerticalAlignment="Center"/>
-                                        <ComboBox x:Name="cbWatchProcess2" Grid.Column="6" Height="26" VerticalContentAlignment="Center"/>
-                                        <TextBox x:Name="txtWatchCustom" Grid.Column="8" Width="130" Height="26" Background="#222" Foreground="#AAA" VerticalContentAlignment="Center" Padding="4,0" Text="process.exe" Visibility="Collapsed"/>
-                                        <Button x:Name="btnWatchStart" Grid.Column="10" Content="▶ İzlemeyi Başlat" Background="#1E5C1E" Foreground="White" FontWeight="Bold" Padding="12,4" Height="26"/>
-                                        <Button x:Name="btnWatchStop" Grid.Column="12" Content="⏹ Durdur" Background="#5C1E1E" Foreground="White" FontWeight="Bold" Padding="12,4" Height="26" IsEnabled="False"/>
+                                        <TextBlock Grid.Column="0" Text="🗃️ Sistem Kara Kutusu" Foreground="#4CC2FF" FontSize="14" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <Ellipse x:Name="shpBlackBoxStatus" Grid.Column="1" Width="12" Height="12" Fill="#888" VerticalAlignment="Center"/>
+                                        <Button x:Name="btnFixBlackBox" Grid.Column="3" Content="🔧 Kara Kutuyu Aç" Background="#A00" Foreground="White" FontWeight="Bold" Padding="15,5" VerticalAlignment="Center" Visibility="Collapsed" Tag="off"
+                                                ToolTip="3 şeyi kontrol eder: (1) WER servisi çalışıyor mu, (2) Mavi Ekran (BSOD) dökümü açık mı, (3) Uygulama/oyun çökünce .dmp toplanıyor mu (LocalDumps). 3. madde Windows'ta varsayılan KAPALIDIR — 'Aç' dersen bundan sonraki çökmelerde otomatik .dmp toplanır. Önce 'Log/Dump Bul' ile mevcut dosyalara bakman yeterli olabilir."/>
                                     </Grid>
-                                    <!-- Satır 2: Durum -->
-                                    <TextBlock x:Name="txtWatchStatus" Text="İzleme kapalı — process seç, İzlemeyi Başlat'a bas." Foreground="#666" FontSize="11" Margin="0,5,0,0" FontStyle="Italic"/>
-                                </StackPanel>
+                                    <TextBlock x:Name="txtBlackBoxStatus" Grid.Row="1" Text="Durum kontrol ediliyor..." Foreground="#CCC" FontSize="12" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                                </Grid>
                             </Border>
 
-                            <!-- FİLTRE VE TARAMA BUTONLARI -->
-                            <Grid Grid.Row="2" Margin="0,0,0,10">
+                            <!-- ORTA: FİLTRE + 2 TARAMA BUTONU -->
+                            <Grid Grid.Row="1" Margin="0,0,0,10">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid Grid.Row="0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="180"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="8"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Zaman Aralığı:" Foreground="#AAA" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <ComboBox x:Name="cbCrashTime" Grid.Column="1" Height="30" VerticalContentAlignment="Center" SelectedIndex="2">
+                                        <ComboBoxItem Content="Son 1 Saat" Tag="1"/>
+                                        <ComboBoxItem Content="Son 4 Saat" Tag="4"/>
+                                        <ComboBoxItem Content="Son 24 Saat (Tavsiye)" Tag="24"/>
+                                        <ComboBoxItem Content="Son 3 Gün" Tag="72"/>
+                                        <ComboBoxItem Content="Son 7 Gün" Tag="168"/>
+                                    </ComboBox>
+                                    <Button x:Name="btnScanCrashes" Grid.Column="3" Content="🔍 Çökme Analizi" Background="#E68A00" Foreground="White" FontWeight="Bold" Width="150" Height="36">
+                                        <Button.Effect>
+                                            <DropShadowEffect Color="#E68A00" BlurRadius="10" ShadowDepth="0" Opacity="0.5"/>
+                                        </Button.Effect>
+                                    </Button>
+                                    <Button x:Name="btnScanLogs" Grid.Column="5" Content="📂 Log/Dump Bul" Background="#0066AA" Foreground="White" FontWeight="Bold" Width="150" Height="36"/>
+                                </Grid>
+                                <TextBlock Grid.Row="1" Text="💡 Oyun/sistem çöktükten sonra bu butonlara bas. 'Çökme Analizi' Olay Görüntüleyici'yi tarayıp sebebi yorumlar; 'Log/Dump Bul' son oluşan log/dump/anti-cheat dosyalarını listeler (çift tık → konumu açar)." Foreground="#888" FontSize="11" FontStyle="Italic" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                            </Grid>
+
+                            <!-- ARAMA/FİLTRE KUTUSU (v1.2.26) -->
+                            <Grid Grid.Row="2" Margin="0,0,0,8">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="150"/>
-                                    <ColumnDefinition Width="15"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-
-                                <TextBlock Text="Zaman Aralığı:" Foreground="#AAA" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                                <ComboBox x:Name="cbCrashTime" Grid.Column="1" Height="28" VerticalContentAlignment="Center" SelectedIndex="0">
-                                    <ComboBoxItem Content="Son 1 Saat (Tavsiye)" Tag="1"/>
-                                    <ComboBoxItem Content="Son 4 Saat" Tag="4"/>
-                                    <ComboBoxItem Content="Son 24 Saat" Tag="24"/>
-                                    <ComboBoxItem Content="Son 3 Gün" Tag="72"/>
-                                </ComboBox>
-
-                                <TextBlock Grid.Column="3" Text="Oyun çöktükten veya sistem kapandıktan hemen sonra bu butona basınız." Foreground="#888" FontSize="11" VerticalAlignment="Center" FontStyle="Italic" TextWrapping="Wrap" Margin="0,0,10,0"/>
-
-                                <Button x:Name="btnScanCrashes" Grid.Column="4" Content="🔍 NE OLDU BUL!" Background="#E68A00" Foreground="White" FontWeight="Bold" Width="140" Height="35">
-                                    <Button.Effect>
-                                        <DropShadowEffect Color="#E68A00" BlurRadius="10" ShadowDepth="0" Opacity="0.5"/>
-                                    </Button.Effect>
-                                </Button>
+                                <TextBlock Grid.Column="0" Text="🔎 Filtre:" Foreground="#AAA" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBox x:Name="txtCrashFilter" Grid.Column="1" Height="30" Background="#222" Foreground="White" BorderBrush="#444" VerticalContentAlignment="Center" Padding="6,0"
+                                         ToolTip="Yazdıkça listeyi daraltır — dosya adı, tür, konum, açıklama içinde arar (örn: bf6, ntdll, .dmp, EA)"/>
+                                <TextBlock x:Name="txtCrashCount" Grid.Column="2" Text="" Foreground="#888" FontSize="11" VerticalAlignment="Center" Margin="10,0,0,0"/>
                             </Grid>
 
                             <!-- ALT: SONUÇ TABLOSU -->
                             <ListView x:Name="lvCrashes" Grid.Row="3" Background="#1E1E1E" BorderThickness="1" BorderBrush="#444">
                                 <ListView.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="Hata Detayını Kopyala" Name="ctxCopyCrash" FontWeight="Bold" Foreground="#4CC2FF"/>
-                                        <MenuItem Header="Google'da Çözüm Ara" Name="ctxSearchCrash" Foreground="#00CC00"/>
+                                        <MenuItem Header="📋 Detayı Kopyala" Name="ctxCopyCrash" FontWeight="Bold" Foreground="#4CC2FF"/>
+                                        <MenuItem Header="🌐 Google'da Çözüm Ara" Name="ctxSearchCrash" Foreground="#00CC00"/>
                                         <Separator/>
-                                        <MenuItem Header="💾 Dump (Bellek Dökümü) Klasörünü Aç" Name="ctxOpenDump" Foreground="#FFCC00" FontWeight="Bold"/>
+                                        <MenuItem Header="📂 Dosya/Dump Konumunu Aç" Name="ctxOpenDump" Foreground="#FFCC00" FontWeight="Bold"/>
                                     </ContextMenu>
                                 </ListView.ContextMenu>
                                 <ListView.View>
                                     <GridView>
-                                        <GridViewColumn Header="SAAT" Width="120" DisplayMemberBinding="{Binding Time}"/>
-                                        <GridViewColumn Header="TÜR" Width="120">
+                                        <GridViewColumn Header="ZAMAN" Width="130" DisplayMemberBinding="{Binding Time}"/>
+                                        <GridViewColumn Header="TÜR" Width="150">
                                             <GridViewColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <TextBlock Text="{Binding Category}" Foreground="{Binding Color}" FontWeight="Bold"/>
                                                 </DataTemplate>
                                             </GridViewColumn.CellTemplate>
                                         </GridViewColumn>
-                                        <GridViewColumn Header="SUÇLU DOSYA" Width="150" DisplayMemberBinding="{Binding FaultingModule}"/>
-                                        <GridViewColumn Header="AÇIKLAMA" Width="500">
+                                        <GridViewColumn Header="DOSYA / MODÜL" Width="180" DisplayMemberBinding="{Binding FaultingModule}"/>
+                                        <GridViewColumn Header="AÇIKLAMA / KONUM" Width="480">
                                             <GridViewColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <TextBlock Text="{Binding Description}" TextWrapping="Wrap"/>
@@ -4742,13 +4721,10 @@ $txtBlackBoxStatus = $Win.FindName('txtBlackBoxStatus')
 $btnFixBlackBox = $Win.FindName('btnFixBlackBox')
 $cbCrashTime = $Win.FindName('cbCrashTime')
 $btnScanCrashes = $Win.FindName('btnScanCrashes')
+$btnScanLogs = $Win.FindName('btnScanLogs')
 $lvCrashes = $Win.FindName('lvCrashes')
-$cbWatchProcess = $Win.FindName('cbWatchProcess')
-$cbWatchProcess2 = $Win.FindName('cbWatchProcess2')
-$txtWatchCustom = $Win.FindName('txtWatchCustom')
-$txtWatchStatus = $Win.FindName('txtWatchStatus')
-$btnWatchStart = $Win.FindName('btnWatchStart')
-$btnWatchStop = $Win.FindName('btnWatchStop')
+$txtCrashFilter = $Win.FindName('txtCrashFilter')
+$txtCrashCount = $Win.FindName('txtCrashCount')
 
 # Dedektif Sağ Tık Menüsü
 $ctxCopyCrash = $Win.FindName('ctxCopyCrash')
@@ -7023,7 +6999,7 @@ function Apply-System-Tweaks {
         # flag'i varsa bypass et (ornek: Timer Resolution helper instant aktif olur, reboot gereksiz).
         # v1.2.22: $tweakItem.RequiresReboot=$true tek-bayrak ile spesifik tweak tetikleyebilir
         # (yeni tweak ekleyenler SubCategory pattern bekleyip detection logic guncellemek yerine
-        # direkt flag koyar — future-proof). HAGS + Modern Standby buna ornek.
+        # direkt flag koyar — future-proof). HAGS buna ornek.
         if ((-not $tweakItem.SkipRebootDialog) -and (
             $tweakItem.RequiresReboot -eq $true -or
             $tweakItem.Group -eq "NetProfile" -or
@@ -8593,16 +8569,40 @@ function Check-Browser-Safety {
 
 
 
+# v1.2.26: Ortam parmak izi — kurulu tarayici klasorlerinin varlik imzasi. Cache bu imza ile
+# yazilir; acilista mevcut imza ile karsilastirilip degisiklik varsa cache ATLANIR (yeniden parse).
+# Sebep: cache tarayicilar kurulmadan olustuysa Brave/Chrome sonsuza dek gizli kaliyordu (laptop bug).
+function Get-AppEnvFingerprint {
+    $probe = @(
+        "$env:LOCALAPPDATA\BraveSoftware\Brave-Browser",
+        "$env:LOCALAPPDATA\Google\Chrome",
+        "$env:APPDATA\Mozilla\Firefox",
+        "$env:LOCALAPPDATA\Microsoft\Edge",
+        "$env:APPDATA\Opera Software",
+        "$env:LOCALAPPDATA\Vivaldi",
+        "$env:LOCALAPPDATA\Yandex\YandexBrowser",
+        "$env:LOCALAPPDATA\Chromium",
+        "$env:LOCALAPPDATA\Thorium"
+    )
+    $sb = New-Object System.Text.StringBuilder
+    foreach ($p in $probe) {
+        $exists = if (Test-Path $p -EA SilentlyContinue) { "1" } else { "0" }
+        [void]$sb.Append($exists)
+    }
+    return $sb.ToString()
+}
+
 function Update-Cache {
     param([string]$Type, [object]$Data)
-    
+
     # --- CACHE KONTROLÜ (EKLENDİ) ---
     if ($global:IsCacheDisabled) { return }
 
-    $currentCache = @{ Winapp2 = @(); Winget = @() }
+    $currentCache = @{ Winapp2 = @(); Winget = @(); EnvFp = "" }
     if (Test-Path $CachePath) { try { $raw = Get-Content $CachePath -Raw | ConvertFrom-Json; if ($raw.Winapp2) { $currentCache.Winapp2 = $raw.Winapp2 }; if ($raw.Winget) { $currentCache.Winget = $raw.Winget } } catch {} }
     if ($Type -eq 'Winapp2') { $currentCache.Winapp2 = $Data }
     if ($Type -eq 'Winget')  { $currentCache.Winget  = $Data }
+    $currentCache.EnvFp = Get-AppEnvFingerprint
     $currentCache | ConvertTo-Json -Depth 4 | Set-Content $CachePath -Encoding UTF8
 }
 
@@ -8729,7 +8729,14 @@ function Start-Winapp2-Process {
         try {
             WpfLog "[SİSTEM] Önbellek yükleniyor..."
             $json = Get-Content $CachePath -Raw | ConvertFrom-Json
-            if ($json.Winapp2) {
+            # v1.2.26: Tarayici/ortam parmak izi degistiyse cache GECERSIZ — yeni kurulan tarayicilar
+            # (Brave/Chrome) cache'te olmadigi icin gozukmuyordu. Imza farkliysa parse'a dus.
+            $curFp = Get-AppEnvFingerprint
+            if ((-not $json.EnvFp) -or ($json.EnvFp -ne $curFp)) {
+                # Imza yok (eski cache) VEYA degismis → cache atla, Senaryo 2 (parse) yeniden olustursun
+                WpfLog "[SİSTEM] Kurulu tarayicilar degismis/eski onbellek — yeniden taraniyor."
+            }
+            elseif ($json.Winapp2) {
                 foreach ($item in $json.Winapp2) {
                     $global:Winapp2Rules[$item.Name] = $item.Rules
                     if ($global:Blacklist -notcontains $item.Name) { Add-To-Buffer $item.Name $item.Tag $item.IsBrowser }
@@ -9854,48 +9861,6 @@ function Refresh-StartupView {
 # Tools, Profiller, Dashboard, Donanim, Dialog pencereleri,
 # Bloatware yoneticisi, Buyuk dosya tarayici vb.
 # =============================================================
-
-# ---- Fill-WatcherComboBox ----
-function Fill-WatcherComboBox($cb, $otherCb) {
-    $current = if ($cb.SelectedItem) { $cb.SelectedItem.Tag } else { $null }
-    $cb.Items.Clear()
-
-    $excluded = @('svchost','csrss','smss','wininit','winlogon','lsass','services',
-                  'System','Idle','Registry','MemCompression','fontdrvhost','dwm',
-                  'conhost','RuntimeBroker','SearchHost','StartMenuExperienceHost',
-                  'ShellExperienceHost','sihost','taskhostw','ctfmon','spoolsv',
-                  'WmiPrvSE','dllhost','msdtc','VBCSCompiler')
-
-    # "Yok / Seçme" seçeneği
-    $noneItem = New-Object System.Windows.Controls.ComboBoxItem
-    $noneItem.Content = "— Seçme —"
-    $noneItem.Tag = "none"
-    $cb.Items.Add($noneItem) | Out-Null
-
-    Get-Process | Where-Object {
-        $_.MainWindowHandle -ne 0 -or $_.Name -match 'EA|steam|battle|uplay|epic|riot|game|bf|cod|apex|valve|origin|link2'
-    } | Where-Object { $_.Name -notin $excluded } |
-    Sort-Object Name | Select-Object -Unique Name | ForEach-Object {
-        $item = New-Object System.Windows.Controls.ComboBoxItem
-        $item.Content = "$($_.Name).exe"
-        $item.Tag = $_.Name
-        $cb.Items.Add($item) | Out-Null
-    }
-
-    $customItem = New-Object System.Windows.Controls.ComboBoxItem
-    $customItem.Content = "✏️ Manuel Gir"
-    $customItem.Tag = "custom"
-    $cb.Items.Add($customItem) | Out-Null
-
-    # Önceki seçimi koru
-    $restored = $false
-    if ($current) {
-        foreach ($item in $cb.Items) {
-            if ($item.Tag -eq $current) { $cb.SelectedItem = $item; $restored = $true; break }
-        }
-    }
-    if (-not $restored) { $cb.SelectedIndex = 0 }
-}
 
 # ---- Get-WebLink + Refresh-Tools-Menu ----
 function Get-WebLink {
@@ -11076,6 +11041,164 @@ function Show-RecommendedProfiles {
 }
 
 # ---- Show-ProfileManager ----
+# v1.2.25: Profil paylasim modallari — programa uygun WPF (dark theme + PMButton + scrollbar).
+# MessageBox yerine XAML kullanilir (tutarli gorunum, renkli tweak listesi, scroll).
+
+# Ortak buton stili XAML parcasi (her iki modal da kullanir)
+$global:PMShareBtnStyle = @"
+        <Style x:Key="ShareBtn" TargetType="Button">
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" CornerRadius="4" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="border" Property="Opacity" Value="0.85"/></Trigger>
+                            <Trigger Property="IsPressed" Value="True"><Setter TargetName="border" Property="Opacity" Value="0.65"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+"@
+
+# Disa Aktar kaynak secimi. Donus: 'profile' / 'checked' / 'cancel'
+function Show-ExportSourceDialog {
+    param([string]$ProfileName, [int]$ProfileCount)
+    $script:_exportChoice = 'cancel'
+    $xamlEx = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="📤 Dışa Aktar - Kaynak Seç" Height="280" Width="460"
+        Background="#181818" WindowStartupLocation="CenterOwner" WindowStyle="ToolWindow" ResizeMode="NoResize">
+    <Window.Resources>
+$global:PMShareBtnStyle
+    </Window.Resources>
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Row="0" Text="📤 Hangi tweak'ler dışa aktarılsın?" Foreground="#FFFFFF" FontSize="16" FontWeight="Bold" Margin="0,0,0,6"/>
+        <TextBlock Grid.Row="1" Text="Bir profil seçili. Seçili profili mi yoksa şu an Tweaks sekmesinde işaretli olan tweak'leri mi paylaşmak istersin?" Foreground="#999" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,14"/>
+        <StackPanel Grid.Row="2" VerticalAlignment="Top">
+            <Button x:Name="btnExSelProfile" Style="{StaticResource ShareBtn}" Height="42" Margin="0,0,0,10" Background="#2E5E2E" Content="📁 Seçili Profil ($ProfileName · $ProfileCount tweak)"/>
+            <Button x:Name="btnExChecked" Style="{StaticResource ShareBtn}" Height="42" Background="#007ACC" Content="☑️ Tweaks sekmesinde işaretli olanlar"/>
+        </StackPanel>
+        <Button Grid.Row="3" x:Name="btnExCancel" Style="{StaticResource ShareBtn}" Height="32" Width="100" HorizontalAlignment="Right" Background="#3A3A3A" Content="İptal"/>
+    </Grid>
+</Window>
+"@
+    try {
+        $r = New-Object System.Xml.XmlNodeReader ([xml]$xamlEx)
+        $w = [Windows.Markup.XamlReader]::Load($r)
+        try { $w.Owner = $Win } catch {}
+        $w.FindName('btnExSelProfile').Add_Click({ $script:_exportChoice = 'profile'; $w.Close() })
+        $w.FindName('btnExChecked').Add_Click({ $script:_exportChoice = 'checked'; $w.Close() })
+        $w.FindName('btnExCancel').Add_Click({ $script:_exportChoice = 'cancel'; $w.Close() })
+        [void]$w.ShowDialog()
+    } catch { $script:_exportChoice = 'cancel' }
+    return $script:_exportChoice
+}
+
+# Ice Aktar onay penceresi. Donus: 'apply' / 'mark' / 'cancel'
+function Show-ImportConfirmDialog {
+    param([string]$ProfileName, [string]$AppVer, $FoundList, $MissingList)
+    $script:_importChoice = 'cancel'
+
+    # Renkli liste item'lari (found yesil, missing kirmizi)
+    $items = New-Object System.Collections.ArrayList
+    foreach ($n in $FoundList)   { [void]$items.Add([PSCustomObject]@{ Mark="✓"; Name=$n; Color="#5CD68A" }) }
+    foreach ($n in $MissingList) { [void]$items.Add([PSCustomObject]@{ Mark="✗"; Name="$n  (bu sürümde yok - atlanacak)"; Color="#E06666" }) }
+
+    $verLine = if ($AppVer) { "Oluşturulduğu sürüm: v$AppVer" } else { "" }
+    $missNote = if ($MissingList.Count -gt 0) { "⚠️ $($MissingList.Count) tweak bu sürümde yok, atlanacak (kırmızı). " } else { "" }
+
+    $xamlIm = @"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="📥 İçe Aktar - Onay" Height="600" Width="560"
+        Background="#181818" WindowStartupLocation="CenterOwner" WindowStyle="ToolWindow" ResizeMode="CanResize" MinHeight="420" MinWidth="440">
+    <Window.Resources>
+$global:PMShareBtnStyle
+    </Window.Resources>
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="0,0,0,8">
+            <TextBlock Text="📥 Profil İçe Aktarılıyor" Foreground="#FFFFFF" FontSize="17" FontWeight="Bold"/>
+            <TextBlock Text="Profil: $ProfileName" Foreground="#CCC" FontSize="13" Margin="0,4,0,0"/>
+            <TextBlock Text="$verLine" Foreground="#888" FontSize="11" Margin="0,2,0,0"/>
+        </StackPanel>
+
+        <TextBlock Grid.Row="1" Foreground="#AAA" FontSize="12" Margin="0,0,0,8" TextWrapping="Wrap"
+                   Text="Uygulanacak $($FoundList.Count) tweak (yeşil ✓). $missNote"/>
+
+        <Border Grid.Row="2" Background="#202020" CornerRadius="6" BorderBrush="#2E2E2E" BorderThickness="1">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="4">
+                <ItemsControl x:Name="icList">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="8,3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding Mark}" Foreground="{Binding Color}" FontWeight="Bold" FontSize="13" Margin="0,0,8,0"/>
+                                <TextBlock Grid.Column="1" Text="{Binding Name}" Foreground="{Binding Color}" FontSize="12" TextWrapping="Wrap"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+        </Border>
+
+        <TextBlock Grid.Row="3" Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,10,0,0"
+                   Text="🔒 Güvenlik: Profil yalnızca tweak İSİMLERİNİ içerir; başka makineden kod ÇALIŞMAZ — bu programdaki aynı isimli tweak uygulanır."/>
+
+        <Grid Grid.Row="4" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="btnImApply" Grid.Column="1" Style="{StaticResource ShareBtn}" Height="36" Width="170" Background="#2E5E2E" Content="✓ İçe Aktar + Uygula"/>
+            <Button x:Name="btnImMark" Grid.Column="3" Style="{StaticResource ShareBtn}" Height="36" Width="120" Background="#007ACC" Content="Sadece İşaretle"/>
+            <Button x:Name="btnImCancel" Grid.Column="5" Style="{StaticResource ShareBtn}" Height="36" Width="90" Background="#3A3A3A" Content="İptal"/>
+        </Grid>
+    </Grid>
+</Window>
+"@
+    try {
+        $r = New-Object System.Xml.XmlNodeReader ([xml]$xamlIm)
+        $w = [Windows.Markup.XamlReader]::Load($r)
+        try { $w.Owner = $Win } catch {}
+        $w.FindName('icList').ItemsSource = $items
+        $w.FindName('btnImApply').Add_Click({ $script:_importChoice = 'apply'; $w.Close() })
+        $w.FindName('btnImMark').Add_Click({ $script:_importChoice = 'mark'; $w.Close() })
+        $w.FindName('btnImCancel').Add_Click({ $script:_importChoice = 'cancel'; $w.Close() })
+        if ($FoundList.Count -eq 0) { $w.FindName('btnImApply').IsEnabled = $false; $w.FindName('btnImMark').IsEnabled = $false }
+        [void]$w.ShowDialog()
+    } catch { $script:_importChoice = 'cancel' }
+    return $script:_importChoice
+}
+
 function Show-ProfileManager {
     $profileDir = Join-Path $env:APPDATA "MrClean\Profiles"
     if (-not (Test-Path $profileDir)) {
@@ -11107,7 +11230,7 @@ function Show-ProfileManager {
     $xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Profil Yöneticisi" Height="460" Width="560"
+        Title="Profil Yöneticisi" Height="540" Width="560"
         Background="#181818" WindowStartupLocation="CenterOwner"
         WindowStyle="ToolWindow" ResizeMode="NoResize">
     <Window.Resources>
@@ -11150,6 +11273,7 @@ function Show-ProfileManager {
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -11217,8 +11341,27 @@ function Show-ProfileManager {
             </Grid>
         </Border>
 
-        <!-- ALT BUTONLAR -->
+        <!-- PAYLAŞIM BUTONLARI (v1.2.25) -->
         <Grid Grid.Row="4" Margin="0,8,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Button x:Name="btnExportProfile" Grid.Column="0"
+                    Style="{StaticResource PMButton}"
+                    Content="📤 Dışa Aktar (Paylaş)" Height="32"
+                    Background="#2E5E2E"
+                    ToolTip="İşaretli tweak'leri veya seçili profili .json olarak kaydet — başka biriyle paylaş"/>
+            <Button x:Name="btnImportProfile" Grid.Column="2"
+                    Style="{StaticResource PMButton}"
+                    Content="📥 İçe Aktar" Height="32" Width="140"
+                    Background="#6600CC"
+                    ToolTip="Birinin paylaştığı profil .json dosyasını yükle — içeriği önce gösterilir, sonra onaylarsın"/>
+        </Grid>
+
+        <!-- ALT BUTONLAR -->
+        <Grid Grid.Row="5" Margin="0,8,0,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="8"/>
@@ -11261,6 +11404,8 @@ function Show-ProfileManager {
         $btnDel  = $winPM.FindName('btnDelete')
         $btnCl   = $winPM.FindName('btnPMClose')
         $txtStat = $winPM.FindName('txtPMStatus')
+        $btnExp  = $winPM.FindName('btnExportProfile')
+        $btnImp  = $winPM.FindName('btnImportProfile')
 
         function Refresh-List {
             $lstP.Items.Clear()
@@ -11374,6 +11519,128 @@ function Show-ProfileManager {
                 [System.Windows.MessageBoxImage]::Information) | Out-Null
         })
 
+        # v1.2.25: O an tvTweaks'te isaretli tweak isimlerini topla (btnSave ScanSave ile ayni mantik)
+        function Get-CheckedTweakNames {
+            $names = @()
+            foreach ($cat in $tvTweaks.Items) {
+                function ScanChk($nodes) {
+                    foreach ($node in $nodes) {
+                        if ($node.Tag -is [System.Collections.IDictionary] -or
+                            $node.Tag -is [System.Management.Automation.PSCustomObject]) {
+                            if ((Get-CheckFromItem $node).IsChecked) { $script:_chkNames += $node.Tag.Name }
+                        }
+                        if ($node.Items.Count -gt 0) { ScanChk $node.Items }
+                    }
+                }
+                $script:_chkNames = @()
+                ScanChk $cat.Items
+                $names += $script:_chkNames
+            }
+            return $names
+        }
+
+        # v1.2.25: DISA AKTAR — isaretli tweak'ler VEYA secili profil -> .json (paylasilabilir)
+        $btnExp.Add_Click({
+            $sel = $lstP.SelectedItem
+            # Kaynak sec: profil secili ise XAML modal ile sor, degilse isaretlileri al
+            $useProfile = $false
+            if ($sel) {
+                $choice = Show-ExportSourceDialog -ProfileName $sel.Name -ProfileCount $sel.Count
+                if ($choice -eq 'cancel') { return }
+                $useProfile = ($choice -eq 'profile')
+            }
+
+            if ($useProfile) {
+                $expName = $sel.Name
+                $expTweaks = @($sel.Tweaks)
+            } else {
+                $expName = $txtName.Text.Trim(); if ([string]::IsNullOrWhiteSpace($expName)) { $expName = "Paylasilan Profil" }
+                $expTweaks = @(Get-CheckedTweakNames)
+            }
+
+            if ($expTweaks.Count -eq 0) {
+                [System.Windows.MessageBox]::Show("Aktarilacak tweak yok (hic isaretli tweak yok veya profil bos).", "Uyari", "OK", "Warning") | Out-Null
+                return
+            }
+
+            $sfd = New-Object Microsoft.Win32.SaveFileDialog
+            $sfd.Filter = "MrClean Profil Dosyasi (*.json)|*.json"
+            $sfd.FileName = (($expName -replace '[\\/:*?"<>|]', '_') + ".json")
+            if ($sfd.ShowDialog() -eq $true) {
+                try {
+                    $data = @{ Name=$expName; Date=(Get-Date -Format "yyyy-MM-dd HH:mm"); Tweaks=$expTweaks; AppVersion=$global:AppVersion }
+                    $data | ConvertTo-Json -Depth 3 | Set-Content $sfd.FileName -Encoding UTF8
+                    [System.Windows.MessageBox]::Show(
+                        ("Profil disa aktarildi.`n`n  Ad: {0}`n  Tweak: {1}`n  Dosya: {2}`n`nBu dosyayi baska biriyle paylasabilirsin." -f $expName, $expTweaks.Count, $sfd.FileName),
+                        "Başarılı", "OK", "Information") | Out-Null
+                } catch {
+                    [System.Windows.MessageBox]::Show("Dosya yazma hatasi: $($_.Exception.Message)", "Hata", "OK", "Error") | Out-Null
+                }
+            }
+        })
+
+        # v1.2.25: ICE AKTAR — paylasilan .json -> onay penceresi (liste+total+eksik uyari) -> uygula/isaretle
+        $btnImp.Add_Click({
+            $ofd = New-Object Microsoft.Win32.OpenFileDialog
+            $ofd.Filter = "MrClean Profil Dosyasi (*.json)|*.json"
+            if ($ofd.ShowDialog() -ne $true) { return }
+            try {
+                $imp = Get-Content $ofd.FileName -Raw -ErrorAction Stop | ConvertFrom-Json
+            } catch {
+                [System.Windows.MessageBox]::Show("Dosya okunamadi veya gecersiz JSON: $($_.Exception.Message)", "Hata", "OK", "Error") | Out-Null
+                return
+            }
+            $impName = if ($imp.Name) { [string]$imp.Name } else { "Bilinmeyen" }
+            $impTweaks = @($imp.Tweaks)
+            if ($impTweaks.Count -eq 0) {
+                [System.Windows.MessageBox]::Show("Dosyada tweak bulunamadi (gecersiz veya bos profil).", "Uyari", "OK", "Warning") | Out-Null
+                return
+            }
+
+            # Sende olan / olmayan tweak'leri ayir (Find-TweakByName cross-check — guvenlik: sadece isim eslesir)
+            $found = New-Object System.Collections.ArrayList
+            $missing = New-Object System.Collections.ArrayList
+            foreach ($tn in $impTweaks) {
+                if (Find-TweakByName $tn) { [void]$found.Add($tn) } else { [void]$missing.Add($tn) }
+            }
+
+            # XAML onay penceresi (renkli liste + scroll + dark theme)
+            $resp = Show-ImportConfirmDialog -ProfileName $impName -AppVer $imp.AppVersion -FoundList $found -MissingList $missing
+            if ($resp -eq 'cancel') { return }
+            if ($found.Count -eq 0) {
+                [System.Windows.MessageBox]::Show("Uygulanabilir tweak yok (hepsi bu surumde eksik).", "Uyari", "OK", "Warning") | Out-Null
+                return
+            }
+
+            # tvTweaks'te ilgili tweak'leri isaretle
+            $marked = 0
+            foreach ($cat in $tvTweaks.Items) {
+                function ScanMark($nodes) {
+                    foreach ($node in $nodes) {
+                        if ($node.Tag -is [System.Collections.IDictionary] -or
+                            $node.Tag -is [System.Management.Automation.PSCustomObject]) {
+                            if ($found -contains $node.Tag.Name) {
+                                (Get-CheckFromItem $node).IsChecked = $true
+                                $script:_markCount++
+                            }
+                        }
+                        if ($node.Items.Count -gt 0) { ScanMark $node.Items }
+                    }
+                }
+                $script:_markCount = 0
+                ScanMark $cat.Items
+                $marked += $script:_markCount
+            }
+
+            $winPM.Close()
+            if ($resp -eq 'apply') {
+                # Hemen uygula
+                Apply-System-Tweaks
+            } else {
+                [System.Windows.MessageBox]::Show("$marked tweak isaretlendi.`n`nTweaks sekmesinde UYGULA butonuna basarak sisteme uygulayabilirsin.", "İçe Aktarildi", "OK", "Information") | Out-Null
+            }
+        })
+
         $btnCl.Add_Click({ $winPM.Close() })
         $winPM.ShowDialog() | Out-Null
     } catch {
@@ -11412,7 +11679,7 @@ function Check-BlackBoxStatus {
     # Arayüzü Güncelle
     if ($isEnabled) {
         $shpBlackBoxStatus.Fill = [System.Windows.Media.Brushes]::LimeGreen
-        $txtBlackBoxStatus.Text = "Aktif. Tüm çökmeler (Oyun/BSOD) detaylı olarak kaydediliyor."
+        $txtBlackBoxStatus.Text = "Aktif — WER servisi + Mavi Ekran (BSOD) dökümü + oyun/uygulama .dmp toplama açık. Bundan sonraki çökmeler kaydedilir."
         $txtBlackBoxStatus.Foreground =[System.Windows.Media.Brushes]::White
         $btnFixBlackBox.Content = "🔴 Devre Dışı Bırak"
         $btnFixBlackBox.Background = [System.Windows.Media.Brushes]::DimGray
@@ -11421,7 +11688,7 @@ function Check-BlackBoxStatus {
     } else {
         $shpBlackBoxStatus.Fill = [System.Windows.Media.Brushes]::Red
         $errText = $reasons -join ", "
-        $txtBlackBoxStatus.Text = "Kayıt Kapalı/Yetersiz! Sebep: $errText"
+        $txtBlackBoxStatus.Text = "Çökme kaydı eksik ($errText). Oyun .dmp toplama (LocalDumps) Windows'ta varsayılan kapalıdır — bu normaldir. 'Aç' dersen bundan sonraki çökmelerde otomatik .dmp toplanır. (Önce 'Log/Dump Bul' ile mevcut dosyalara bak — yeterli olabilir.)"
         $txtBlackBoxStatus.Foreground =[System.Windows.Media.Brushes]::Salmon
         $btnFixBlackBox.Content = "🔧 Kara Kutuyu Aç"
         $btnFixBlackBox.Background = [System.Windows.Media.Brushes]::Firebrick
@@ -12882,8 +13149,10 @@ function Load-DashboardData {
         $disk = Get-CimInstance Win32_LogicalDisk -CimSession $cim -Filter "DeviceID='C:'" | Select-Object -First 1
         $diskSizeGB = [Math]::Round($disk.Size / 1GB, 1)
         $diskFreeGB = [Math]::Round($disk.FreeSpace / 1GB, 1)
-        $diskUsedGB = $diskSizeGB - $diskFreeGB
-        $diskPercent = [Math]::Round(($diskUsedGB / $diskSizeGB) * 100)
+        # Ham byte'tan hesapla, SONRA yuvarla — yoksa iki yuvarlanmis sayinin farki floating-point
+        # artigi birakir (orn 70.1999999999999). $disk.Size 0 ise bolme hatasi onlenir.
+        $diskUsedGB = [Math]::Round(($disk.Size - $disk.FreeSpace) / 1GB, 1)
+        $diskPercent = if ($disk.Size -gt 0) { [Math]::Round((($disk.Size - $disk.FreeSpace) / $disk.Size) * 100) } else { 0 }
         
         # --- 6. S.M.A.R.T. ---
         $smartStatus = "Sağlıklı ✅"
@@ -17498,256 +17767,6 @@ $btnBloatware.Add_Click({ Show-BloatwareManager })
 # PROCESS WATCHER — CANLI PROCESS İZLEYİCİ
 # =========================================================
 
-# ComboBox değişince "Diğer" seçilmişse manuel giriş kutusu göster
-# Yardımcı: ComboBox'ı çalışan process'lerle doldur
-
-$cbWatchProcess.Add_DropDownOpened({ Fill-WatcherComboBox $cbWatchProcess $cbWatchProcess2 })
-$cbWatchProcess2.Add_DropDownOpened({ Fill-WatcherComboBox $cbWatchProcess2 $cbWatchProcess })
-
-$cbWatchProcess2.Add_SelectionChanged({
-    if ($cbWatchProcess2.SelectedItem -and $cbWatchProcess2.SelectedItem.Tag -eq "custom") {
-        $txtWatchCustom.Visibility = "Visible"
-    } else {
-        $txtWatchCustom.Visibility = "Collapsed"
-    }
-})
-
-# Tek process izleyen runspace scripti (her ikisi için ortak)
-$watcherScript = {
-    param($pname, $logFile)
-    $ErrorActionPreference = 'SilentlyContinue'
-
-    function WriteLog($m) {
-        $line = "$(Get-Date -Format 'HH:mm:ss.fff')|$m"
-        Add-Content $logFile $line -Encoding UTF8
-    }
-
-    $deadline = (Get-Date).AddMinutes(30)
-    $proc = $null
-    while ((Get-Date) -lt $deadline) {
-        $proc = Get-Process -Name $pname -ErrorAction SilentlyContinue | Select-Object -First 1
-        if ($proc) { break }
-        Start-Sleep -Milliseconds 400
-    }
-
-    if (-not $proc) { WriteLog "TIMEOUT"; return }
-
-    WriteLog "STARTED|$($proc.Id)"
-    try { $proc.WaitForExit() } catch {}
-
-    $exitCode = $null
-    try { $exitCode = $proc.ExitCode } catch {}
-    $exitHex = if ($null -ne $exitCode) { "0x{0:X8}" -f [uint32]$exitCode } else { "?" }
-    WriteLog "ENDED|$exitHex"
-
-    $desc = switch ([uint32]$exitCode) {
-        0          { "✅ Temiz kapanma (Exit 0) — menüden çıkış, sunucu kicki veya normal sonlanma." }
-        1          { "⚠️ Genel hata (Exit 1) — detay kaydedilmedi." }
-        0xC0000005 { "💥 ACCESS VIOLATION — geçersiz bellek erişimi. RAM veya bozuk oyun dosyası." }
-        0xC0000094 { "💥 INTEGER DIVIDE BY ZERO." }
-        0xC000013A { "ℹ️ Ctrl+C / Konsol kapatma sinyali." }
-        0xC0000142 { "💥 DLL başlatılamadı — Visual C++ veya DirectX eksik/bozuk." }
-        0xC06D007E { "💥 DLL bulunamadı." }
-        0xE0434352 { "💥 .NET Runtime hatası." }
-        0xDEAD0010 { "🛡️ EA Anti-Cheat tarafından sonlandırıldı (0xDEAD0010)." }
-        0x40010004 { "🛡️ Anti-Cheat debugger tespiti (0x40010004)." }
-        default    {
-            if ($null -eq $exitCode) { "❓ Exit code alınamadı — TerminateProcess ile zorla kapatıldı." }
-            else { "❓ Bilinmeyen exit code: $exitHex" }
-        }
-    }
-    WriteLog "DESC|$desc"
-}
-
-$btnWatchStart.Add_Click({
-    # Process isimlerini belirle
-    $p1 = if ($cbWatchProcess.SelectedItem -and $cbWatchProcess.SelectedItem.Tag -notin @("none","custom")) { $cbWatchProcess.SelectedItem.Tag } else { $null }
-    $p2 = if ($cbWatchProcess2.SelectedItem -and $cbWatchProcess2.SelectedItem.Tag -eq "custom") {
-                $txtWatchCustom.Text.Trim() -replace '\.exe$',''
-          } elseif ($cbWatchProcess2.SelectedItem -and $cbWatchProcess2.SelectedItem.Tag -notin @("none","custom")) {
-                $cbWatchProcess2.SelectedItem.Tag
-          } else { $null }
-
-    if (-not $p1 -and -not $p2) {
-        WpfLog "❌ En az bir process seçin."
-        return
-    }
-
-    # Önceki watcher'ları temizle
-    foreach ($t in @($script:WatcherTimer)) {
-        if ($t -and $t.IsEnabled) { $t.Stop() }
-    }
-    foreach ($r in @($script:WatcherRunspace, $script:WatcherRunspace2)) {
-        if ($r) { try { $r.Dispose() } catch {} }
-    }
-
-    $script:WatcherLog1 = "$env:TEMP\MrClean_W1.txt"
-    $script:WatcherLog2 = "$env:TEMP\MrClean_W2.txt"
-    Remove-Item $script:WatcherLog1,$script:WatcherLog2 -Force -ErrorAction SilentlyContinue
-
-    $script:WP1 = $p1; $script:WP2 = $p2
-    $script:WS1 = "waiting"; $script:WS2 = if ($p2) { "waiting" } else { "none" }
-    $script:WEnd1 = $null; $script:WEnd2 = $null
-
-    $btnWatchStart.IsEnabled = $false
-    $btnWatchStop.IsEnabled = $true
-
-    $pLabel = @(); if ($p1) { $pLabel += "$p1.exe" }; if ($p2) { $pLabel += "$p2.exe" }
-    $txtWatchStatus.Text = "⏳ Bekleniyor: $($pLabel -join ' + ')"
-    $txtWatchStatus.Foreground = [System.Windows.Media.Brushes]::Yellow
-    WpfLog "🎯 Process İzleyici başlatıldı: $($pLabel -join ' + ')"
-
-    # Runspace 1
-    if ($p1) {
-        $script:WatcherRunspace = [powershell]::Create()
-        $script:WatcherRunspace.AddScript($watcherScript) | Out-Null
-        $script:WatcherRunspace.AddArgument($p1) | Out-Null
-        $script:WatcherRunspace.AddArgument($script:WatcherLog1) | Out-Null
-        $script:WatcherAsync = $script:WatcherRunspace.BeginInvoke()
-    }
-
-    # Runspace 2
-    if ($p2) {
-        $script:WatcherRunspace2 = [powershell]::Create()
-        $script:WatcherRunspace2.AddScript($watcherScript) | Out-Null
-        $script:WatcherRunspace2.AddArgument($p2) | Out-Null
-        $script:WatcherRunspace2.AddArgument($script:WatcherLog2) | Out-Null
-        $script:WatcherAsync2 = $script:WatcherRunspace2.BeginInvoke()
-    }
-
-    # UI Timer
-    $script:WatcherTimer = New-Object System.Windows.Threading.DispatcherTimer
-    $script:WatcherTimer.Interval = [TimeSpan]::FromMilliseconds(400)
-    $script:WatcherTimer.Add_Tick({
-
-        # Log okuyucu yardımcı
-        function Read-WLog($logFile) {
-            if (Test-Path $logFile) { return Get-Content $logFile -ErrorAction SilentlyContinue }
-            return @()
-        }
-
-        # Her iki process için durumu güncelle
-        foreach ($idx in @(1,2)) {
-            $pname  = if ($idx -eq 1) { $script:WP1 } else { $script:WP2 }
-            $state  = if ($idx -eq 1) { $script:WS1 } else { $script:WS2 }
-            $logF   = if ($idx -eq 1) { $script:WatcherLog1 } else { $script:WatcherLog2 }
-            $async  = if ($idx -eq 1) { $script:WatcherAsync } else { $script:WatcherAsync2 }
-
-            if ($state -eq "none" -or $state -eq "done") { continue }
-
-            $lines = Read-WLog $logF
-            foreach ($line in $lines) {
-                if ($state -eq "waiting" -and $line -match '\|STARTED\|(\d+)') {
-                    if ($idx -eq 1) { $script:WS1 = "running" } else { $script:WS2 = "running" }
-                    WpfLog "🟢 [$pname] yakalandı (PID $($Matches[1]))"
-                }
-                if ($state -eq "running" -and $line -match '\|TIMEOUT') {
-                    if ($idx -eq 1) { $script:WS1 = "done" } else { $script:WS2 = "done" }
-                    WpfLog "⏰ [$pname] 30 dakikada başlamadı."
-                }
-            }
-
-            # Bitti mi?
-            if ($async -and $async.IsCompleted -and (if ($idx -eq 1) {$script:WS1} else {$script:WS2}) -eq "running") {
-                if ($idx -eq 1) { $script:WS1 = "done"; $script:WEnd1 = Get-Date }
-                else             { $script:WS2 = "done"; $script:WEnd2 = Get-Date }
-
-                $allLines = Read-WLog $logF
-                $exitHex = "?"; $desc = "Açıklama alınamadı."
-                foreach ($l in $allLines) {
-                    if ($l -match '\|ENDED\|(.+)') { $exitHex = $Matches[1] }
-                    if ($l -match '\|DESC\|(.+)')  { $desc = $Matches[1] }
-                }
-
-                $color = if ($exitHex -eq "0x00000000") { "#00CC00" }
-                         elseif ($desc -match "Anti-Cheat|DEAD|0xDEAD") { "#FF8C00" }
-                         else { "#FF5555" }
-
-                $uiObj = [PSCustomObject]@{
-                    Time = (Get-Date).ToString("HH:mm:ss")
-                    Category = "🎯 Process İzleyici"
-                    Color = $color
-                    FaultingModule = "$pname.exe ($exitHex)"
-                    Description = $desc
-                    RawMessage = ($allLines -join "`n")
-                    DumpPath = ""
-                }
-                $lvCrashes.Items.Insert(0, $uiObj) | Out-Null
-                WpfLog "🎯 [$pname] kapandı → $exitHex | $desc"
-            }
-        }
-
-        # Her ikisi de bittiyse — hangisi önce kapandı?
-        $both1 = $script:WS1 -in @("done","none")
-        $both2 = $script:WS2 -in @("done","none")
-
-        if ($both1 -and $both2) {
-            $script:WatcherTimer.Stop()
-            $btnWatchStart.IsEnabled = $true
-            $btnWatchStop.IsEnabled = $false
-
-            # Kapanma sırası analizi
-            if ($script:WEnd1 -and $script:WEnd2) {
-                $diff = [Math]::Round(($script:WEnd2 - $script:WEnd1).TotalMilliseconds)
-                if ($diff -lt 0) {
-                    $first = $script:WP2; $second = $script:WP1; $diffAbs = [Math]::Abs($diff)
-                } else {
-                    $first = $script:WP1; $second = $script:WP2; $diffAbs = $diff
-                }
-
-                $verdict = ""
-                if ($diffAbs -lt 500) {
-                    $verdict = "⚡ İkisi neredeyse aynı anda kapandı ($diffAbs ms fark) — dışarıdan bir şey (GPU driver, kernel) ikisini birden öldürdü olabilir."
-                } elseif ($first -match 'AntiCheat|EAAnti|eac') {
-                    $verdict = "🛡️ ÖNCE Anti-Cheat kapandı ($diffAbs ms önce) → Anti-Cheat oyunu sonlandırdı."
-                } elseif ($second -match 'AntiCheat|EAAnti|eac') {
-                    $verdict = "🎮 ÖNCE oyun kapandı ($diffAbs ms önce) → Oyun kendi çöktü, Anti-Cheat sonra temizlendi."
-                } else {
-                    $verdict = "🔍 $first önce kapandı ($diffAbs ms fark)."
-                }
-
-                $orderObj = [PSCustomObject]@{
-                    Time = (Get-Date).ToString("HH:mm:ss")
-                    Category = "⚖️ Kapanma Sırası"
-                    Color = "#FFD700"
-                    FaultingModule = "$first → $second"
-                    Description = $verdict
-                    RawMessage = $verdict
-                    DumpPath = ""
-                }
-                $lvCrashes.Items.Insert(0, $orderObj) | Out-Null
-                WpfLog "⚖️ $verdict"
-            }
-
-            $txtWatchStatus.Text = "✅ İzleme tamamlandı. Sonuçlar tabloya eklendi."
-            $txtWatchStatus.Foreground = [System.Windows.Media.Brushes]::LightGreen
-            try { if ($script:WatcherRunspace)  { $script:WatcherRunspace.Dispose()  } } catch {}
-            try { if ($script:WatcherRunspace2) { $script:WatcherRunspace2.Dispose() } } catch {}
-        } else {
-            # Durum güncelle
-            $parts = @()
-            if ($script:WP1) { $parts += "$(if($script:WS1 -eq 'running'){'🟢'} elseif($script:WS1 -eq 'done'){'✅'} else {'⏳'}) $($script:WP1).exe" }
-            if ($script:WP2) { $parts += "$(if($script:WS2 -eq 'running'){'🟢'} elseif($script:WS2 -eq 'done'){'✅'} else {'⏳'}) $($script:WP2).exe" }
-            $txtWatchStatus.Text = $parts -join "   |   "
-            $txtWatchStatus.Foreground = [System.Windows.Media.Brushes]::LightGreen
-        }
-
-    }.GetNewClosure())
-    $script:WatcherTimer.Start()
-})
-
-$btnWatchStop.Add_Click({
-    if ($script:WatcherTimer -and $script:WatcherTimer.IsEnabled) { $script:WatcherTimer.Stop() }
-    foreach ($r in @($script:WatcherRunspace, $script:WatcherRunspace2)) {
-        if ($r) { try { $r.Dispose() } catch {} }
-    }
-    $txtWatchStatus.Text = "İzleme durduruldu."
-    $txtWatchStatus.Foreground = [System.Windows.Media.Brushes]::Gray
-    $btnWatchStart.IsEnabled = $true
-    $btnWatchStop.IsEnabled = $false
-    WpfLog "⏹ Process İzleyici durduruldu."
-})
-
 # --- DEDEKTİF (ÇÖKME ANALİZİ) GOD TIER TARAMA MOTORU ---
 
 $btnScanCrashes.Add_Click({
@@ -17818,19 +17837,29 @@ $btnScanCrashes.Add_Click({
                     elseif ($msg -match 'Faulting application name:\s*([^,]+)') { $app = $Matches[1].Trim() }
                     if ($msg -match 'Hatalı modül adı:\s*([^,]+)') { $mod = $Matches[1].Trim() }
                     elseif ($msg -match 'Faulting module name:\s*([^,]+)') { $mod = $Matches[1].Trim() }
-                    
+                    # Exception kodu (RAM/CPU instabilitesi tespiti icin kritik)
+                    $exCode = ""
+                    if ($msg -match '(?:Özel durum kodu|Exception code):\s*(0x[0-9a-fA-F]+)') { $exCode = $Matches[1].ToLower() }
+
                     $cat = "🎮 Uygulama Çökmesi"
                     $color = "#FF5555"
-                    
+
+                    # RAM/CPU INSTABILITESI DESENI: ntdll/KERNELBASE + 0xc0000005 (Access Violation)
+                    # = klasik XMP/EXPO veya CPU OC (PBO/Curve) instabilitesi imzasi
+                    $isMemPattern = ($mod -match 'ntdll\.dll|KERNELBASE\.dll|kernel32\.dll') -or ($exCode -eq '0xc0000005')
+
                     $desc = ""
-                    if ($mod -match 'ntdll\.dll') { $desc = "Windows çekirdek hatası. Genellikle hatalı RAM frekansı (XMP/EXPO) veya bozuk sistem dosyası kaynaklıdır." }
-                    elseif ($mod -match 'KERNELBASE\.dll' -or $mod -match 'kernel32\.dll') { $desc = "Uygulama geçersiz bir işlem yapmaya çalıştı. Sürücü uyuşmazlığı veya yetki sorunu olabilir." }
-                    elseif ($mod -match 'd3d11\.dll' -or $mod -match 'dxgi\.dll' -or $mod -match 'd3d12') { $desc = "DirectX (Grafik) hatası. Ekran kartı sürücüsü veya oyunun grafik motoru çöktü." }
-                    elseif ($mod -match 'ucrtbase\.dll' -or $mod -match 'VCRUNTIME') { $desc = "Visual C++ kütüphanesi hatası. Oyunun veya programın dosyaları eksik/bozuk olabilir." }
-                    elseif ($app -eq $mod) { $desc = "Oyun/Program kendi iç hatasından dolayı çöktü. Dosya bütünlüğünü doğrulayın." }
-                    else { $desc = "'$mod' modülü çökmeye sebep oldu. Bu modülün kime ait olduğunu Google'da aratarak suçluyu bulabilirsiniz." }
-                    
-                    $fullDesc = "Çöken: $app -> $desc"
+                    if ($isMemPattern) {
+                        $color = "#FF3333"
+                        $exStr = if ($exCode) { " (kod: $exCode)" } else { "" }
+                        $desc = "⚠️ BELLEK/CPU INSTABILITESI SUPHESI$exStr. Suclu modul '$mod' + Access Violation deseni; bu genellikle uygulamanin DEGIL, sisteminizin hatasidir. Olasi sebepler: agresif RAM frekansi (XMP/EXPO), CPU overclock (PBO/Curve Optimizer), yetersiz voltaj. COZUM: 1) BIOS'ta XMP/EXPO KAPAT, oyunu tekrar dene. 2) Hala coku yorsa donanim testi yap: Ycruncher (VT3/VST), anta777 (HCI/Karhu alternatifi), TestMem5 (anta777 config), MemTest86 (boot, gecede), OCCT (CPU+RAM+Buyuk Veri). Tek bir hata bile RAM/CPU ayarinin kararsiz oldugunu gosterir."
+                    }
+                    elseif ($mod -match 'd3d11\.dll' -or $mod -match 'dxgi\.dll' -or $mod -match 'd3d12|nvwgf2umx|atidxx') { $desc = "DirectX (Grafik) hatasi. Ekran karti surucusu veya oyunun grafik motoru cokyu. GPU surucusunu temiz kur (DDU), GPU overclock varsa geri al." }
+                    elseif ($mod -match 'ucrtbase\.dll' -or $mod -match 'VCRUNTIME') { $desc = "Visual C++ kutuphane hatasi. Oyun dosyalari eksik/bozuk olabilir — dosya butunlugunu dogrula, VC++ Redistributable yeniden kur." }
+                    elseif ($app -eq $mod) { $desc = "Oyun/Program kendi ic hatasindan dolayi cokyu. Dosya butunlugunu dogrula." }
+                    else { $desc = "'$mod' modulu cokmeye sebep oldu. Bu modulun kime ait oldugunu Google'da aratarak suclu yu bulabilirsin." }
+
+                    $fullDesc = "Coken: $app -> $desc"
                 } 
                 # 1002: Uygulama Donması (Hang)
                 else {
@@ -17974,11 +18003,11 @@ $btnScanCrashes.Add_Click({
             $script:CrashTimer.Stop()
             try {
                 $crashes = $script:CrashRunspace.EndInvoke($script:CrashAsync)
-                
+
+                $script:CrashAllItems = New-Object System.Collections.ArrayList
                 if ($crashes -and $crashes.Count -gt 0) {
-                    $count = 0
                     foreach ($c in $crashes) {
-                        $uiObj = [PSCustomObject]@{
+                        [void]$script:CrashAllItems.Add([PSCustomObject]@{
                             Time = $c.Time
                             Category = $c.Category
                             Color = $c.Color
@@ -17986,15 +18015,16 @@ $btnScanCrashes.Add_Click({
                             Description = $c.Description
                             RawMessage = $c.RawMessage
                             DumpPath = $c.DumpPath # Menü için gizli veri
-                        }
-                        $lvCrashes.Items.Add($uiObj) | Out-Null
-                        $count++
+                        })
                     }
-                    WpfLog "✅ $count adet hata/çökme tespit edildi ve listelendi."
+                    Apply-CrashFilter
+                    WpfLog "✅ $($script:CrashAllItems.Count) adet hata/çökme tespit edildi ve listelendi."
                 } else {
                     WpfLog "ℹ️ Seçilen zaman aralığında hiçbir çökme veya kritik hata bulunamadı!"
-                    $emptyObj =[PSCustomObject]@{ Time = "-"; Category = "✔️ Temiz"; Color = "#00CC00"; FaultingModule = "-"; Description = "Seçilen sürede hiçbir çökme günlüğü bulunamadı."; RawMessage = ""; DumpPath = "" }
-                    $lvCrashes.Items.Add($emptyObj) | Out-Null
+                    $lvCrashes.Items.Clear()
+                    $lvCrashes.Items.Add([PSCustomObject]@{ Time = "-"; Category = "✔️ Kayıt Yok"; Color = "#00CC00"; FaultingModule = "-"; Description = "Seçilen sürede Olay Görüntüleyici'de çökme kaydı YOK. DİKKAT: Oyun HİÇ hata vermeden anında kapanıyorsa (BF6 tarzı), instabilite o kadar şiddetlidir ki Windows kaydetmeye fırsat bulamaz — bu durumda log aramak işe yaramaz, DONANIM TESTİ gerekir. RAM/CPU kararlılık testi: Ycruncher (VT3/VST), anta777 (TestMem5 config), TestMem5, MemTest86 (boot, gecede çalıştır), OCCT (CPU+RAM+Büyük Veri). İlk adım: BIOS'ta XMP/EXPO KAPAT, oyunu dene — düzeliyorsa suçlu RAM frekansı."; RawMessage = ""; DumpPath = "" }) | Out-Null
+                    $script:CrashAllItems = New-Object System.Collections.ArrayList
+                    if ($txtCrashCount) { $txtCrashCount.Text = "" }
                 }
             } catch {
 				WpfLog "Hata: $_"
@@ -18007,14 +18037,153 @@ $btnScanCrashes.Add_Click({
 			}
             
             $btnScanCrashes.IsEnabled = $true
-            $btnScanCrashes.Content = "🔍 NE OLDU BUL!"
+            $btnScanCrashes.Content = "🔍 Çökme Analizi"
             $pbMain.IsIndeterminate = $false
         }
     })
     $script:CrashTimer.Start()
 })
 
-# --- ÇÖKME TABLOSU SAĞ TIK OLAYLARI ---
+# v1.2.26: LOG/DUMP BUL — hedefli klasorleri tara, son olusan log/dump/anticheat dosyalarini listele
+$btnScanLogs.Add_Click({
+    $btnScanLogs.IsEnabled = $false
+    $btnScanLogs.Content = "⏳ TARANIYOR..."
+    $lvCrashes.Items.Clear()
+    $pbMain.IsIndeterminate = $true
+    WpfLog "--- LOG/DUMP TARAMASI BAŞLATILDI ---"
+
+    $hours = 24
+    if ($cbCrashTime.SelectedItem -and $cbCrashTime.SelectedItem.Tag) { $hours = [int]$cbCrashTime.SelectedItem.Tag }
+
+    $script:LogScanRunspace = [powershell]::Create()
+    $script:LogScanRunspace.AddScript({
+        param($h)
+        $ErrorActionPreference = 'SilentlyContinue'
+        $startTime = (Get-Date).AddHours(-$h)
+        $results = @()
+
+        # Hedefli konumlar: {Yol; Desen; Tur; Etiket}
+        $targets = @(
+            @{ P="$env:LOCALAPPDATA\CrashDumps";                          F="*.dmp"; T="💾 Dump";       L="Windows Çökme Dökümü" },
+            @{ P="C:\Windows\Minidump";                                   F="*.dmp"; T="💀 BSOD Dump";  L="Mavi Ekran Dökümü" },
+            @{ P="$env:TEMP";                                             F="*.dmp"; T="💾 Dump";       L="Geçici Dump" },
+            @{ P="$env:ProgramData\Microsoft\Windows\WER\ReportArchive";  F="*.*";   T="📄 WER Rapor";  L="Windows Hata Raporu" },
+            @{ P="$env:ProgramData\Microsoft\Windows\WER\ReportQueue";    F="*.*";   T="📄 WER Rapor";  L="Windows Hata Raporu (kuyruk)" },
+            @{ P="$env:ProgramData\EA\Logs";                              F="*.*";   T="🎮 EA Log";     L="EA / Battlefield Log" },
+            @{ P="$env:LOCALAPPDATA\Electronic Arts";                     F="*.log"; T="🎮 EA Log";     L="EA Uygulama Log" },
+            @{ P="$env:ProgramData\Riot Games";                           F="*.log"; T="🎮 Riot Log";   L="Riot / Vanguard Log" },
+            @{ P="$env:LOCALAPPDATA\Riot Games";                          F="*.log"; T="🎮 Riot Log";   L="Riot Log" },
+            @{ P="$env:ProgramData\BattlEye";                             F="*.*";   T="🛡️ Anti-Cheat"; L="BattlEye Log" },
+            @{ P="$env:ProgramData\EasyAntiCheat";                        F="*.*";   T="🛡️ Anti-Cheat"; L="EasyAntiCheat Log" },
+            @{ P="$env:USERPROFILE\Documents\My Games";                   F="*.log"; T="🎮 Oyun Log";   L="Oyun Log (My Games)" },
+            @{ P="$env:LOCALAPPDATA\Temp";                                F="*.log"; T="📄 Log";        L="Geçici Log" }
+        )
+
+        foreach ($t in $targets) {
+            if (-not (Test-Path $t.P)) { continue }
+            $files = Get-ChildItem -Path $t.P -Filter $t.F -File -Recurse -Depth 3 -ErrorAction SilentlyContinue |
+                     Where-Object { $_.LastWriteTime -ge $startTime }
+            foreach ($f in $files) {
+                # WER klasoru icin sadece .wer/.txt anlamli; cok kucuk/alakasiz olanlari ele
+                if ($t.T -eq "📄 WER Rapor" -and $f.Extension -notmatch '\.(wer|txt)$') { continue }
+                $sizeKB = [Math]::Round($f.Length / 1KB, 1)
+                $sizeStr = if ($f.Length -ge 1MB) { "$([Math]::Round($f.Length/1MB,1)) MB" } else { "$sizeKB KB" }
+                $results += @{
+                    Time = $f.LastWriteTime.ToString("dd.MM HH:mm:ss")
+                    Category = $t.T
+                    Color = if ($t.T -match "BSOD") { "#FF3333" } elseif ($t.T -match "Dump") { "#FFCC00" } elseif ($t.T -match "Anti-Cheat") { "#FF8800" } else { "#4CC2FF" }
+                    FaultingModule = $sizeStr
+                    Description = "$($t.L): $($f.Name)  →  $($f.DirectoryName)"
+                    RawMessage = $f.FullName
+                    DumpPath = $f.FullName
+                    Ticks = $f.LastWriteTime.Ticks
+                }
+            }
+        }
+        # En yeni en ustte. EndInvoke zaten koleksiyon dondurur — virgul/array-wrap YAPMA
+        # (yoksa tek-eleman-icinde-array olur, foreach tum listeyi tek nesne sanar).
+        $sorted = @($results | Sort-Object { $_.Ticks } -Descending)
+        foreach ($r in $sorted) { Write-Output $r }
+    }) | Out-Null
+    $script:LogScanRunspace.AddArgument($hours) | Out-Null
+    $script:LogScanAsync = $script:LogScanRunspace.BeginInvoke()
+
+    $script:LogScanTimer = New-Object System.Windows.Threading.DispatcherTimer
+    $script:LogScanTimer.Interval = [TimeSpan]::FromMilliseconds(400)
+    $script:LogScanTimer.Add_Tick({
+        if (-not $script:LogScanAsync.IsCompleted) { return }
+        $script:LogScanTimer.Stop()
+        try {
+            $logs = @($script:LogScanRunspace.EndInvoke($script:LogScanAsync))
+            $script:CrashAllItems = New-Object System.Collections.ArrayList
+            if ($logs -and $logs.Count -gt 0) {
+                foreach ($lg in $logs) {
+                    [void]$script:CrashAllItems.Add([PSCustomObject]@{
+                        Time=$lg.Time; Category=$lg.Category; Color=$lg.Color
+                        FaultingModule=$lg.FaultingModule; Description=$lg.Description
+                        RawMessage=$lg.RawMessage; DumpPath=$lg.DumpPath
+                    })
+                }
+                Apply-CrashFilter
+                WpfLog "✅ $($script:CrashAllItems.Count) adet log/dump dosyası bulundu (filtre kutusuyla daralt, çift tık → konumu aç)."
+            } else {
+                $lvCrashes.Items.Clear()
+                $lvCrashes.Items.Add([PSCustomObject]@{ Time="-"; Category="✔️ Temiz"; Color="#00CC00"; FaultingModule="-"; Description="Seçilen sürede log/dump dosyası bulunamadı. Süreyi uzatmayı dene (örn. Son 7 Gün). Hiç dump yoksa ve oyun çöküyorsa: Kara Kutu'yu 'Aç' (sonraki çökmelerde .dmp toplanır) veya donanım testi yap (Ycruncher/TestMem5/OCCT)."; RawMessage=""; DumpPath="" }) | Out-Null
+                if ($txtCrashCount) { $txtCrashCount.Text = "" }
+                WpfLog "ℹ️ Log/dump dosyası bulunamadı."
+            }
+        } catch {
+            WpfLog "Log tarama hatası: $_"
+        } finally {
+            if ($script:LogScanRunspace) { $script:LogScanRunspace.Dispose(); $script:LogScanRunspace = $null }
+            $script:LogScanAsync = $null
+        }
+        $btnScanLogs.IsEnabled = $true
+        $btnScanLogs.Content = "📂 Log/Dump Bul"
+        $pbMain.IsIndeterminate = $false
+    })
+    $script:LogScanTimer.Start()
+})
+
+# v1.2.26: Canli filtre — $script:CrashAllItems'tan txtCrashFilter metnine gore daraltir.
+# Dosya adi, tur, suclu modul, aciklama/konum (4 alanda) arar. Bos ise hepsini gosterir.
+function Apply-CrashFilter {
+    if (-not $script:CrashAllItems) { return }
+    $q = ""
+    if ($txtCrashFilter) { $q = $txtCrashFilter.Text.Trim().ToLower() }
+    $lvCrashes.Items.Clear()
+    $shown = 0
+    foreach ($it in $script:CrashAllItems) {
+        $match = $true
+        if ($q -ne "") {
+            $hay = ("{0} {1} {2} {3}" -f $it.Category, $it.FaultingModule, $it.Description, $it.RawMessage).ToLower()
+            $match = $hay.Contains($q)
+        }
+        if ($match) { $lvCrashes.Items.Add($it) | Out-Null; $shown++ }
+    }
+    if ($txtCrashCount) {
+        $total = $script:CrashAllItems.Count
+        $txtCrashCount.Text = if ($q -ne "") { "$shown / $total" } else { "$total kayıt" }
+    }
+}
+
+# Filtre kutusu: yazdikca daralt
+if ($txtCrashFilter) {
+    $txtCrashFilter.Add_TextChanged({ try { Apply-CrashFilter } catch {} })
+}
+
+# --- ÇÖKME TABLOSU SAĞ TIK + ÇİFT TIK OLAYLARI ---
+
+# v1.2.26: Cift tik -> dosya/dump konumunu Explorer'da ac (secili halde)
+$lvCrashes.Add_MouseDoubleClick({
+    if ($lvCrashes.SelectedItem) {
+        $dPath = $lvCrashes.SelectedItem.DumpPath
+        if ($dPath -and (Test-Path $dPath)) {
+            try { [FileSelector]::Select($dPath) } catch { try { Start-Process explorer.exe "/select,`"$dPath`"" } catch {} }
+            WpfLog "📂 Konum açıldı: $dPath"
+        }
+    }
+})
 
 $ctxCopyCrash.Add_Click({
     if ($lvCrashes.SelectedItem) {
@@ -19695,8 +19864,8 @@ $Win.Add_Closing({
     # Timer'lar durdurulmazsa arka planda UI nesnelerine erişmeye çalışıp hata fırlatabilirler.
     $allTimers = @(
         $script:WorkerTimer, $script:CrashTimer, $script:DashTimer, 
-        $script:FileTimer, $script:GhTimer, $script:UpdTimer, 
-        $script:UpdateTimer, $script:PingTimer, $script:WatcherTimer
+        $script:FileTimer, $script:GhTimer, $script:UpdTimer,
+        $script:UpdateTimer, $script:PingTimer
     )
     foreach ($timer in $allTimers) {
         if ($null -ne $timer -and $timer.IsEnabled) { try { $timer.Stop() } catch {} }
@@ -19704,8 +19873,7 @@ $Win.Add_Closing({
 
     # 2. Statik Runspace'leri Temizle
     $allRunspaces = @(
-        $script:DashRunspace, $script:CrashRunspace, $script:WatcherRunspace, 
-        $script:WatcherRunspace2, $script:UpdRunspace
+        $script:DashRunspace, $script:CrashRunspace, $script:UpdRunspace
     )
     foreach ($rs in $allRunspaces) {
         if ($null -ne $rs) {
