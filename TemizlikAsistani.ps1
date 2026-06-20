@@ -555,7 +555,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.26"
+$global:AppVersion = "1.2.27"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -8606,13 +8606,60 @@ function Update-Cache {
     $currentCache | ConvertTo-Json -Depth 4 | Set-Content $CachePath -Encoding UTF8
 }
 
+# v1.2.27: Tarayici vendor'i icin GERCEK kurulu mu (exe var mi) kontrol. Winapp2 DetectFile sadece
+# klasor varligina bakar -> kaldirilmis tarayicinin kalinti klasoru "kurulu" sanilir (orn Yandex).
+# Bu helper bilinen tarayicilarin gercek exe'sini arar; bulamazsa $false (= kalinti). Bilinmeyen
+# vendor'da $true doner (false-positive "kalinti" damgasi vurmamak icin — guvenli taraf).
+function Test-BrowserInstalled([string]$vendor) {
+    $v = $vendor.ToLower()
+    # vendor -> aday exe yollari (biri bile varsa kurulu)
+    $map = @{
+        'yandex'    = @("$env:LOCALAPPDATA\Yandex\YandexBrowser\Application\browser.exe")
+        'google'    = @("$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe", "$env:ProgramFiles\Google\Chrome\Application\chrome.exe", "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe")
+        'chrome'    = @("$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe", "$env:ProgramFiles\Google\Chrome\Application\chrome.exe")
+        'brave'     = @("$env:LOCALAPPDATA\BraveSoftware\Brave-Browser\Application\brave.exe", "$env:ProgramFiles\BraveSoftware\Brave-Browser\Application\brave.exe")
+        'mozilla'   = @("$env:ProgramFiles\Mozilla Firefox\firefox.exe", "${env:ProgramFiles(x86)}\Mozilla Firefox\firefox.exe")
+        'firefox'   = @("$env:ProgramFiles\Mozilla Firefox\firefox.exe", "${env:ProgramFiles(x86)}\Mozilla Firefox\firefox.exe")
+        'opera'     = @("$env:LOCALAPPDATA\Programs\Opera\opera.exe", "$env:LOCALAPPDATA\Programs\Opera GX\opera.exe")
+        'vivaldi'   = @("$env:LOCALAPPDATA\Vivaldi\Application\vivaldi.exe", "$env:ProgramFiles\Vivaldi\Application\vivaldi.exe")
+        'thorium'   = @("$env:LOCALAPPDATA\Thorium\Application\thorium.exe")
+        'chromium'  = @("$env:LOCALAPPDATA\Chromium\Application\chrome.exe")
+    }
+    # Microsoft Edge: ozel (vendor "Microsoft Edge" olarak set ediliyor)
+    if ($v -match 'edge') {
+        return (Test-Path "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe" -EA SilentlyContinue) -or
+               (Test-Path "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe" -EA SilentlyContinue)
+    }
+    foreach ($key in $map.Keys) {
+        if ($v -match $key) {
+            foreach ($exe in $map[$key]) { if (Test-Path $exe -EA SilentlyContinue) { return $true } }
+            return $false  # bilinen vendor ama hicbir exe yok = kalinti
+        }
+    }
+    return $true  # bilinmeyen vendor -> dokunma (kalinti damgasi vurma)
+}
+
 $global:AppsBuffer = @{}; $global:BrowserBuffer = @{}
 function Flush-Buffers-To-Tree {
     $tvApps.BeginInit(); $tvBrowser.BeginInit()
     $tvApps.Items.Clear(); $tvBrowser.Items.Clear(); $global:AppCounter = 0
     try {
         foreach ($vendor in ($global:AppsBuffer.Keys | Sort-Object)) { $apps = $global:AppsBuffer[$vendor]; $global:AppCounter++; if ($apps.Count -eq 1) { $tvApps.Items.Add((New-TreeItem $apps[0].Name $apps[0].Tag)) | Out-Null } else { $group = New-TreeItem $vendor "ROOT"; foreach ($app in $apps) { $group.Items.Add((New-TreeItem $app.Name $app.Tag)) | Out-Null }; $tvApps.Items.Add($group) | Out-Null } }
-        foreach ($vendor in ($global:BrowserBuffer.Keys | Sort-Object)) { $apps = $global:BrowserBuffer[$vendor]; $global:AppCounter++; if ($apps.Count -eq 1) { $tvBrowser.Items.Add((New-TreeItem $apps[0].Name $apps[0].Tag)) | Out-Null } else { $group = New-TreeItem $vendor "ROOT"; foreach ($app in $apps) { $group.Items.Add((New-TreeItem $app.Name $app.Tag)) | Out-Null }; $tvBrowser.Items.Add($group) | Out-Null } }
+        foreach ($vendor in ($global:BrowserBuffer.Keys | Sort-Object)) {
+            $apps = $global:BrowserBuffer[$vendor]; $global:AppCounter++
+            # v1.2.27: Gercek exe yoksa "(kalinti)" etiketi — kaldirilmis tarayicinin kalinti
+            # klasoru kafa karistirmasin, ama yine de cache/profil cop temizlenebilsin.
+            $isRemnant = -not (Test-BrowserInstalled $vendor)
+            $suffix = if ($isRemnant) { "  ⚠️ (kalıntı - kurulu değil)" } else { "" }
+            if ($apps.Count -eq 1) {
+                $node = New-TreeItem ($apps[0].Name + $suffix) $apps[0].Tag
+                $tvBrowser.Items.Add($node) | Out-Null
+            } else {
+                $group = New-TreeItem ($vendor + $suffix) "ROOT"
+                foreach ($app in $apps) { $group.Items.Add((New-TreeItem $app.Name $app.Tag)) | Out-Null }
+                $tvBrowser.Items.Add($group) | Out-Null
+            }
+        }
     } finally {
         $tvApps.EndInit(); $tvBrowser.EndInit()
     }
