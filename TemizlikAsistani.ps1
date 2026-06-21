@@ -555,7 +555,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.27"
+$global:AppVersion = "1.2.28"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -4568,9 +4568,9 @@ $xamlFeedback = @"
         <!-- MESAJ ETIKETI -->
         <TextBlock Grid.Row='3' Text='Mesaj (ne oldu, ne bekliyordun, adımlar):' Foreground='#CCC' FontSize='12' Margin='0,0,0,4'/>
 
-        <!-- MESAJ TEXTAREA -->
+        <!-- MESAJ TEXTAREA (MaxLength: Discord/GitHub limitlerini asmasin) -->
         <TextBox x:Name='txtFeedbackBody' Grid.Row='4' Background='#222' Foreground='White' BorderBrush='#444' Padding='6'
-                 AcceptsReturn='True' TextWrapping='Wrap' VerticalScrollBarVisibility='Auto' MinHeight='160'/>
+                 AcceptsReturn='True' TextWrapping='Wrap' VerticalScrollBarVisibility='Auto' MinHeight='160' MaxLength='3500'/>
 
         <!-- E-POSTA -->
         <Grid Grid.Row='5' Margin='0,12,0,4'>
@@ -9588,6 +9588,20 @@ function Get-InstalledAppRegistry {
             }
         } catch {}
     }
+    # v1.2.27: MSIX/Store paketleri (NanaZip vb.) klasik Uninstall registry'sine YAZMAZ — Get-AppxPackage
+    # ile gelir. winget bunlari kurabiliyor ama eski detection goremiyordu. PackageFullName/Name de
+    # eklenir ki ID son segment cross-check eslesebilsin (M2Team.NanaZip -> "NanaZip").
+    try {
+        Get-AppxPackage -ErrorAction SilentlyContinue | Where-Object { $_.Name } | ForEach-Object {
+            # Name = "40174MouriNaruto.NanaZip" gibi; gercek isim son segment + DisplayName yok
+            $shortName = ($_.Name -split '\.')[-1]
+            $apps.Add([PSCustomObject]@{
+                Name      = $shortName
+                Publisher = $_.Publisher
+                Version   = $_.Version
+            }) | Out-Null
+        }
+    } catch {}
     return $apps
 }
 
@@ -11937,8 +11951,14 @@ function Send-Feedback {
         return $r
     }
 
-    $titleEsc = _Esc "$emoji [$typeLabel] $Title"
-    $bodyEsc  = _Esc $Body
+    # v1.2.27: Discord embed limitleri — asilirsa 400 "Bad Request". Once kirp, SONRA escape.
+    # title <= 256, description <= 4096. Guvenli payda biraz altinda tutariz.
+    $titleRaw = "$emoji [$typeLabel] $Title"
+    if ($titleRaw.Length -gt 240) { $titleRaw = $titleRaw.Substring(0, 240) + "..." }
+    $bodyRaw = $Body
+    if ($bodyRaw.Length -gt 3800) { $bodyRaw = $bodyRaw.Substring(0, 3800) + "`n...(mesaj çok uzun, kısaltıldı)" }
+    $titleEsc = _Esc $titleRaw
+    $bodyEsc  = _Esc $bodyRaw
 
     # Embed fields — PowerShell single-quoted string + concatenation, double quote escape gerekmiyor
     $fieldsArr = @()
@@ -12085,10 +12105,32 @@ function Show-FeedbackWindow {
                 $encodedTitle = [System.Web.HttpUtility]::UrlEncode($titleVal)
                 $encodedBody  = [System.Web.HttpUtility]::UrlEncode($plainBody)
                 $url = "https://github.com/$($global:AppRepo)/issues/new?title=$encodedTitle&body=$encodedBody&labels=$label"
+
+                # v1.2.27 FIX: Cok uzun URL (log satirlari encode edilince binlerce char) ShellExecute
+                # sinirini asip "Sistem belirtilen dosyayi bulamiyor" hatasi veriyordu. GitHub pratik
+                # limiti ~8000. Asilirsa body'yi kisalt (log'u at), title+mesaj kalsin; log icin
+                # "Panoya Kopyala" onerilir.
+                $trimmed = $false
+                if ($url.Length -gt 7500) {
+                    $shortBody = "$($body.Text.Trim())`r`n`r`n_(Sistem bilgileri/log cok uzun oldugu icin URL'e sigmadi — detay icin 'Panoya Kopyala' kullanip issue'ya yapistirin.)_"
+                    $encodedBody = [System.Web.HttpUtility]::UrlEncode($shortBody)
+                    $url = "https://github.com/$($global:AppRepo)/issues/new?title=$encodedTitle&body=$encodedBody&labels=$label"
+                    $trimmed = $true
+                }
+                # Hala uzunsa (cok uzun mesaj) tamamen kis
+                if ($url.Length -gt 7500) {
+                    $url = "https://github.com/$($global:AppRepo)/issues/new?title=$encodedTitle&labels=$label"
+                    $trimmed = $true
+                }
+
                 Start-Process $url
-                $lblStat.Foreground = '#90EE90'; $lblStat.Text = "✅ Tarayıcı açıldı — GitHub'da Submit edin."
+                if ($trimmed) {
+                    $lblStat.Foreground = '#E68A00'; $lblStat.Text = "⚠️ Tarayıcı açıldı (mesaj uzun olduğu için kısaltıldı — log için Panoya Kopyala)."
+                } else {
+                    $lblStat.Foreground = '#90EE90'; $lblStat.Text = "✅ Tarayıcı açıldı — GitHub'da Submit edin."
+                }
             } catch {
-                $lblStat.Foreground = '#FF6B6B'; $lblStat.Text = "❌ GitHub URL hatası: $($_.Exception.Message)"
+                $lblStat.Foreground = '#FF6B6B'; $lblStat.Text = "❌ GitHub açılamadı: $($_.Exception.Message)"
             }
         })
 
