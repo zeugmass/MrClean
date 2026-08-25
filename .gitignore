@@ -68,3 +68,11 @@ MrClean/
 
 # Commit message dosyalari (-F flag ile gecici kullanim, repo'ya gitmesin)
 COMMIT_MSG*.txt
+
+# Yeni pencere prompt dosyalari (gecici handoff)
+PROMPT_YENI_PENCERE.txt
+
+# Gelistirici araclari (son kullaniciya gitmez, release'e dahil edilmez)
+Yayinla.ps1
+Yayinla.cmd
+Build-Calistir.cmd
