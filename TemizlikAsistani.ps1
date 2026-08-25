@@ -555,7 +555,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.28"
+$global:AppVersion = "1.2.29"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -563,6 +563,7 @@ $global:AppRepo = "zeugmass/MrClean"
 # Update check sonucu: yeni surum varsa @{ Tag, Notes, ExeUrl, Ps1Url, HashUrl, ExeHash, Ps1Hash } doldurulur.
 # Add_Loaded async check tamamlandiginda set edilir, UI status bar'da notification gosterir.
 $global:UpdateAvailable = $null
+$global:Winapp2UpdateAvailable = $false  # Winapp2.ini veritabani guncellemesi acilista tespit edilirse true (buton uyari stili)
 
 # Atla edilen surumler: kullanici "Bu surumu atla" derse buraya yazilir, ayni surum icin tekrar uyari gosterilmez.
 $global:UpdateSkippedFile = $null  # AppDataPath set edildikten sonra dolacak (asagida)
@@ -8717,9 +8718,10 @@ function Start-Winapp2-Process {
         $winapp2Src = $Winapp2Sources[0]
         $winapp2Path = $Winapp2Path
         $uiCtrl = $txtWinappStatus
+        $btnRef = $btnRefreshApp
 
-        $script:UpdateRS = [powershell]::Create()
-        $script:UpdateRS.AddScript({
+        $updRS = [powershell]::Create()
+        $updRS.AddScript({
             param($src, $localPath)
             [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
             try {
@@ -8729,8 +8731,8 @@ function Start-Winapp2-Process {
                 
                 # Online sürüm (sadece ilk satırı indir - bant genişliği tasarrufu)
                 $req = [System.Net.WebRequest]::Create($src)
-                $req.Timeout = 5000
-                $req.Headers.Add("User-Agent", "Mozilla/5.0")
+                $req.Timeout = 8000
+                $req.UserAgent = "Mozilla/5.0"  # DÜZELTME: HttpWebRequest'te User-Agent kisitli header, .Headers.Add() firlatiyordu (acilis kontrolu hep sessiz basarisiz oluyordu)
                 $resp = $req.GetResponse()
                 $sr = New-Object System.IO.StreamReader($resp.GetResponseStream())
                 $online = $sr.ReadLine(); $sr.Close(); $resp.Close()
@@ -8740,18 +8742,19 @@ function Start-Winapp2-Process {
                 return @{ Success=$false; Local=""; Online=""; Error=$_.Exception.Message }
             }
         }) | Out-Null
-        $script:UpdateRS.AddArgument($winapp2Src) | Out-Null
-        $script:UpdateRS.AddArgument($winapp2Path) | Out-Null
-        $script:UpdateAsync = $script:UpdateRS.BeginInvoke()
+        $updRS.AddArgument($winapp2Src) | Out-Null
+        $updRS.AddArgument($winapp2Path) | Out-Null
+        $updAsync = $updRS.BeginInvoke()
 
         $script:UpdateTimer = New-Object System.Windows.Threading.DispatcherTimer
+        $updTimer = $script:UpdateTimer   # local alias: GetNewClosure $script: degiskeni yakalamiyor, tick icinde local lazim
         $script:UpdateTimer.Interval = [TimeSpan]::FromMilliseconds(300)
         $script:UpdateTimer.Add_Tick({
-            if ($script:UpdateAsync.IsCompleted) {
-                $script:UpdateTimer.Stop()
+            if ($updAsync -and $updAsync.IsCompleted) {
+                $updTimer.Stop()
                 try {
-                    $r = $script:UpdateRS.EndInvoke($script:UpdateAsync)
-                    $script:UpdateRS.Dispose()
+                    $r = $updRS.EndInvoke($updAsync)
+                    $updRS.Dispose()
                     if ($r.Success) {
                         if ($r.Local -ne $r.Online) {
                             WpfLog "---------------------------------------------------"
@@ -8759,9 +8762,21 @@ function Start-Winapp2-Process {
                             WpfLog "[BİLGİ] İndirmek için Güncelle butonuna basın!"
                             WpfLog "---------------------------------------------------"
                             $uiCtrl.Text = "Yeni Sürüm Mevcut!"
+                            $global:Winapp2UpdateAvailable = $true
+                            if ($btnRef) {
+                                $btnRef.Content = "🔔 Güncelle (Yeni!)"
+                                $btnRef.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#137333")
+                                $btnRef.ToolTip = "Yeni winapp2 temizlik veritabanı sürümü mevcut - tıklayıp güncelleyin."
+                            }
                         } else {
                             WpfLog "[SİSTEM] Veritabanı güncel."
                             $uiCtrl.Text = "Sürüm Güncel."
+                            $global:Winapp2UpdateAvailable = $false
+                            if ($btnRef) {
+                                $btnRef.Content = "♻ Güncelle"
+                                $btnRef.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#4f0707")
+                                $btnRef.ToolTip = "Winapp2 veritabanını ve program listesini kontrol et."
+                            }
                         }
                     }
                     # Hata durumunda sessiz kal — kullanıcıyı rahatsız etme
@@ -12381,6 +12396,68 @@ function Show-AppUpdateWindow {
 }
 
 # ---- Show-UpdateWindow (Winapp2.ini icin — eski isim, korunmasi gereken Winapp2 update mantigi) ----
+function Get-Winapp2Diff {
+    # Iki Winapp2.ini dosyasini [Section] bloklarina ayirip fark cikarir.
+    # Doner: @{ Added=@(ad); Removed=@(ad); Changed=@(ad); OldCount; NewCount }
+    param([string]$OldPath, [string]$NewPath)
+    $parse = {
+        param($p)
+        $map = [ordered]@{}
+        if (-not (Test-Path $p)) { return $map }
+        $cur = $null
+        $sb = $null
+        foreach ($line in [System.IO.File]::ReadLines($p)) {
+            $t = $line.Trim()
+            if ($t -match '^\[(.+)\]$') {
+                if ($cur) { $map[$cur] = ($sb -join "`n") }
+                $cur = $Matches[1].Trim()
+                $sb = New-Object System.Collections.Generic.List[string]
+            }
+            elseif ($cur -and $t -ne '' -and -not $t.StartsWith(';')) {
+                $sb.Add($t)
+            }
+        }
+        if ($cur) { $map[$cur] = ($sb -join "`n") }
+        return $map
+    }
+    $old = & $parse $OldPath
+    $new = & $parse $NewPath
+    $added = @(); $removed = @(); $changed = @()
+    foreach ($k in $new.Keys) {
+        if (-not $old.Contains($k)) { $added += $k }
+        elseif ($old[$k] -ne $new[$k]) { $changed += $k }
+    }
+    foreach ($k in $old.Keys) { if (-not $new.Contains($k)) { $removed += $k } }
+    return @{ Added = $added; Removed = $removed; Changed = $changed; OldCount = $old.Count; NewCount = $new.Count }
+}
+
+function New-Winapp2DiffReport {
+    # Eski<->yeni farki hesaplar, txt rapor yazar. Doner: @{ Path; Added; Changed; Removed }
+    param([string]$OldPath, [string]$NewPath, [string]$OnlineVer = "")
+    $d = Get-Winapp2Diff -OldPath $OldPath -NewPath $NewPath
+    $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
+    $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+    $reportPath = Join-Path $AppDataPath "winapp2_diff_$stamp.txt"
+    $sb = New-Object System.Text.StringBuilder
+    [void]$sb.AppendLine("Winapp2.ini Guncelleme Fark Raporu")
+    [void]$sb.AppendLine("Tarih: $ts")
+    if ($OnlineVer) { [void]$sb.AppendLine("Yeni surum satiri: $OnlineVer") }
+    [void]$sb.AppendLine("Eski toplam uygulama: $($d.OldCount)   ->   Yeni toplam: $($d.NewCount)")
+    [void]$sb.AppendLine("OZET:  +$($d.Added.Count) eklenen   ~$($d.Changed.Count) degisen   -$($d.Removed.Count) cikarilan")
+    [void]$sb.AppendLine(("=" * 62))
+    [void]$sb.AppendLine("")
+    [void]$sb.AppendLine("EKLENEN UYGULAMALAR ($($d.Added.Count)):")
+    if ($d.Added.Count -eq 0) { [void]$sb.AppendLine("  (yok)") } else { foreach ($n in ($d.Added | Sort-Object)) { [void]$sb.AppendLine("  + $n") } }
+    [void]$sb.AppendLine("")
+    [void]$sb.AppendLine("DEGISEN UYGULAMALAR ($($d.Changed.Count)):")
+    if ($d.Changed.Count -eq 0) { [void]$sb.AppendLine("  (yok)") } else { foreach ($n in ($d.Changed | Sort-Object)) { [void]$sb.AppendLine("  ~ $n") } }
+    [void]$sb.AppendLine("")
+    [void]$sb.AppendLine("CIKARILAN UYGULAMALAR ($($d.Removed.Count)):")
+    if ($d.Removed.Count -eq 0) { [void]$sb.AppendLine("  (yok)") } else { foreach ($n in ($d.Removed | Sort-Object)) { [void]$sb.AppendLine("  - $n") } }
+    try { [System.IO.File]::WriteAllText($reportPath, $sb.ToString(), (New-Object System.Text.UTF8Encoding($true))) } catch {}
+    return @{ Path = $reportPath; Added = $d.Added.Count; Changed = $d.Changed.Count; Removed = $d.Removed.Count }
+}
+
 function Show-UpdateWindow {
     # --- XAML ARAYÜZÜ ---
     $xamlUpdate = @"
@@ -12597,6 +12674,19 @@ function Show-UpdateWindow {
                 $txtStat.Text = "✔ Başarıyla güncellendi!"
                 $txtStat.Foreground = [System.Windows.Media.Brushes]::LimeGreen
                 $btnUpd.Content = "TAMAMLANDI"
+
+                # v1.2.29: Eski <-> yeni Winapp2 fark raporu (txt) uret + ac, eski surumu kalici sakla
+                if (Test-Path $backupFile) {
+                    try {
+                        $rep = New-Winapp2DiffReport -OldPath $backupFile -NewPath $localFile -OnlineVer $txtOnline.Text
+                        $txtStat.Text = "✔ Güncellendi!  +$($rep.Added) yeni · ~$($rep.Changed) değişen · -$($rep.Removed) çıkan"
+                        $script:LastWinapp2DiffPath = $rep.Path
+                        $prev = Join-Path $AppDataPath "Winapp2.prev.ini"
+                        Copy-Item $backupFile $prev -Force -ErrorAction SilentlyContinue
+                        if ($rep.Path -and (Test-Path $rep.Path)) { Invoke-Item $rep.Path }
+                    } catch { WpfLog "[UYARI] Winapp2 fark raporu uretilemedi: $($_.Exception.Message)" }
+                }
+                $global:Winapp2UpdateAvailable = $false
                 
 				if (Test-Path $backupFile) { Remove-Item $backupFile -Force -ErrorAction SilentlyContinue }
 				
