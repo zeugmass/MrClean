@@ -489,13 +489,45 @@ if ((Test-Path -LiteralPath $_legacyAppData) -and -not (Test-Path -LiteralPath $
 $AppDataPath = "$env:APPDATA\MrClean"
 if (-not (Test-Path $AppDataPath)) { New-Item -Path $AppDataPath -ItemType Directory -Force | Out-Null }
 
-$Winapp2Path = "$AppDataPath\Winapp2.ini"
-$UserConfigPath = "$AppDataPath\user_config.json"
-$AppStatePath   = "$AppDataPath\app_state.json"
-$CachePath      = "$AppDataPath\app_cache.json"
+# v1.2.30: Roaming\MrClean duzeni — dosyalar alt klasorlerde tutulur (config/cache/database/logs/tools).
+# helpers (TimerResHelper) ve update_staging kokte kalir (zamanlanmis gorev tam-yol referansi + gecici).
+$ConfigDir   = "$AppDataPath\config"
+$CacheDir    = "$AppDataPath\cache"
+$DatabaseDir = "$AppDataPath\database"
+$LogsDir     = "$AppDataPath\logs"
+$ToolsDir    = "$AppDataPath\tools"
+function Migrate-AppDataLayout {
+    # Tek seferlik, guvenli gecis: alt klasorleri olustur, mevcut dosyalari tasi (yoksa atla, hata sessiz).
+    try {
+        $map = [ordered]@{
+            $ConfigDir   = @('user_config.json','user_config.json.bak1','user_config.json.bak2','user_config.json.bak3','user_config.json.bak4','user_config.json.bak5','app_state.json','settings.json','trt_settings.json','no_cache.flag','update_skipped_versions.txt')
+            $CacheDir    = @('app_cache.json','tweak_status_cache.json')
+            $DatabaseDir = @('Winapp2.ini','Winapp2.prev.ini')
+            $LogsDir     = @('tweak_history.log')
+            $ToolsDir    = @('MSI_Utility_V3.exe')
+        }
+        foreach ($dir in $map.Keys) {
+            if (-not (Test-Path $dir)) { New-Item -Path $dir -ItemType Directory -Force -ErrorAction SilentlyContinue | Out-Null }
+            foreach ($f in $map[$dir]) {
+                $src = Join-Path $AppDataPath $f; $dst = Join-Path $dir $f
+                if ((Test-Path $src) -and -not (Test-Path $dst)) { Move-Item -Path $src -Destination $dst -Force -ErrorAction SilentlyContinue }
+            }
+        }
+        Get-ChildItem -Path $AppDataPath -Filter 'winapp2_diff_*.txt' -File -ErrorAction SilentlyContinue | ForEach-Object {
+            $dd = Join-Path $DatabaseDir $_.Name
+            if (-not (Test-Path $dd)) { Move-Item -Path $_.FullName -Destination $dd -Force -ErrorAction SilentlyContinue }
+        }
+    } catch {}
+}
+Migrate-AppDataLayout
+
+$Winapp2Path = "$DatabaseDir\Winapp2.ini"
+$UserConfigPath = "$ConfigDir\user_config.json"
+$AppStatePath   = "$ConfigDir\app_state.json"
+$CachePath      = "$CacheDir\app_cache.json"
 # Auto-update: kullanicinin atladigi surumler ve guncelleme staging klasoru
 # PS2EXE-safe: $env:APPDATA kullaniyoruz, $AppDataPath script scope'a bagimli olmasin
-$global:UpdateSkippedFile = "$env:APPDATA\MrClean\update_skipped_versions.txt"
+$global:UpdateSkippedFile = "$ConfigDir\update_skipped_versions.txt"
 $global:UpdateStagingDir  = "$env:APPDATA\MrClean\update_staging"
 
 # --- LOGO + ICON BASE64 EMBED (PS2EXE tek-EXE deneyimi icin) ---
@@ -511,7 +543,7 @@ $global:LogoIcoBase64 = 'AAABAAYAAAAAAAEAIAADeAEAZgAAAICAAAABACAAKAgBAGl4AQBAQAA
 # Kural: UI kontrollerine ($Win.*) erişim gerektiren her şey $global: veya $script: olabilir.
 #         Ama kapanış event'inden erişilenler $global: olmalıdır.
 # =============================================================
-$NoCacheFlag = "$AppDataPath\no_cache.flag"
+$NoCacheFlag = "$ConfigDir\no_cache.flag"
 $global:IsCacheDisabled = (Test-Path $NoCacheFlag)
 
 $Winapp2Sources = @(
@@ -555,7 +587,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "1.2.29"
+$global:AppVersion = "1.2.30"
 
 # AppRepo: GitHub kullanici/repo formatinda. README'de "burayi kendi repo'na gore degistir" talimati.
 $global:AppRepo = "zeugmass/MrClean"
@@ -742,6 +774,380 @@ $global:TweakList = [ordered]@{}
 # Varsayılan Ayarları Getiren Fonksiyon
 
 # #endregion 3 -- GLOBAL DEGISKENLER & DOSYA YOLLARI
+
+# =========================================================================
+# #region 3B -- DIL / i18n (FR/TR/EN) — Faz 1
+# =========================================================================
+# Mimari: Gomulu sozluk ($global:Strings). Aktif dil $global:CurrentLang.
+# XAML'de @@anahtar@@ token'lari Localize-Xaml ile XamlReader.Load ONCESI cevrilir.
+# Kod icinde T('anahtar') kullanilir. Dil degisimi = yeniden baslatma (config'e yazilir).
+# Fallback zinciri: aktif dil -> en -> anahtarin kendisi (eksik ceviri bos gostermez).
+
+$global:Strings = @{
+    tr = @{
+        tab_dashboard  = 'Genel Bakış'
+        tab_browsers   = 'Tarayıcılar'
+        tab_apps       = 'Uygulamalar'
+        tab_system     = 'Sistem'
+        tab_shellbags  = 'ShellBags'
+        tab_repair     = 'Onarım'
+        tab_tools      = 'Araçlar'
+        tab_winget     = 'Winget'
+        tab_tweaks     = 'Tweaks'
+        tab_startup    = 'Başlangıç'
+        tab_largefiles = 'Dosya Boyutu'
+        tab_crash      = 'Çökme Analizi'
+        set_appearance = 'Görünüm Tercihi'
+        set_language   = 'Dil'
+        lang_restart_title = 'Dil Değişikliği'
+        lang_restart_msg   = 'Dil değişikliği için program yeniden başlatılacak. Devam edilsin mi?'
+        btn_update      = '♻ Güncelle'
+        btn_update_new  = '🔔 Güncelle (Yeni!)'
+        btn_tools       = '🛠 Araçlar ▾'
+        btn_shutdown    = '🌙 Shutdown'
+        btn_settings    = '⚙ Ayarlar'
+        btn_opendata    = '📂 Veri Klasörü'
+        log_copy        = 'Kopyala'
+        log_clear       = 'Temizle'
+        btn_bloatware   = '🗑️ Bloatware'
+        btn_profile     = '★ Önerilen'
+        btn_apply       = 'UYGULA'
+        btn_start          = 'BAŞLAT'
+        btn_stop           = 'DURDUR'
+        btn_processing     = 'İŞLENİYOR...'
+        search_placeholder = 'Uygulama Ara...'
+        win_settings_title = 'Program Ayarları'
+        set_layout_modern  = 'Modern (Sol Menü)'
+        set_layout_classic = 'Klasik (Üst Menü)'
+        set_dev_title      = 'Geliştirici Modu (Önbellek)'
+        set_dev_cache      = 'Önbelleği ve Yapılandırmayı Devre Dışı Bırak'
+        set_list_title     = 'Liste ve Kural Yönetimi'
+        set_ignored        = '🚫 Yoksayılanlar'
+        set_customrules    = '📂 Özel Kurallar'
+        set_winapp2edit    = '📝 Winapp2 Düzenle'
+        set_restore_title  = 'Sistem Geri Yükleme (Tweak Uygulamadan Önce)'
+        set_rp_ask         = 'Her seferinde sor'
+        set_rp_auto        = 'Sormadan oluştur'
+        set_rp_never       = 'Asla oluşturma'
+        set_rp_manual      = '🔄 Şimdi Manuel Oluştur'
+        set_rp_panel       = '📂 Windows Geri Yükleme Paneli'
+        set_update_title   = 'Program Güncellemesi'
+        set_curver         = 'Mevcut Sürüm'
+        set_ghrepo         = 'GitHub Repo'
+        set_checkupdate    = '🔄 Şimdi Kontrol Et'
+        set_releases       = '🌐 Releases Sayfası'
+        set_feedback_title = 'Geri Bildirim & İletişim'
+        set_feedback_desc  = 'Hata bildir, öneri yap, ya da soru sor — Discord kanalına anonim olarak ulaşır.'
+        set_feedback_btn   = '💬 Geri Bildirim Gönder'
+        set_datafiles      = 'Veri Dosyaları'
+        set_delete_sel     = '🗑 SEÇİLENLERİ SİL'
+        set_import         = 'İçe Aktar'
+        set_export         = 'Dışa Aktar'
+        col_status='DURUM'; col_name='İSİM'; col_type='TÜR'; col_delay='GECİKME'; col_pathcmd='DOSYA YOLU / KOMUT'
+        col_filename='DOSYA ADI'; col_size='BOYUT'; col_location='KONUM'; col_date='TARİH'; col_time='ZAMAN'
+        col_filemodule='DOSYA / MODÜL'; col_desc_loc='AÇIKLAMA / KONUM'
+        dash_summary='SİSTEM ÖZETİ'; dash_detail='🔍 Daha Fazla Detay'; dash_ping='🌐 Ping:'; dash_activedns='🛡️ Aktif DNS:'; dash_active='📡 Aktif:'; dash_test='📡 Test Et'
+        card_os='🖥️ İşletim Sistemi'; card_cpu='⚙️ İşlemci (CPU)'; card_ram='🧠 Bellek (RAM)'; card_gpu='🎮 Grafik Kartı (GPU)'; card_disk='💾 C: Diski ve Sağlık'; card_security='🛡️ Sistem & Güvenlik'
+        btn_cleanram='🧠 Clean RAM'; btn_detail='🔍 Detay'
+        repair_instant='⚡ Anında çalışan onarımlar (tek tık — çok adımlı işlemler):'; btn_fixupdate='🛠️ Update Onar'; btn_resetnet='🌐 Ağ Ayarlarını Sıfırla'
+        tools_intro='🛠️ Tanılama ve yardımcı araçlar. Tweak''lerin etkisini ölç, sistem sağlığını izle, geçmişi yönet.'; btn_benchmark='⚖️ Benchmark'; btn_timertest='⏱️ Timer Testi'; btn_activitylog='📜 Aktivite Log'; btn_defenderexc='🛡️ Defender Exc.'
+        btn_check='♻ Denetle'; btn_wingetupdate='🚀 Winget Update'; btn_manage='⚙ Yönet'; btn_uninstall='KALDIR'; btn_install='KUR'; btn_saveprofile='💾 Profil'; btn_quickundo='↶ Geri Al'
+        startup_win='Windows Başlangıcı (Kayıt Defteri & Klasör)'; startup_task='Zamanlanmış Görevler (Gereksiz Updaters)'; btn_refresh='♻ Yenile'
+        lf_target='Hedef:'; lf_userfolders='Kullanıcı Klasörleri'; lf_cdisk='C: Diski (Sistem)'; lf_customfolder='Özel Klasör Seç...'; lf_minsize='Min. Boyut:'; btn_scan='🔍 TARA'
+        ctx_openloc='Dosya Konumunu Aç (Seç)'; ctx_copypath='Yolu Kopyala'; ctx_deleteperm='Kalıcı Olarak SİL'
+        crash_blackbox='🗃️ Sistem Kara Kutusu'; btn_fixblackbox='🔧 Kara Kutuyu Aç'; crash_timerange='Zaman Aralığı:'; crash_t1h='Son 1 Saat'; crash_t4h='Son 4 Saat'; crash_t24h='Son 24 Saat (Tavsiye)'; crash_t3d='Son 3 Gün'; crash_t7d='Son 7 Gün'
+        btn_scancrashes='🔍 Çökme Analizi'; btn_scanlogs='📂 Log/Dump Bul'; crash_filter='🔎 Filtre:'
+        ctx_copydetail='📋 Detayı Kopyala'; ctx_googlesearch='🌐 Google''da Çözüm Ara'; ctx_opendump='📂 Dosya/Dump Konumunu Aç'
+        crash_hint='💡 Oyun/sistem çöktükten sonra bu butonlara bas. ''Çökme Analizi'' Olay Görüntüleyici''yi tarayıp sebebi yorumlar; ''Log/Dump Bul'' son oluşan log/dump/anti-cheat dosyalarını listeler (çift tık → konumu açar).'
+        log_title='İşlem Kayıtları'; footer_deletemethod='Silme Yöntemi:'; del_fast='Hızlı Silme (Standart)'; del_secure_zero='Güvenli (Sıfırla - Zeroes)'; del_secure_random='Güvenli (Random Data)'; btn_analyze='ANALİZ ET'; chk_debug='Debug Mode'
+        m_save='Kaydet'; m_cancel='İptal'; m_delete='Sil'; m_edit='Düzenle'; m_add='Ekle'; m_close='Kapat'; m_ok='TAMAM'; m_reset='Sıfırla'; m_remove='Çıkar'; m_add_caps='EKLE'
+        nm_title='🌙 Akıllı Gece Modu'; nm_autoshut='Otomatik Sistem Kapatma'; nm_choosewhen='Bilgisayarınızın ne zaman kapatılacağını seçin.'; nm_tab_time='⏳ Süreye Göre'; nm_tab_net='🌐 Genel Ağ Trafiği'; nm_tab_app='🎯 Uygulama Takibi'
+        nm_after='Sistem şu kadar zaman sonra kapatılsın:'; nm_hours='Saat'; nm_mins='Dakika'; nm_belowspeed='İndirme hızı şu değerin altına düşerse kapat:'; nm_waittime='Emin olmak için bekleme süresi:'; nm_2min='2 Dakika'; nm_5min='5 Dakika'; nm_10min='10 Dakika'
+        nm_pickclient='İndirme yapan programı (Client) seçin:'; nm_event='Olay:'; nm_eventdesc='Program kapatıldığında VEYA diske/ağa veri yazması 5 dakika boyunca durduğunda sistem kapatılır.'; nm_status_off='Gece Modu Kapalı.'
+        cd_title='Sistem Kapatılıyor'; cd_reached='Belirlenen hedefe ulaşıldı. Bilgisayar kapatılıyor...'; cd_abort='İPTAL ET (DURDUR)'
+        exp_whatbackup='Neler yedeklensin?'; exp_blacklist='Yoksayılanlar'; exp_custompaths='Özel Yollar'; exp_customrules='Özel Kurallar'; exp_winget='Winget Listesi'; exp_tweaks='Tweak Ayarları'; exp_tools='Web Araçları'; exp_profile='Profilim'; exp_do='DIŞA AKTAR'
+        wm_title='Liste Yöneticisi'; wm_windows='Windows'; wm_addlabel='Ekle:'; wm_name='Ad'; wm_id_winget='Winget ID (Örn: Valve.Steam)'; wm_id_appx='Paket Adı (Örn: *xbox* veya tam isim)'
+        pw_title='Bilgilendirme'; pw_perms='⚠️ Uygulama İzinleri'; pw_desc='Manuel müdahaleler (Ayarlar menüsünden kapatmak) programın yetkisini kısıtlayabilir. Bu program üzerinden yaptığınız değişiklikleri yine bu programla geri alabilirsiniz.'; pw_dontshow='Bir daha gösterme'
+        bl_notscanned='Bu uygulamalar taranmaz:'; cm_title='Özel Temizlik'; cm_folders='Özel Klasörler:'
+        ac_title='Klasör Ekle/Düzenle'; ac_path='Yol:'; ac_filter='Filtre (*.*):'; ac_recurse='Alt Klasörleri Dahil Et'; ac_deletefolder='Klasörü de Sil'
+        pe_title='Yolları Düzenle'; pe_onerule='Her satıra bir kural girin.'
+        rs_title='Sistem Yeniden Başlatma'; rs_needed='Yeniden Başlatma Gerekiyor'; rs_desc='Low Latency (Espor), Ping ve İşlemci ayarlarının Windows çekirdeğinde (Kernel) devreye girebilmesi için bilgisayarın yeniden başlatılması şarttır.'; rs_later='Daha Sonra'; rs_now='🔥 ŞİMDİ YENİDEN BAŞLAT'
+        fb_header='Geri Bildirim Gönder'; fb_desc='Hata bildir, öneri yap, ya da soru sor. 3 gönderim seçeneği: Panoya kopyala (manuel paylaş), GitHub Issue (browser açar), Discord (anonim webhook — Türkiye dahil bazı ülkelerde erişim engelli olabilir).'; fb_bug='🐛 Hata'; fb_suggestion='💡 Öneri'; fb_question='❓ Soru'; fb_msglabel='Mesaj (ne oldu, ne bekliyordun, adımlar):'; fb_email='E-posta (opsiyonel):'; fb_includesys='Sistem bilgilerini ekle (Windows sürümü + MrClean sürümü + son 30 log satırı)'; fb_clipboard='📋 Panoya Kopyala'; fb_github='🐙 GitHub Issue'; fb_discord='💬 Discord'
+        we_title='Winapp2 Editörü (Override)'; we_search='Uygulama Ara (Winapp2.ini):'; we_find='BUL'; we_results='Sonuçlar:'; we_editlabel='Düzenle (Kendi kurallarınızı yazın):'; we_deleteoverride='Özel Ayarı Sil (Sıfırla)'; we_saveexit='KAYDET ve ÇIK'
+        bloat_title='Akıllı Bloatware Yöneticisi'; bloat_header='Windows Uygulamaları Temizleyici'; bloat_desc='Kaldırmak istediğiniz uygulamaları seçin.'; bloat_selectall='Tümünü Seç / Kaldır'; bloat_removesel='SEÇİLENLERİ KALDIR'
+        ex_title='📤 Dışa Aktar - Kaynak Seç'; ex_which='📤 Hangi tweak''ler dışa aktarılsın?'; ex_desc='Bir profil seçili. Seçili profili mi yoksa şu an Tweaks sekmesinde işaretli olan tweak''leri mi paylaşmak istersin?'; ex_checked='☑️ Tweaks sekmesinde işaretli olanlar'
+        im_title='📥 İçe Aktar - Onay'; im_importing='📥 Profil İçe Aktarılıyor'; im_security='🔒 Güvenlik: Profil yalnızca tweak İSİMLERİNİ içerir; başka makineden kod ÇALIŞMAZ — bu programdaki aynı isimli tweak uygulanır.'; im_apply='✓ İçe Aktar + Uygula'; im_mark='Sadece İşaretle'
+        rp_title='Geri Yukleme Noktasi'; rp_creating='🔒 Sistem Geri Yukleme Noktasi Olusturuluyor'; rp_waiting='Windows VSS servisinden cevap bekleniyor...'; rp_takes='Bu islem genelde 20-40 saniye surer. Lutfen bekleyin.'
+        vs_title='Sürüm Seçimi'; vs_detected='Yeni Sürüm Tespit Edildi'; vs_desc='Bu araç için yeni bir test (Beta) sürümü mevcut. Lütfen indirmek istediğiniz versiyonu seçin:'; vs_stable='🌟 STABİL SÜRÜM'; vs_beta='🧪 BETA SÜRÜM'; vs_cancel='İptal Et'
+        rec_title='Önerilen Profil Seç'; rec_desc='Bir veya birden fazla profil seçip uygulayabilirsiniz. Profil içeriğini görmek için oka tıklayın.'
+        pm_title='Profil Yöneticisi'; pm_desc='Profiller en yeniden eskiye sıralanır (son 50). AppData\MrClean\Profiles klasörüne kaydedilir. Sil butonu seçili profili kalıcı kaldırır.'; pm_changes='✨ Degisiklikler'
+        au_title='Program Guncellemesi'; au_available='🚀 Yeni Surum Mevcut'; au_current='Mevcut Surum'; au_new='Yeni Surum'; au_update='📦  Güncelle'; au_later='💤  Daha sonra'; au_skip='🔇  Bu sürümü atla'; au_releasetip='Release sayfasını tarayıcıda aç'
+        uw_title='Veritabanı Güncelleme'; uw_header='Winapp2.ini Veritabanı ve Liste'; uw_server='Sunucu Sürümü'; uw_checking='Kontrol Ediliyor...'; uw_wait='Lütfen bekleyin...'; uw_openfolder='📂 Klasörü Aç'; uw_rescan='♻ Listeyi Yenile'; uw_do='GÜNCELLE'; uw_foldertip='Dosya konumunu açar.'; uw_rescantip='Önbelleği siler ve yüklü uygulamaları tekrar tarar.'; uw_dotip='İnternetten yeni sürümü indirir.'
+        hw_title='Detayli Donanim Bilgisi'; hw_brandmodel='Marka / Model'; hw_model='Model'; hw_gpu='Grafik Karti (GPU)'; hw_vram='VRAM'; hw_rammodules='RAM Modulleri'; hw_capacity='Kapasite'; hw_speed='Hiz'; hw_slot='Slot'; hw_aib='Uretici (AIB)'; hw_disks='Fiziksel Diskler'; hw_serial='Seri No'; hw_driver='Surucu'; hw_mobo='Anakart'; hw_moboBios='Anakart ve BIOS'; hw_biosver='BIOS Surumu'; hw_copyhint='Tum degerler secilip kopyalanabilir (Ctrl+C)'; copy_all='📋 Tümünü Kopyala'; hw_collecting='Veriler toplanıyor, lütfen bekleyin...'
+        ss_title='🛡️ Sistem ve Güvenlik Detayı'; desc_title='Açıklama Düzenle'; desc_deltip='Açıklamayı tamamen kaldırır.'; gen_lowlatency='🎮 Oyun / Düşük Gecikme'; gen_lowlatency_desc='Input lag azaltma, CPU/ağ optimizasyonu'
+        mb_error='Hata'; mb_info='Bilgi'; mb_warn='Uyarı'; mb_confirm='Onay'; mb_success='Başarılı'
+        mbx_clean_browsers='Açık tarayıcılar var. Temizlik için kapatılsın mı?'; mbx_clean_critical='DİKKAT! Şifreler veya Yer İmleri gibi kritik veriler seçildi. Devam edilsin mi?'; mbx_nochange='Herhangi bir değişiklik yapılmadı. Sistem zaten seçimlerinizle aynı durumda.'
+        mbx_bloat_confirm='{0} uygulama sistemden silinecek. Onaylıyor musunuz?'; mbx_winget_install='{0} uygulama kurulacak. Onaylıyor musunuz?'; mbx_del_selected='Seçili öğeler silinecek. Emin misiniz?'; mbx_del_files='Seçili dosyalar silinecek. Onaylıyor musunuz?'
+        mbx_net_reset="Tüm ağ ayarları (DNS, IP, WinSock) sıfırlanacak.`nBilgisayarı yeniden başlatmanız gerekecek.`nOnaylıyor musunuz?"; mbx_noundo='Geri alınacak son işlem yok.'; mbx_saved='Kaydedildi.'; mbx_noselect='Seçim yok.'; mbx_winget_noselect='Kurulacak uygulama seçilmedi.'
+    }
+    en = @{
+        tab_dashboard  = 'Overview'
+        tab_browsers   = 'Browsers'
+        tab_apps       = 'Applications'
+        tab_system     = 'System'
+        tab_shellbags  = 'ShellBags'
+        tab_repair     = 'Repair'
+        tab_tools      = 'Tools'
+        tab_winget     = 'Winget'
+        tab_tweaks     = 'Tweaks'
+        tab_startup    = 'Startup'
+        tab_largefiles = 'File Size'
+        tab_crash      = 'Crash Analysis'
+        set_appearance = 'Appearance'
+        set_language   = 'Language'
+        lang_restart_title = 'Language Change'
+        lang_restart_msg   = 'The program will restart to apply the language change. Continue?'
+        btn_update      = '♻ Update'
+        btn_update_new  = '🔔 Update (New!)'
+        btn_tools       = '🛠 Tools ▾'
+        btn_shutdown    = '🌙 Shutdown'
+        btn_settings    = '⚙ Settings'
+        btn_opendata    = '📂 Data Folder'
+        log_copy        = 'Copy'
+        log_clear       = 'Clear'
+        btn_bloatware   = '🗑️ Bloatware'
+        btn_profile     = '★ Recommended'
+        btn_apply       = 'APPLY'
+        btn_start          = 'START'
+        btn_stop           = 'STOP'
+        btn_processing     = 'PROCESSING...'
+        search_placeholder = 'Search app...'
+        win_settings_title = 'Program Settings'
+        set_layout_modern  = 'Modern (Left Menu)'
+        set_layout_classic = 'Classic (Top Menu)'
+        set_dev_title      = 'Developer Mode (Cache)'
+        set_dev_cache      = 'Disable Cache and Configuration'
+        set_list_title     = 'List and Rule Management'
+        set_ignored        = '🚫 Ignored'
+        set_customrules    = '📂 Custom Rules'
+        set_winapp2edit    = '📝 Edit Winapp2'
+        set_restore_title  = 'System Restore (Before Applying Tweaks)'
+        set_rp_ask         = 'Ask every time'
+        set_rp_auto        = 'Create without asking'
+        set_rp_never       = 'Never create'
+        set_rp_manual      = '🔄 Create Manually Now'
+        set_rp_panel       = '📂 Windows Restore Panel'
+        set_update_title   = 'Program Update'
+        set_curver         = 'Current Version'
+        set_ghrepo         = 'GitHub Repo'
+        set_checkupdate    = '🔄 Check Now'
+        set_releases       = '🌐 Releases Page'
+        set_feedback_title = 'Feedback & Contact'
+        set_feedback_desc  = 'Report a bug, suggest, or ask — reaches the Discord channel anonymously.'
+        set_feedback_btn   = '💬 Send Feedback'
+        set_datafiles      = 'Data Files'
+        set_delete_sel     = '🗑 DELETE SELECTED'
+        set_import         = 'Import'
+        set_export         = 'Export'
+        col_status='STATUS'; col_name='NAME'; col_type='TYPE'; col_delay='DELAY'; col_pathcmd='FILE PATH / COMMAND'
+        col_filename='FILE NAME'; col_size='SIZE'; col_location='LOCATION'; col_date='DATE'; col_time='TIME'
+        col_filemodule='FILE / MODULE'; col_desc_loc='DESCRIPTION / LOCATION'
+        dash_summary='SYSTEM SUMMARY'; dash_detail='🔍 More Details'; dash_ping='🌐 Ping:'; dash_activedns='🛡️ Active DNS:'; dash_active='📡 Active:'; dash_test='📡 Test'
+        card_os='🖥️ Operating System'; card_cpu='⚙️ Processor (CPU)'; card_ram='🧠 Memory (RAM)'; card_gpu='🎮 Graphics Card (GPU)'; card_disk='💾 Disk C: and Health'; card_security='🛡️ System & Security'
+        btn_cleanram='🧠 Clean RAM'; btn_detail='🔍 Details'
+        repair_instant='⚡ Instant repairs (one click — multi-step operations):'; btn_fixupdate='🛠️ Repair Update'; btn_resetnet='🌐 Reset Network Settings'
+        tools_intro='🛠️ Diagnostics and utility tools. Measure tweak impact, monitor system health, manage history.'; btn_benchmark='⚖️ Benchmark'; btn_timertest='⏱️ Timer Test'; btn_activitylog='📜 Activity Log'; btn_defenderexc='🛡️ Defender Exc.'
+        btn_check='♻ Check'; btn_wingetupdate='🚀 Winget Update'; btn_manage='⚙ Manage'; btn_uninstall='UNINSTALL'; btn_install='INSTALL'; btn_saveprofile='💾 Profile'; btn_quickundo='↶ Undo'
+        startup_win='Windows Startup (Registry & Folder)'; startup_task='Scheduled Tasks (Unnecessary Updaters)'; btn_refresh='♻ Refresh'
+        lf_target='Target:'; lf_userfolders='User Folders'; lf_cdisk='Disk C: (System)'; lf_customfolder='Select Custom Folder...'; lf_minsize='Min. Size:'; btn_scan='🔍 SCAN'
+        ctx_openloc='Open File Location (Select)'; ctx_copypath='Copy Path'; ctx_deleteperm='Delete Permanently'
+        crash_blackbox='🗃️ System Black Box'; btn_fixblackbox='🔧 Enable Black Box'; crash_timerange='Time Range:'; crash_t1h='Last 1 Hour'; crash_t4h='Last 4 Hours'; crash_t24h='Last 24 Hours (Recommended)'; crash_t3d='Last 3 Days'; crash_t7d='Last 7 Days'
+        btn_scancrashes='🔍 Crash Analysis'; btn_scanlogs='📂 Find Log/Dump'; crash_filter='🔎 Filter:'
+        ctx_copydetail='📋 Copy Details'; ctx_googlesearch='🌐 Search Solution on Google'; ctx_opendump='📂 Open File/Dump Location'
+        crash_hint='💡 Press these buttons after a game/system crash. ''Crash Analysis'' scans Event Viewer and interprets the cause; ''Find Log/Dump'' lists recent log/dump/anti-cheat files (double-click → open location).'
+        log_title='Activity Log'; footer_deletemethod='Delete Method:'; del_fast='Fast Delete (Standard)'; del_secure_zero='Secure (Zero Fill)'; del_secure_random='Secure (Random Data)'; btn_analyze='ANALYZE'; chk_debug='Debug Mode'
+        m_save='Save'; m_cancel='Cancel'; m_delete='Delete'; m_edit='Edit'; m_add='Add'; m_close='Close'; m_ok='OK'; m_reset='Reset'; m_remove='Remove'; m_add_caps='ADD'
+        nm_title='🌙 Smart Night Mode'; nm_autoshut='Automatic System Shutdown'; nm_choosewhen='Choose when your computer will shut down.'; nm_tab_time='⏳ By Duration'; nm_tab_net='🌐 Global Network Traffic'; nm_tab_app='🎯 Application Tracking'
+        nm_after='Shut down the system after:'; nm_hours='Hours'; nm_mins='Minutes'; nm_belowspeed='Shut down if download speed drops below:'; nm_waittime='Wait time to be sure:'; nm_2min='2 Minutes'; nm_5min='5 Minutes'; nm_10min='10 Minutes'
+        nm_pickclient='Select the downloading program (Client):'; nm_event='Event:'; nm_eventdesc='The system shuts down when the program is closed OR stops writing data to disk/network for 5 minutes.'; nm_status_off='Night Mode Off.'
+        cd_title='System Shutting Down'; cd_reached='Target reached. The computer is shutting down...'; cd_abort='ABORT (STOP)'
+        exp_whatbackup='What should be backed up?'; exp_blacklist='Ignored'; exp_custompaths='Custom Paths'; exp_customrules='Custom Rules'; exp_winget='Winget List'; exp_tweaks='Tweak Settings'; exp_tools='Web Tools'; exp_profile='My Profile'; exp_do='EXPORT'
+        wm_title='List Manager'; wm_windows='Windows'; wm_addlabel='Add:'; wm_name='Name'; wm_id_winget='Winget ID (e.g. Valve.Steam)'; wm_id_appx='Package Name (e.g. *xbox* or full name)'
+        pw_title='Information'; pw_perms='⚠️ Application Permissions'; pw_desc='Manual changes (disabling from the Settings menu) may limit the program''s authority. Changes made through this program can be undone with this program.'; pw_dontshow='Don''t show again'
+        bl_notscanned='These applications are not scanned:'; cm_title='Custom Cleanup'; cm_folders='Custom Folders:'
+        ac_title='Add/Edit Folder'; ac_path='Path:'; ac_filter='Filter (*.*):'; ac_recurse='Include Subfolders'; ac_deletefolder='Also Delete Folder'
+        pe_title='Edit Paths'; pe_onerule='Enter one rule per line.'
+        rs_title='System Restart'; rs_needed='Restart Required'; rs_desc='A restart is required for Low Latency (eSports), Ping and Processor settings to take effect in the Windows kernel.'; rs_later='Later'; rs_now='🔥 RESTART NOW'
+        fb_header='Send Feedback'; fb_desc='Report a bug, suggest, or ask. 3 send options: Copy to clipboard (share manually), GitHub Issue (opens browser), Discord (anonymous webhook — may be blocked in some countries incl. Turkey).'; fb_bug='🐛 Bug'; fb_suggestion='💡 Suggestion'; fb_question='❓ Question'; fb_msglabel='Message (what happened, what you expected, steps):'; fb_email='Email (optional):'; fb_includesys='Include system info (Windows version + MrClean version + last 30 log lines)'; fb_clipboard='📋 Copy to Clipboard'; fb_github='🐙 GitHub Issue'; fb_discord='💬 Discord'
+        we_title='Winapp2 Editor (Override)'; we_search='Search App (Winapp2.ini):'; we_find='FIND'; we_results='Results:'; we_editlabel='Edit (write your own rules):'; we_deleteoverride='Delete Override (Reset)'; we_saveexit='SAVE and EXIT'
+        bloat_title='Smart Bloatware Manager'; bloat_header='Windows Apps Cleaner'; bloat_desc='Select the apps you want to remove.'; bloat_selectall='Select All / Remove'; bloat_removesel='REMOVE SELECTED'
+        ex_title='📤 Export - Select Source'; ex_which='📤 Which tweaks to export?'; ex_desc='A profile is selected. Do you want to share the selected profile or the tweaks currently checked in the Tweaks tab?'; ex_checked='☑️ Items checked in the Tweaks tab'
+        im_title='📥 Import - Confirm'; im_importing='📥 Importing Profile'; im_security='🔒 Security: The profile contains only tweak NAMES; no code runs from another machine — the same-named tweak in this program is applied.'; im_apply='✓ Import + Apply'; im_mark='Only Check'
+        rp_title='Restore Point'; rp_creating='🔒 Creating System Restore Point'; rp_waiting='Waiting for Windows VSS service...'; rp_takes='This usually takes 20-40 seconds. Please wait.'
+        vs_title='Version Selection'; vs_detected='New Version Detected'; vs_desc='A new test (Beta) version is available for this tool. Please choose the version to download:'; vs_stable='🌟 STABLE VERSION'; vs_beta='🧪 BETA VERSION'; vs_cancel='Cancel'
+        rec_title='Select Recommended Profile'; rec_desc='You can select and apply one or more profiles. Click the arrow to see profile contents.'
+        pm_title='Profile Manager'; pm_desc='Profiles are sorted newest first (last 50). Saved in AppData\MrClean\Profiles. Delete permanently removes the selected profile.'; pm_changes='✨ Changes'
+        au_title='Program Update'; au_available='🚀 New Version Available'; au_current='Current Version'; au_new='New Version'; au_update='📦  Update'; au_later='💤  Later'; au_skip='🔇  Skip this version'; au_releasetip='Open the releases page in browser'
+        uw_title='Database Update'; uw_header='Winapp2.ini Database and List'; uw_server='Server Version'; uw_checking='Checking...'; uw_wait='Please wait...'; uw_openfolder='📂 Open Folder'; uw_rescan='♻ Refresh List'; uw_do='UPDATE'; uw_foldertip='Opens the file location.'; uw_rescantip='Clears the cache and rescans installed apps.'; uw_dotip='Downloads the new version from the internet.'
+        hw_title='Detailed Hardware Info'; hw_brandmodel='Brand / Model'; hw_model='Model'; hw_gpu='Graphics Card (GPU)'; hw_vram='VRAM'; hw_rammodules='RAM Modules'; hw_capacity='Capacity'; hw_speed='Speed'; hw_slot='Slot'; hw_aib='Manufacturer (AIB)'; hw_disks='Physical Disks'; hw_serial='Serial No'; hw_driver='Driver'; hw_mobo='Motherboard'; hw_moboBios='Motherboard and BIOS'; hw_biosver='BIOS Version'; hw_copyhint='All values can be selected and copied (Ctrl+C)'; copy_all='📋 Copy All'; hw_collecting='Collecting data, please wait...'
+        ss_title='🛡️ System and Security Details'; desc_title='Edit Description'; desc_deltip='Removes the description completely.'; gen_lowlatency='🎮 Gaming / Low Latency'; gen_lowlatency_desc='Reduce input lag, CPU/network optimization'
+        mb_error='Error'; mb_info='Information'; mb_warn='Warning'; mb_confirm='Confirm'; mb_success='Success'
+        mbx_clean_browsers='Open browsers detected. Close them for cleaning?'; mbx_clean_critical='WARNING! Critical data such as passwords or bookmarks is selected. Continue?'; mbx_nochange='No changes were made. The system already matches your selection.'
+        mbx_bloat_confirm='{0} app(s) will be removed from the system. Confirm?'; mbx_winget_install='{0} app(s) will be installed. Confirm?'; mbx_del_selected='Selected items will be deleted. Are you sure?'; mbx_del_files='Selected files will be deleted. Confirm?'
+        mbx_net_reset="All network settings (DNS, IP, WinSock) will be reset.`nYou will need to restart your computer.`nConfirm?"; mbx_noundo='No last operation to undo.'; mbx_saved='Saved.'; mbx_noselect='No selection.'; mbx_winget_noselect='No app selected to install.'
+    }
+    fr = @{
+        tab_dashboard  = 'Aperçu'
+        tab_browsers   = 'Navigateurs'
+        tab_apps       = 'Applications'
+        tab_system     = 'Système'
+        tab_shellbags  = 'ShellBags'
+        tab_repair     = 'Réparation'
+        tab_tools      = 'Outils'
+        tab_winget     = 'Winget'
+        tab_tweaks     = 'Tweaks'
+        tab_startup    = 'Démarrage'
+        tab_largefiles = 'Taille Fichier'
+        tab_crash      = 'Analyse Plantage'
+        set_appearance = 'Apparence'
+        set_language   = 'Langue'
+        lang_restart_title = 'Changement de langue'
+        lang_restart_msg   = 'Le programme va redémarrer pour appliquer le changement de langue. Continuer ?'
+        btn_update      = '♻ Mettre à jour'
+        btn_update_new  = '🔔 Mettre à jour (Nouveau!)'
+        btn_tools       = '🛠 Outils ▾'
+        btn_shutdown    = '🌙 Arrêt'
+        btn_settings    = '⚙ Paramètres'
+        btn_opendata    = '📂 Dossier'
+        log_copy        = 'Copier'
+        log_clear       = 'Effacer'
+        btn_bloatware   = '🗑️ Bloatware'
+        btn_profile     = '★ Recommandé'
+        btn_apply       = 'APPLIQUER'
+        btn_start          = 'DÉMARRER'
+        btn_stop           = 'ARRÊTER'
+        btn_processing     = 'TRAITEMENT...'
+        search_placeholder = 'Rechercher une app...'
+        win_settings_title = 'Paramètres du programme'
+        set_layout_modern  = 'Moderne (Menu gauche)'
+        set_layout_classic = 'Classique (Menu haut)'
+        set_dev_title      = 'Mode développeur (Cache)'
+        set_dev_cache      = 'Désactiver le cache et la configuration'
+        set_list_title     = 'Gestion des listes et règles'
+        set_ignored        = '🚫 Ignorés'
+        set_customrules    = '📂 Règles personnalisées'
+        set_winapp2edit    = '📝 Modifier Winapp2'
+        set_restore_title  = 'Restauration système (avant les tweaks)'
+        set_rp_ask         = 'Demander à chaque fois'
+        set_rp_auto        = 'Créer sans demander'
+        set_rp_never       = 'Ne jamais créer'
+        set_rp_manual      = '🔄 Créer maintenant'
+        set_rp_panel       = '📂 Panneau de restauration Windows'
+        set_update_title   = 'Mise à jour du programme'
+        set_curver         = 'Version actuelle'
+        set_ghrepo         = 'Dépôt GitHub'
+        set_checkupdate    = '🔄 Vérifier maintenant'
+        set_releases       = '🌐 Page des versions'
+        set_feedback_title = 'Retour & Contact'
+        set_feedback_desc  = 'Signalez un bug, suggérez ou posez une question — envoyé anonymement au canal Discord.'
+        set_feedback_btn   = '💬 Envoyer un retour'
+        set_datafiles      = 'Fichiers de données'
+        set_delete_sel     = '🗑 SUPPRIMER LA SÉLECTION'
+        set_import         = 'Importer'
+        set_export         = 'Exporter'
+        col_status='STATUT'; col_name='NOM'; col_type='TYPE'; col_delay='DÉLAI'; col_pathcmd='CHEMIN / COMMANDE'
+        col_filename='NOM DU FICHIER'; col_size='TAILLE'; col_location='EMPLACEMENT'; col_date='DATE'; col_time='HEURE'
+        col_filemodule='FICHIER / MODULE'; col_desc_loc='DESCRIPTION / EMPLACEMENT'
+        dash_summary='RÉSUMÉ SYSTÈME'; dash_detail='🔍 Plus de détails'; dash_ping='🌐 Ping :'; dash_activedns='🛡️ DNS actif :'; dash_active='📡 Actif :'; dash_test='📡 Tester'
+        card_os='🖥️ Système d''exploitation'; card_cpu='⚙️ Processeur (CPU)'; card_ram='🧠 Mémoire (RAM)'; card_gpu='🎮 Carte graphique (GPU)'; card_disk='💾 Disque C: et santé'; card_security='🛡️ Système & Sécurité'
+        btn_cleanram='🧠 Nettoyer RAM'; btn_detail='🔍 Détails'
+        repair_instant='⚡ Réparations instantanées (un clic — opérations multi-étapes) :'; btn_fixupdate='🛠️ Réparer MàJ'; btn_resetnet='🌐 Réinit. réseau'
+        tools_intro='🛠️ Outils de diagnostic et utilitaires. Mesurez l''impact des tweaks, surveillez la santé système, gérez l''historique.'; btn_benchmark='⚖️ Benchmark'; btn_timertest='⏱️ Test Timer'; btn_activitylog='📜 Journal d''activité'; btn_defenderexc='🛡️ Defender Exc.'
+        btn_check='♻ Vérifier'; btn_wingetupdate='🚀 Winget Update'; btn_manage='⚙ Gérer'; btn_uninstall='DÉSINSTALLER'; btn_install='INSTALLER'; btn_saveprofile='💾 Profil'; btn_quickundo='↶ Annuler'
+        startup_win='Démarrage Windows (Registre & Dossier)'; startup_task='Tâches planifiées (Updaters inutiles)'; btn_refresh='♻ Actualiser'
+        lf_target='Cible :'; lf_userfolders='Dossiers utilisateur'; lf_cdisk='Disque C: (Système)'; lf_customfolder='Choisir un dossier...'; lf_minsize='Taille min. :'; btn_scan='🔍 ANALYSER'
+        ctx_openloc='Ouvrir l''emplacement (Sélectionner)'; ctx_copypath='Copier le chemin'; ctx_deleteperm='Supprimer définitivement'
+        crash_blackbox='🗃️ Boîte noire système'; btn_fixblackbox='🔧 Activer la boîte noire'; crash_timerange='Plage horaire :'; crash_t1h='Dernière heure'; crash_t4h='4 dernières heures'; crash_t24h='24 dernières heures (Recommandé)'; crash_t3d='3 derniers jours'; crash_t7d='7 derniers jours'
+        btn_scancrashes='🔍 Analyse plantage'; btn_scanlogs='📂 Trouver log/dump'; crash_filter='🔎 Filtre :'
+        ctx_copydetail='📋 Copier les détails'; ctx_googlesearch='🌐 Chercher sur Google'; ctx_opendump='📂 Ouvrir l''emplacement fichier/dump'
+        crash_hint='💡 Appuyez sur ces boutons après un plantage jeu/système. ''Analyse plantage'' scanne l''Observateur d''événements et interprète la cause ; ''Trouver log/dump'' liste les fichiers log/dump/anti-triche récents (double-clic → ouvrir l''emplacement).'
+        log_title='Journal d''activité'; footer_deletemethod='Méthode de suppression :'; del_fast='Suppression rapide (Standard)'; del_secure_zero='Sécurisé (Zéros)'; del_secure_random='Sécurisé (Données aléatoires)'; btn_analyze='ANALYSER'; chk_debug='Mode débogage'
+        m_save='Enregistrer'; m_cancel='Annuler'; m_delete='Supprimer'; m_edit='Modifier'; m_add='Ajouter'; m_close='Fermer'; m_ok='OK'; m_reset='Réinitialiser'; m_remove='Retirer'; m_add_caps='AJOUTER'
+        nm_title='🌙 Mode nuit intelligent'; nm_autoshut='Arrêt automatique du système'; nm_choosewhen='Choisissez quand votre ordinateur s''éteindra.'; nm_tab_time='⏳ Par durée'; nm_tab_net='🌐 Trafic réseau global'; nm_tab_app='🎯 Suivi d''application'
+        nm_after='Éteindre le système après :'; nm_hours='Heures'; nm_mins='Minutes'; nm_belowspeed='Éteindre si la vitesse de téléchargement descend sous :'; nm_waittime='Temps d''attente pour confirmer :'; nm_2min='2 minutes'; nm_5min='5 minutes'; nm_10min='10 minutes'
+        nm_pickclient='Sélectionnez le programme de téléchargement (Client) :'; nm_event='Événement :'; nm_eventdesc='Le système s''éteint lorsque le programme est fermé OU cesse d''écrire des données sur le disque/réseau pendant 5 minutes.'; nm_status_off='Mode nuit désactivé.'
+        cd_title='Arrêt du système'; cd_reached='Cible atteinte. L''ordinateur s''éteint...'; cd_abort='ANNULER (ARRÊTER)'
+        exp_whatbackup='Que sauvegarder ?'; exp_blacklist='Ignorés'; exp_custompaths='Chemins personnalisés'; exp_customrules='Règles personnalisées'; exp_winget='Liste Winget'; exp_tweaks='Paramètres tweak'; exp_tools='Outils web'; exp_profile='Mon profil'; exp_do='EXPORTER'
+        wm_title='Gestionnaire de listes'; wm_windows='Windows'; wm_addlabel='Ajouter :'; wm_name='Nom'; wm_id_winget='ID Winget (ex : Valve.Steam)'; wm_id_appx='Nom du paquet (ex : *xbox* ou nom complet)'
+        pw_title='Information'; pw_perms='⚠️ Autorisations de l''application'; pw_desc='Les modifications manuelles (désactivation depuis le menu Paramètres) peuvent limiter l''autorité du programme. Les modifications faites via ce programme peuvent être annulées avec ce programme.'; pw_dontshow='Ne plus afficher'
+        bl_notscanned='Ces applications ne sont pas analysées :'; cm_title='Nettoyage personnalisé'; cm_folders='Dossiers personnalisés :'
+        ac_title='Ajouter/Modifier un dossier'; ac_path='Chemin :'; ac_filter='Filtre (*.*) :'; ac_recurse='Inclure les sous-dossiers'; ac_deletefolder='Supprimer aussi le dossier'
+        pe_title='Modifier les chemins'; pe_onerule='Entrez une règle par ligne.'
+        rs_title='Redémarrage du système'; rs_needed='Redémarrage requis'; rs_desc='Un redémarrage est requis pour que les paramètres Low Latency (eSport), Ping et Processeur prennent effet dans le noyau Windows.'; rs_later='Plus tard'; rs_now='🔥 REDÉMARRER MAINTENANT'
+        fb_header='Envoyer un retour'; fb_desc='Signalez un bug, suggérez ou posez une question. 3 options d''envoi : Copier dans le presse-papiers (partage manuel), GitHub Issue (ouvre le navigateur), Discord (webhook anonyme — peut être bloqué dans certains pays dont la Turquie).'; fb_bug='🐛 Bug'; fb_suggestion='💡 Suggestion'; fb_question='❓ Question'; fb_msglabel='Message (ce qui s''est passé, attendu, étapes) :'; fb_email='E-mail (optionnel) :'; fb_includesys='Inclure les infos système (version Windows + version MrClean + 30 dernières lignes de log)'; fb_clipboard='📋 Copier'; fb_github='🐙 GitHub Issue'; fb_discord='💬 Discord'
+        we_title='Éditeur Winapp2 (Override)'; we_search='Rechercher une app (Winapp2.ini) :'; we_find='TROUVER'; we_results='Résultats :'; we_editlabel='Modifier (écrivez vos propres règles) :'; we_deleteoverride='Supprimer l''override (Réinit.)'; we_saveexit='ENREGISTRER et QUITTER'
+        bloat_title='Gestionnaire de bloatware intelligent'; bloat_header='Nettoyeur d''applications Windows'; bloat_desc='Sélectionnez les applications à supprimer.'; bloat_selectall='Tout sélectionner / Retirer'; bloat_removesel='SUPPRIMER LA SÉLECTION'
+        ex_title='📤 Exporter - Choisir la source'; ex_which='📤 Quels tweaks exporter ?'; ex_desc='Un profil est sélectionné. Voulez-vous partager le profil sélectionné ou les tweaks actuellement cochés dans l''onglet Tweaks ?'; ex_checked='☑️ Éléments cochés dans l''onglet Tweaks'
+        im_title='📥 Importer - Confirmation'; im_importing='📥 Importation du profil'; im_security='🔒 Sécurité : Le profil ne contient que les NOMS des tweaks ; aucun code d''une autre machine n''est exécuté — le tweak du même nom dans ce programme est appliqué.'; im_apply='✓ Importer + Appliquer'; im_mark='Cocher seulement'
+        rp_title='Point de restauration'; rp_creating='🔒 Création d''un point de restauration'; rp_waiting='En attente du service VSS Windows...'; rp_takes='Cela prend généralement 20-40 secondes. Veuillez patienter.'
+        vs_title='Sélection de version'; vs_detected='Nouvelle version détectée'; vs_desc='Une nouvelle version de test (Bêta) est disponible pour cet outil. Veuillez choisir la version à télécharger :'; vs_stable='🌟 VERSION STABLE'; vs_beta='🧪 VERSION BÊTA'; vs_cancel='Annuler'
+        rec_title='Choisir un profil recommandé'; rec_desc='Vous pouvez sélectionner et appliquer un ou plusieurs profils. Cliquez sur la flèche pour voir le contenu.'
+        pm_title='Gestionnaire de profils'; pm_desc='Les profils sont triés du plus récent (50 derniers). Enregistrés dans AppData\MrClean\Profiles. Supprimer retire définitivement le profil sélectionné.'; pm_changes='✨ Modifications'
+        au_title='Mise à jour du programme'; au_available='🚀 Nouvelle version disponible'; au_current='Version actuelle'; au_new='Nouvelle version'; au_update='📦  Mettre à jour'; au_later='💤  Plus tard'; au_skip='🔇  Ignorer cette version'; au_releasetip='Ouvrir la page des versions dans le navigateur'
+        uw_title='Mise à jour de la base'; uw_header='Base et liste Winapp2.ini'; uw_server='Version serveur'; uw_checking='Vérification...'; uw_wait='Veuillez patienter...'; uw_openfolder='📂 Ouvrir le dossier'; uw_rescan='♻ Actualiser la liste'; uw_do='METTRE À JOUR'; uw_foldertip='Ouvre l''emplacement du fichier.'; uw_rescantip='Vide le cache et réanalyse les applications installées.'; uw_dotip='Télécharge la nouvelle version depuis internet.'
+        hw_title='Infos matériel détaillées'; hw_brandmodel='Marque / Modèle'; hw_model='Modèle'; hw_gpu='Carte graphique (GPU)'; hw_vram='VRAM'; hw_rammodules='Modules RAM'; hw_capacity='Capacité'; hw_speed='Vitesse'; hw_slot='Slot'; hw_aib='Fabricant (AIB)'; hw_disks='Disques physiques'; hw_serial='N° de série'; hw_driver='Pilote'; hw_mobo='Carte mère'; hw_moboBios='Carte mère et BIOS'; hw_biosver='Version du BIOS'; hw_copyhint='Toutes les valeurs peuvent être copiées (Ctrl+C)'; copy_all='📋 Tout copier'; hw_collecting='Collecte des données, veuillez patienter...'
+        ss_title='🛡️ Détails système et sécurité'; desc_title='Modifier la description'; desc_deltip='Supprime complètement la description.'; gen_lowlatency='🎮 Jeu / Faible latence'; gen_lowlatency_desc='Réduction du lag, optimisation CPU/réseau'
+        mb_error='Erreur'; mb_info='Information'; mb_warn='Avertissement'; mb_confirm='Confirmation'; mb_success='Succès'
+        mbx_clean_browsers='Des navigateurs sont ouverts. Les fermer pour le nettoyage ?'; mbx_clean_critical='ATTENTION ! Des données critiques (mots de passe ou favoris) sont sélectionnées. Continuer ?'; mbx_nochange='Aucune modification effectuée. Le système correspond déjà à votre sélection.'
+        mbx_bloat_confirm='{0} application(s) seront supprimées du système. Confirmer ?'; mbx_winget_install='{0} application(s) seront installées. Confirmer ?'; mbx_del_selected='Les éléments sélectionnés seront supprimés. Êtes-vous sûr ?'; mbx_del_files='Les fichiers sélectionnés seront supprimés. Confirmer ?'
+        mbx_net_reset="Tous les paramètres réseau (DNS, IP, WinSock) seront réinitialisés.`nVous devrez redémarrer votre ordinateur.`nConfirmer ?"; mbx_noundo='Aucune opération à annuler.'; mbx_saved='Enregistré.'; mbx_noselect='Aucune sélection.'; mbx_winget_noselect='Aucune application sélectionnée à installer.'
+    }
+}
+
+# Aktif dili belirle: (1) config'teki kayitli tercih, (2) yoksa Windows arayuz dili, (3) yoksa TR.
+function Initialize-Language {
+    $lang = $null
+    try {
+        if (Test-Path $UserConfigPath) {
+            $j = Get-Content $UserConfigPath -Raw -ErrorAction Stop | ConvertFrom-Json -ErrorAction Stop
+            if ($j.Language -and ($j.Language -in @('tr','en','fr'))) { $lang = $j.Language }
+        }
+    } catch {}
+    if (-not $lang) {
+        try {
+            switch ((Get-Culture).TwoLetterISOLanguageName) {
+                'tr'    { $lang = 'tr' }
+                'fr'    { $lang = 'fr' }
+                default { $lang = 'en' }
+            }
+        } catch { $lang = 'tr' }
+    }
+    $global:CurrentLang = $lang
+}
+Initialize-Language
+
+# Anahtardan aktif dildeki metni dondurur (fallback: aktif -> en -> anahtar).
+function T([string]$key) {
+    $d = $global:Strings[$global:CurrentLang]
+    if ($d -and $d.Contains($key)) { return $d[$key] }
+    $en = $global:Strings['en']
+    if ($en -and $en.Contains($key)) { return $en[$key] }
+    return $key
+}
+
+# XAML string'indeki @@anahtar@@ token'larini aktif dil metniyle degistirir (XML-escape'li).
+# XamlReader.Load ONCESI cagrilmali. Token bulunamazsa (henuz cevrilmemis metin) DOKUNULMAZ.
+function Localize-Xaml([string]$Xaml) {
+    if (-not $Xaml) { return $Xaml }
+    return [regex]::Replace($Xaml, '@@([A-Za-z0-9_]+)@@', {
+        param($m)
+        $v = [string](T $m.Groups[1].Value)
+        $v = $v -replace '&','&amp;' -replace '<','&lt;' -replace '>','&gt;' -replace '"','&quot;' -replace "'","&#39;"
+        return $v
+    })
+}
+
+# #endregion 3B -- DIL / i18n
 
 
 # =========================================================================
@@ -3203,7 +3609,7 @@ $xaml = @"
         <MenuItem Header="Dosya Yolunu Kopyala" Name="ctxCopyStartupPath" Foreground="#00CC00"/>
         <MenuItem Header="Kayıt Defterinde Aç" Name="ctxOpenStartupReg"/>
         <Separator/>
-        <MenuItem Header="Kalıcı Olarak SİL" Name="ctxDeleteStartup" Foreground="#FF5555" FontWeight="Bold"/>
+        <MenuItem Header="@@ctx_deleteperm@@" Name="ctxDeleteStartup" Foreground="#FF5555" FontWeight="Bold"/>
     </ContextMenu>
 
     <!-- MODERN LISTVIEW VE SÜTUN BAŞLIKLARI TASARIMI -->
@@ -3256,13 +3662,13 @@ $xaml = @"
         <Grid.ColumnDefinitions> <ColumnDefinition Width="Auto"/> <ColumnDefinition Width="*"/> <ColumnDefinition Width="Auto"/> </Grid.ColumnDefinitions>
         <Image x:Name="Logo" Grid.Column="0" Width="160" Height="50" Stretch="Uniform" HorizontalAlignment="Left" VerticalAlignment="Center"/>
         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-            <Button x:Name="btnRefreshApp" Content="♻ Güncelle" Height="32" Padding="15,0" Background="#4f0707" Margin="0,0,10,0"/>
-            <Button x:Name="btnTools" Content="🛠 Araçlar ▾" Height="32" Padding="15,0" Background="#E68A00" Margin="0,0,10,0">
+            <Button x:Name="btnRefreshApp" Content="@@btn_update@@" Height="32" Padding="15,0" Background="#4f0707" Margin="0,0,10,0"/>
+            <Button x:Name="btnTools" Content="@@btn_tools@@" Height="32" Padding="15,0" Background="#E68A00" Margin="0,0,10,0">
                   <Button.ContextMenu> <ContextMenu Name="ctxToolsMenu"/> </Button.ContextMenu>
             </Button>
 			<!-- YENİ EKLENEN GECE MODU BUTONU -->
-            <Button x:Name="btnNightMode" Content="🌙 Shutdown" Height="32" Padding="15,0" Background="#1A1A4A" Foreground="#4CC2FF" Margin="0,0,10,0" ToolTip="Akıllı Otomatik Kapanma ve İndirme Takibi"/>
-            <Button x:Name="btnSettings" Content="⚙ Ayarlar" Height="32" Padding="15,0" Background="#333"/>
+            <Button x:Name="btnNightMode" Content="@@btn_shutdown@@" Height="32" Padding="15,0" Background="#1A1A4A" Foreground="#4CC2FF" Margin="0,0,10,0" ToolTip="Akıllı Otomatik Kapanma ve İndirme Takibi"/>
+            <Button x:Name="btnSettings" Content="@@btn_settings@@" Height="32" Padding="15,0" Background="#333"/>
         </StackPanel>
     </Grid>
 
@@ -3277,7 +3683,7 @@ $xaml = @"
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBox x:Name="txtSearch" Grid.Column="0" Height="30" Padding="5" Background="#1E1E1E" BorderBrush="#444" Foreground="#EEE" Tag="Ara..." Text="Uygulama Ara..." Margin="0,0,10,0"/>
+                    <TextBox x:Name="txtSearch" Grid.Column="0" Height="30" Padding="5" Background="#1E1E1E" BorderBrush="#444" Foreground="#EEE" Tag="Ara..." Text="@@search_placeholder@@" Margin="0,0,10,0"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                         <Button x:Name="btnSelectAll" Content="Tümünü Seç" Width="100" Height="30" Background="#006600" Foreground="White" FontSize="11" Margin="0,0,5,0" BorderThickness="0"/>
                         <Button x:Name="btnSelectTab" Content="Sekme Seç" Width="100" Height="30" Background="#444" Foreground="White" FontSize="11" Margin="0,0,5,0" BorderThickness="0"/>
@@ -3286,7 +3692,7 @@ $xaml = @"
                 </Grid>
                 <TabControl x:Name="tabControl" Grid.Row="1" Background="Transparent" BorderThickness="0" TabStripPlacement="Left" Margin="0,0,0,5">
 				<!-- ANA KONTROL PANELİ (DASHBOARD) -->
-                    <TabItem Header="Genel Bakış" x:Name="tabDashboard">
+                    <TabItem Header="@@tab_dashboard@@" x:Name="tabDashboard">
                         <Grid Margin="15,5,15,15">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -3301,10 +3707,10 @@ $xaml = @"
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Grid.Column="0">
-                                    <TextBlock Text="SİSTEM ÖZETİ" Foreground="#007ACC" FontSize="26" FontWeight="Bold"/>
+                                    <TextBlock Text="@@dash_summary@@" Foreground="#007ACC" FontSize="26" FontWeight="Bold"/>
                                     <TextBlock x:Name="txtDashSubHeader" Text="Donanım ve sağlık durumu taranıyor..." Foreground="#888" FontSize="13" Margin="0,2,0,0"/>
                                 </StackPanel>
-                                <Button x:Name="btnHardwareDetail" Grid.Column="1" Content="🔍 Daha Fazla Detay" 
+                                <Button x:Name="btnHardwareDetail" Grid.Column="1" Content="@@dash_detail@@" 
                                         Height="35" Padding="15,0" Background="#007ACC" Foreground="White"
                                         FontWeight="Bold" VerticalAlignment="Center" IsEnabled="False"/>
                             </Grid>
@@ -3324,7 +3730,7 @@ $xaml = @"
 
                                     <!-- 1. Satır: Ping Değerleri -->
                                     <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,4">
-                                        <TextBlock Text="🌐 Ping:" Foreground="#888" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBlock Text="@@dash_ping@@" Foreground="#888" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                         <TextBlock x:Name="txtPingGoogle" Text="Google —" Foreground="#666" FontSize="11" Margin="0,0,10,0" VerticalAlignment="Center"/>
                                         <TextBlock x:Name="txtPingCF" Text="Cloudflare —" Foreground="#666" FontSize="11" Margin="0,0,10,0" VerticalAlignment="Center"/>
                                         <TextBlock x:Name="txtPingGW" Text="Ağ Geçidi —" Foreground="#666" FontSize="11" VerticalAlignment="Center"/>
@@ -3332,13 +3738,13 @@ $xaml = @"
 
                                     <!-- 2. Satır: Aktif DNS Göstergesi -->
                                     <StackPanel Grid.Row="1" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,0,4">
-                                        <TextBlock Text="🛡️ Aktif DNS:" Foreground="#888" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBlock Text="@@dash_activedns@@" Foreground="#888" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                         <TextBlock x:Name="txtDashDNS" Text="Yükleniyor..." Foreground="#4CC2FF" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                     </StackPanel>
 
                                     <!-- 3. Satır: Connection Monitor (real-time bandwidth + canli ping) -->
                                     <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                                        <TextBlock Text="📡 Aktif:" Foreground="#888" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                        <TextBlock Text="@@dash_active@@" Foreground="#888" FontSize="11" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                         <TextBlock Text="↓" Foreground="#27AE60" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,2,0"/>
                                         <TextBlock x:Name="txtDashDownload" Text="—" Foreground="#27AE60" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                         <TextBlock Text="↑" Foreground="#FFB347" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,2,0"/>
@@ -3348,7 +3754,7 @@ $xaml = @"
                                         <TextBlock x:Name="txtDashNic" Text="" Foreground="#666" FontSize="10" FontStyle="Italic" VerticalAlignment="Center"/>
                                     </StackPanel>
 
-                                    <Button x:Name="btnPingTest" Grid.Row="0" Grid.RowSpan="3" Grid.Column="1" Content="📡 Test Et" Height="32" Padding="15,0" Background="#1E3A5C" Foreground="#4CC2FF" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                    <Button x:Name="btnPingTest" Grid.Row="0" Grid.RowSpan="3" Grid.Column="1" Content="@@dash_test@@" Height="32" Padding="15,0" Background="#1E3A5C" Foreground="#4CC2FF" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" Margin="10,0,0,0"/>
                                 </Grid>
                             </Border>
 
@@ -3358,7 +3764,7 @@ $xaml = @"
                                 <!-- İŞLETİM SİSTEMİ -->
                                 <Border Background="#222" CornerRadius="8" Padding="15" Margin="5" BorderBrush="#333" BorderThickness="1">
                                     <StackPanel>
-                                        <TextBlock Text="🖥️ İşletim Sistemi" Foreground="#4CC2FF" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
+                                        <TextBlock Text="@@card_os@@" Foreground="#4CC2FF" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
                                         <TextBlock x:Name="txtDashOS" Text="Yükleniyor..." Foreground="White" FontSize="13" TextWrapping="Wrap"/>
                                         <TextBlock x:Name="txtDashWinVer" Text="" Foreground="#999" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,0"/>
                                     </StackPanel>
@@ -3367,7 +3773,7 @@ $xaml = @"
                                 <!-- İŞLEMCİ (CPU) -->
                                 <Border Background="#222" CornerRadius="8" Padding="15" Margin="5" BorderBrush="#333" BorderThickness="1">
                                     <StackPanel>
-                                        <TextBlock Text="⚙️ İşlemci (CPU)" Foreground="#E68A00" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
+                                        <TextBlock Text="@@card_cpu@@" Foreground="#E68A00" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
                                         <TextBlock x:Name="txtDashCPU" Text="Yükleniyor..." Foreground="White" FontSize="13" TextWrapping="Wrap"/>
                                     </StackPanel>
                                 </Border>
@@ -3376,13 +3782,13 @@ $xaml = @"
                                 <Border Background="#222" CornerRadius="8" Padding="15" Margin="5" BorderBrush="#333" BorderThickness="1">
 									<Grid>
 										<StackPanel VerticalAlignment="Top">
-											<TextBlock Text="🧠 Bellek (RAM)" Foreground="#00CC00" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
+											<TextBlock Text="@@card_ram@@" Foreground="#00CC00" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
 											<TextBlock x:Name="txtDashRAM" Text="Yükleniyor..." Foreground="White" FontSize="13" TextWrapping="Wrap"/>
 											<ProgressBar x:Name="pbDashRAM" Height="6" Margin="0,10,0,0" Background="#333" Foreground="#00CC00" BorderThickness="0" Maximum="100"/>
 										</StackPanel>
 
 										<Button x:Name="btnCleanRAM" 
-												Content="🧠 Clean RAM" 
+												Content="@@btn_cleanram@@" 
 												Height="35" 
 												Background="#1A3A5C"
 												Padding="10"
@@ -3397,7 +3803,7 @@ $xaml = @"
                                 <!-- GRAFİK KARTI (GPU) -->
                                 <Border Background="#222" CornerRadius="8" Padding="15" Margin="5" BorderBrush="#333" BorderThickness="1">
                                     <StackPanel>
-                                        <TextBlock Text="🎮 Grafik Kartı (GPU)" Foreground="#FFCC00" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
+                                        <TextBlock Text="@@card_gpu@@" Foreground="#FFCC00" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
                                         <TextBlock x:Name="txtDashGPU" Text="Yükleniyor..." Foreground="White" FontSize="13" TextWrapping="Wrap" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
                                     </StackPanel>
                                 </Border>
@@ -3405,7 +3811,7 @@ $xaml = @"
                                 <!-- DEPOLAMA (DİSK) VE SAĞLIK -->
                                 <Border Background="#222" CornerRadius="8" Padding="15" Margin="5" BorderBrush="#333" BorderThickness="1">
                                     <StackPanel>
-                                        <TextBlock Text="💾 C: Diski ve Sağlık" Foreground="#A020F0" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
+                                        <TextBlock Text="@@card_disk@@" Foreground="#A020F0" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
                                         <TextBlock x:Name="txtDashDisk" Text="Yükleniyor..." Foreground="White" FontSize="13" TextWrapping="Wrap"/>
                                         <ProgressBar x:Name="pbDashDisk" Height="6" Margin="0,10,0,0" Background="#333" Foreground="#A020F0" BorderThickness="0" Maximum="100"/>
                                     </StackPanel>
@@ -3414,21 +3820,21 @@ $xaml = @"
                                 <!-- SİSTEM & GÜVENLİK (v1.2.24) -->
                                 <Border Background="#222" CornerRadius="8" Padding="15" Margin="5" BorderBrush="#333" BorderThickness="1">
                                     <StackPanel>
-                                        <TextBlock Text="🛡️ Sistem &amp; Güvenlik" Foreground="#5CD6A0" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
+                                        <TextBlock Text="@@card_security@@" Foreground="#5CD6A0" FontSize="15" FontWeight="Bold" Margin="0,0,0,8"/>
                                         <TextBlock x:Name="txtDashSecurity" Text="Yükleniyor..." Foreground="White" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,3"/>
                                         <TextBlock x:Name="txtDashUptime" Text="" Foreground="#CCC" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,3"/>
                                         <TextBlock x:Name="txtDashLastUpdate" Text="" Foreground="#CCC" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,3"/>
-                                        <Button x:Name="btnSysSecDetail" Content="🔍 Detay" HorizontalAlignment="Right" Margin="0,2,0,0" Height="24" Padding="12,0" FontSize="11" Background="#2A6E54" Foreground="White" FontWeight="Bold" BorderThickness="0" ToolTip="Defender, güvenlik duvarı, BitLocker, sistem kimliği, son güncellemeler — detaylı ve kopyalanabilir liste"/>
+                                        <Button x:Name="btnSysSecDetail" Content="@@btn_detail@@" HorizontalAlignment="Right" Margin="0,2,0,0" Height="24" Padding="12,0" FontSize="11" Background="#2A6E54" Foreground="White" FontWeight="Bold" BorderThickness="0" ToolTip="Defender, güvenlik duvarı, BitLocker, sistem kimliği, son güncellemeler — detaylı ve kopyalanabilir liste"/>
                                     </StackPanel>
                                 </Border>
 
                             </UniformGrid>
                         </Grid>
                     </TabItem>
-                    <TabItem Header="Tarayıcılar" x:Name="tabBrowsers"> <TreeView x:Name="tvBrowser" BorderThickness="0" Background="Transparent" Margin="5" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling"/> </TabItem>
-                    <TabItem Header="Uygulamalar" x:Name="tabApps"> <TreeView x:Name="tvApps" BorderThickness="0" Background="Transparent" Margin="5" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling"/> </TabItem>
-                    <TabItem Header="Sistem" x:Name="tabSystem"> <TreeView x:Name="tvSystem" BorderThickness="0" Background="Transparent" Margin="5" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling"/> </TabItem>
-                    <TabItem Header="ShellBags" x:Name="tabShellBags">
+                    <TabItem Header="@@tab_browsers@@" x:Name="tabBrowsers"> <TreeView x:Name="tvBrowser" BorderThickness="0" Background="Transparent" Margin="5" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling"/> </TabItem>
+                    <TabItem Header="@@tab_apps@@" x:Name="tabApps"> <TreeView x:Name="tvApps" BorderThickness="0" Background="Transparent" Margin="5" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling"/> </TabItem>
+                    <TabItem Header="@@tab_system@@" x:Name="tabSystem"> <TreeView x:Name="tvSystem" BorderThickness="0" Background="Transparent" Margin="5" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling"/> </TabItem>
+                    <TabItem Header="@@tab_shellbags@@" x:Name="tabShellBags">
                             <TabItem.Background>
                                 <LinearGradientBrush EndPoint="0,1">
                                     <GradientStop Color="#FFF0F0F0"/>
@@ -3437,7 +3843,7 @@ $xaml = @"
                             </TabItem.Background>
                             <TreeView x:Name="tvShellBags" BorderThickness="0" Background="Transparent" Margin="5" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling"/> </TabItem>
                     <!-- ONARIM SEKMESİ (GÜNCELLENDİ) -->
-                    <TabItem Header="Onarım" x:Name="tabRepair">
+                    <TabItem Header="@@tab_repair@@" x:Name="tabRepair">
                         <Grid Margin="10,0,5,5">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="*"/>
@@ -3450,48 +3856,48 @@ $xaml = @"
                             <!-- Alt Butonlar -->
                             <Border Grid.Row="1" Background="#222" CornerRadius="5" Padding="5" Margin="0,10,0,0">
                                 <StackPanel>
-                                    <TextBlock Text="⚡ Anında çalışan onarımlar (tek tık — çok adımlı işlemler):" Foreground="#888" FontSize="11" Margin="3,2,3,6"/>
+                                    <TextBlock Text="@@repair_instant@@" Foreground="#888" FontSize="11" Margin="3,2,3,6"/>
                                     <UniformGrid Rows="1" Columns="2">
-                                        <Button x:Name="btnFixUpdate" Content="🛠️ Update Onar" Background="#E68A00" Foreground="White" Height="38" Margin="3" FontWeight="Bold" ToolTip="Windows Update onarımı: servisleri (wuauserv, bits, cryptSvc) sıfırla + SoftwareDistribution/catroot2 önbelleğini temizle + policy düzelt. 'Update çalışmıyor' sorunları için."/>
-                                        <Button x:Name="btnResetNet" Content="🌐 Ağ Ayarlarını Sıfırla" Background="#0066AA" Foreground="White" Height="38" Margin="3" FontWeight="Bold" ToolTip="TCP/IP + WinSock + DNS ayarlarını sıfırlar (5 adım). Sürücülere DOKUNMAZ. Günlük ağ sorunları için ilk denenecek seçenek. Ağaçtaki 'Netcfg' bundan çok daha sert (tüm ağ sürücülerini kaldırır)."/>
+                                        <Button x:Name="btnFixUpdate" Content="@@btn_fixupdate@@" Background="#E68A00" Foreground="White" Height="38" Margin="3" FontWeight="Bold" ToolTip="Windows Update onarımı: servisleri (wuauserv, bits, cryptSvc) sıfırla + SoftwareDistribution/catroot2 önbelleğini temizle + policy düzelt. 'Update çalışmıyor' sorunları için."/>
+                                        <Button x:Name="btnResetNet" Content="@@btn_resetnet@@" Background="#0066AA" Foreground="White" Height="38" Margin="3" FontWeight="Bold" ToolTip="TCP/IP + WinSock + DNS ayarlarını sıfırlar (5 adım). Sürücülere DOKUNMAZ. Günlük ağ sorunları için ilk denenecek seçenek. Ağaçtaki 'Netcfg' bundan çok daha sert (tüm ağ sürücülerini kaldırır)."/>
                                     </UniformGrid>
                                 </StackPanel>
                             </Border>
                         </Grid>
                     </TabItem>
-                    <TabItem Header="Araçlar" x:Name="tabTools">
+                    <TabItem Header="@@tab_tools@@" x:Name="tabTools">
                         <Grid Margin="10,0,5,5">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
                             <TextBlock Grid.Row="0" Foreground="#888" FontSize="12" TextWrapping="Wrap" Margin="4,4,4,10"
-                                       Text="🛠️ Tanılama ve yardımcı araçlar. Tweak'lerin etkisini ölç, sistem sağlığını izle, geçmişi yönet."/>
+                                       Text="@@tools_intro@@"/>
                             <Border Grid.Row="1" Background="#222" CornerRadius="5" Padding="10" VerticalAlignment="Top">
                                 <UniformGrid Rows="2" Columns="2">
-                                    <Button x:Name="btnBenchmark" Content="⚖️ Benchmark" Background="#444488" Foreground="White" Height="44" Margin="4" FontWeight="Bold" FontSize="13" ToolTip="6 metrik performans ölçümü — tweak öncesi/sonrası snapshot al, karşılaştır (Timer, Ping, DNS, DPC, RAM)"/>
-                                    <Button x:Name="btnTimerResTest" Content="⏱️ Timer Testi" Background="#2E5E2E" Foreground="White" Height="44" Margin="4" FontWeight="Bold" FontSize="13" ToolTip="Timer Resolution canlı test + Otomatik İnce Ayar + Stress Bench (valleyofdoom/SwiftyPop algoritması)"/>
-                                    <Button x:Name="btnActivityLog" Content="📜 Aktivite Log" Background="#333" Foreground="White" Height="44" Margin="4" FontSize="13" ToolTip="Apply / Undo geçmişi — son 100 işlem, tek tek veya toplu geri alma"/>
-                                    <Button x:Name="btnDefenderExc" Content="🛡️ Defender Exc." Background="#6B4F00" Foreground="White" Height="44" Margin="4" FontWeight="Bold" FontSize="13" ToolTip="Windows Defender Exclusion Manager — oyun klasörlerini AV scan'inden hariç tut (Steam/Epic/EA/Riot/Battle.net/Ubisoft/GOG auto-detect)"/>
+                                    <Button x:Name="btnBenchmark" Content="@@btn_benchmark@@" Background="#444488" Foreground="White" Height="44" Margin="4" FontWeight="Bold" FontSize="13" ToolTip="6 metrik performans ölçümü — tweak öncesi/sonrası snapshot al, karşılaştır (Timer, Ping, DNS, DPC, RAM)"/>
+                                    <Button x:Name="btnTimerResTest" Content="@@btn_timertest@@" Background="#2E5E2E" Foreground="White" Height="44" Margin="4" FontWeight="Bold" FontSize="13" ToolTip="Timer Resolution canlı test + Otomatik İnce Ayar + Stress Bench (valleyofdoom/SwiftyPop algoritması)"/>
+                                    <Button x:Name="btnActivityLog" Content="@@btn_activitylog@@" Background="#333" Foreground="White" Height="44" Margin="4" FontSize="13" ToolTip="Apply / Undo geçmişi — son 100 işlem, tek tek veya toplu geri alma"/>
+                                    <Button x:Name="btnDefenderExc" Content="@@btn_defenderexc@@" Background="#6B4F00" Foreground="White" Height="44" Margin="4" FontWeight="Bold" FontSize="13" ToolTip="Windows Defender Exclusion Manager — oyun klasörlerini AV scan'inden hariç tut (Steam/Epic/EA/Riot/Battle.net/Ubisoft/GOG auto-detect)"/>
                                 </UniformGrid>
                             </Border>
                         </Grid>
                     </TabItem>
-                    <TabItem Header="Winget" x:Name="tabWinget">
+                    <TabItem Header="@@tab_winget@@" x:Name="tabWinget">
                         <Grid Margin="10,0,5,5">
                             <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                             <TreeView x:Name="tvWinget" Grid.Row="0" BorderThickness="0" Background="Transparent" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling"/>
                             <UniformGrid Grid.Row="1" Rows="1" Margin="0,10,0,0">
-                                <Button x:Name="btnRefreshWinget" Content="♻ Denetle" Background="#007ACC" Margin="0,0,5,0" Height="35"/>
-                                <Button x:Name="btnWingetUpdateAll" Content="🚀 Winget Update" Background="#E68A00" Margin="0,0,5,0" Height="35" FontSize="11" FontWeight="Bold"/>
-                                <Button x:Name="btnManageWinget" Content="⚙ Yönet" Background="#444" Margin="0,0,5,0" Height="35"/>
-                                <Button x:Name="btnUninstallWinget" Content="KALDIR" Background="#A00" Margin="0,0,5,0" Height="35"/>
-                                <Button x:Name="btnInstallWinget" Content="KUR" Background="#006600" Margin="0,0,5,0" Height="35"/>
-								<Button x:Name="btnBloatware" Content="🗑️ Bloatware" Background="#A00" Margin="0,0,5,0" Height="35" FontWeight="Bold"/>
+                                <Button x:Name="btnRefreshWinget" Content="@@btn_check@@" Background="#007ACC" Margin="0,0,5,0" Height="35"/>
+                                <Button x:Name="btnWingetUpdateAll" Content="@@btn_wingetupdate@@" Background="#E68A00" Margin="0,0,5,0" Height="35" FontSize="11" FontWeight="Bold"/>
+                                <Button x:Name="btnManageWinget" Content="@@btn_manage@@" Background="#444" Margin="0,0,5,0" Height="35"/>
+                                <Button x:Name="btnUninstallWinget" Content="@@btn_uninstall@@" Background="#A00" Margin="0,0,5,0" Height="35"/>
+                                <Button x:Name="btnInstallWinget" Content="@@btn_install@@" Background="#006600" Margin="0,0,5,0" Height="35"/>
+								<Button x:Name="btnBloatware" Content="@@btn_bloatware@@" Background="#A00" Margin="0,0,5,0" Height="35" FontWeight="Bold"/>
                             </UniformGrid>
                         </Grid>
                     </TabItem>
-                    <TabItem Header="Tweaks" x:Name="tabTweaks">
+                    <TabItem Header="@@tab_tweaks@@" x:Name="tabTweaks">
                          <Grid Margin="10,0,5,5">
                             <Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                             <TreeView x:Name="tvTweaks" Grid.Row="0" BorderThickness="0" Background="Transparent" VirtualizingStackPanel.IsVirtualizing="True" VirtualizingStackPanel.VirtualizationMode="Recycling">
@@ -3504,16 +3910,16 @@ $xaml = @"
                                 </TreeView.ItemContainerStyle>
                             </TreeView>
                             <UniformGrid Grid.Row="1" Rows="1" Margin="0,10,0,0">
-                                <Button x:Name="btnCheckTweaks" Content="♻ Denetle" Background="#007ACC" Margin="0,0,5,0" Height="35"/>
-                                <Button x:Name="btnProfile"     Content="★ Önerilen" Background="#6600CC" Margin="0,0,5,0" Height="35"/>
-                                <Button x:Name="btnSaveProfile" Content="💾 Profil"  Background="#2E5E2E" Margin="0,0,5,0" Height="35"/>
-                                <Button x:Name="btnQuickUndo"   Content="↶ Geri Al"  Background="#A00"    Margin="0,0,5,0" Height="35" IsEnabled="False" ToolTip="Son uygulanan tweak setini tersine çevirir."/>
-                                <Button x:Name="btnManageTweaks" Content="⚙ Yönet"  Background="#444"    Margin="0,0,5,0" Height="35"/>
-                                <Button x:Name="btnApplyTweaks"  Content="UYGULA"    Background="#E68A00" FontWeight="Bold" Height="35"/>
+                                <Button x:Name="btnCheckTweaks" Content="@@btn_check@@" Background="#007ACC" Margin="0,0,5,0" Height="35"/>
+                                <Button x:Name="btnProfile"     Content="@@btn_profile@@" Background="#6600CC" Margin="0,0,5,0" Height="35"/>
+                                <Button x:Name="btnSaveProfile" Content="@@btn_saveprofile@@"  Background="#2E5E2E" Margin="0,0,5,0" Height="35"/>
+                                <Button x:Name="btnQuickUndo"   Content="@@btn_quickundo@@"  Background="#A00"    Margin="0,0,5,0" Height="35" IsEnabled="False" ToolTip="Son uygulanan tweak setini tersine çevirir."/>
+                                <Button x:Name="btnManageTweaks" Content="@@btn_manage@@"  Background="#444"    Margin="0,0,5,0" Height="35"/>
+                                <Button x:Name="btnApplyTweaks"  Content="@@btn_apply@@"    Background="#E68A00" FontWeight="Bold" Height="35"/>
                             </UniformGrid>
                         </Grid>
                     </TabItem>
-					<TabItem Header="Başlangıç" x:Name="tabStartup">
+					<TabItem Header="@@tab_startup@@" x:Name="tabStartup">
                         <Grid Margin="10,0,5,5">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -3528,10 +3934,10 @@ $xaml = @"
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <RadioButton x:Name="rbStartupWin" Content="Windows Başlangıcı (Kayıt Defteri &amp; Klasör)" Foreground="White" FontSize="13" FontWeight="SemiBold" IsChecked="True" Margin="0,0,20,0"/>
-                                        <RadioButton x:Name="rbStartupTask" Content="Zamanlanmış Görevler (Gereksiz Updaters)" Foreground="#E68A00" FontSize="13" FontWeight="SemiBold"/>
+                                        <RadioButton x:Name="rbStartupWin" Content="@@startup_win@@" Foreground="White" FontSize="13" FontWeight="SemiBold" IsChecked="True" Margin="0,0,20,0"/>
+                                        <RadioButton x:Name="rbStartupTask" Content="@@startup_task@@" Foreground="#E68A00" FontSize="13" FontWeight="SemiBold"/>
                                     </StackPanel>
-                                    <Button x:Name="btnRefreshStartup" Grid.Column="1" Content="♻ Yenile" Background="#007ACC" Foreground="White" Width="90" Height="30"/>
+                                    <Button x:Name="btnRefreshStartup" Grid.Column="1" Content="@@btn_refresh@@" Background="#007ACC" Foreground="White" Width="90" Height="30"/>
                                 </Grid>
                             </Border>
 
@@ -3540,7 +3946,7 @@ $xaml = @"
                                 <ListView.View>
                                     <GridView>
                                         <!-- RENKLİ VE DAİRELİ YENİ DURUM SÜTUNU -->
-                                        <GridViewColumn Header="DURUM" Width="90">
+                                        <GridViewColumn Header="@@col_status@@" Width="90">
                                             <GridViewColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
@@ -3550,23 +3956,23 @@ $xaml = @"
                                                 </DataTemplate>
                                             </GridViewColumn.CellTemplate>
                                         </GridViewColumn>
-                                        <GridViewColumn Header="İSİM" Width="180" DisplayMemberBinding="{Binding Name}"/>
-                                        <GridViewColumn Header="TÜR" Width="120" DisplayMemberBinding="{Binding Type}"/>
-                                        <GridViewColumn Header="GECİKME" Width="80">
+                                        <GridViewColumn Header="@@col_name@@" Width="180" DisplayMemberBinding="{Binding Name}"/>
+                                        <GridViewColumn Header="@@col_type@@" Width="120" DisplayMemberBinding="{Binding Type}"/>
+                                        <GridViewColumn Header="@@col_delay@@" Width="80">
                                             <GridViewColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <TextBlock Text="{Binding DelayStr}" Foreground="{Binding DelayColor}" FontSize="11" FontWeight="SemiBold"/>
                                                 </DataTemplate>
                                             </GridViewColumn.CellTemplate>
                                         </GridViewColumn>
-                                        <GridViewColumn Header="DOSYA YOLU / KOMUT" Width="380" DisplayMemberBinding="{Binding Path}"/>
+                                        <GridViewColumn Header="@@col_pathcmd@@" Width="380" DisplayMemberBinding="{Binding Path}"/>
                                     </GridView>
                                 </ListView.View>
                             </ListView>
                         </Grid>
                     </TabItem>
 					<!-- BÜYÜK DOSYA AVCISI -->
-                    <TabItem Header="Dosya Boyutu" x:Name="tabLargeFiles">
+                    <TabItem Header="@@tab_largefiles@@" x:Name="tabLargeFiles">
                         <Grid Margin="10,0,5,5">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -3587,14 +3993,14 @@ $xaml = @"
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
                                     
-                                    <TextBlock Text="Hedef:" Foreground="#AAA" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <TextBlock Text="@@lf_target@@" Foreground="#AAA" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                     <ComboBox x:Name="cbScanTarget" Grid.Column="1" Height="28" VerticalContentAlignment="Center" SelectedIndex="0">
-                                        <ComboBoxItem Content="Kullanıcı Klasörleri"/>
-                                        <ComboBoxItem Content="C: Diski (Sistem)"/>
-                                        <ComboBoxItem Content="Özel Klasör Seç..."/>
+                                        <ComboBoxItem Content="@@lf_userfolders@@"/>
+                                        <ComboBoxItem Content="@@lf_cdisk@@"/>
+                                        <ComboBoxItem Content="@@lf_customfolder@@"/>
                                     </ComboBox>
 
-                                    <TextBlock Grid.Column="3" Text="Min. Boyut:" Foreground="#AAA" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <TextBlock Grid.Column="3" Text="@@lf_minsize@@" Foreground="#AAA" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                     <ComboBox x:Name="cbMinSize" Grid.Column="4" Height="28" VerticalContentAlignment="Center" SelectedIndex="1">
                                         <ComboBoxItem Content="> 50 MB" Tag="52428800"/>
                                         <ComboBoxItem Content="> 100 MB" Tag="104857600"/>
@@ -3602,7 +4008,7 @@ $xaml = @"
                                         <ComboBoxItem Content="> 1 GB" Tag="1073741824"/>
                                     </ComboBox>
 
-                                    <Button x:Name="btnScanFiles" Grid.Column="6" Content="🔍 TARA" Background="#007ACC" Foreground="White" FontWeight="Bold" Width="100" Height="30"/>
+                                    <Button x:Name="btnScanFiles" Grid.Column="6" Content="@@btn_scan@@" Background="#007ACC" Foreground="White" FontWeight="Bold" Width="100" Height="30"/>
                                 </Grid>
                             </Border>
 
@@ -3610,19 +4016,19 @@ $xaml = @"
                             <ListView x:Name="lvLargeFiles" Grid.Row="1" Background="#1E1E1E" BorderThickness="1" BorderBrush="#444">
                                 <ListView.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="Dosya Konumunu Aç (Seç)" Name="ctxOpenLargeFile" FontWeight="Bold" Foreground="#4CC2FF"/>
-                                        <MenuItem Header="Yolu Kopyala" Name="ctxCopyLargePath"/>
+                                        <MenuItem Header="@@ctx_openloc@@" Name="ctxOpenLargeFile" FontWeight="Bold" Foreground="#4CC2FF"/>
+                                        <MenuItem Header="@@ctx_copypath@@" Name="ctxCopyLargePath"/>
                                         <Separator/>
-                                        <MenuItem Header="Kalıcı Olarak SİL" Name="ctxDeleteLargeFile" Foreground="#FF5555" FontWeight="Bold"/>
+                                        <MenuItem Header="@@ctx_deleteperm@@" Name="ctxDeleteLargeFile" Foreground="#FF5555" FontWeight="Bold"/>
                                     </ContextMenu>
                                 </ListView.ContextMenu>
                                 <ListView.View>
                                     <GridView>
-                                        <GridViewColumn Header="DOSYA ADI" Width="250" DisplayMemberBinding="{Binding Name}"/>
-                                        <GridViewColumn Header="BOYUT" Width="100" DisplayMemberBinding="{Binding SizeStr}"/>
-                                        <GridViewColumn Header="TÜR" Width="80" DisplayMemberBinding="{Binding Extension}"/>
-                                        <GridViewColumn Header="KONUM" Width="350" DisplayMemberBinding="{Binding Folder}"/>
-                                        <GridViewColumn Header="TARİH" Width="140" DisplayMemberBinding="{Binding Date}"/>
+                                        <GridViewColumn Header="@@col_filename@@" Width="250" DisplayMemberBinding="{Binding Name}"/>
+                                        <GridViewColumn Header="@@col_size@@" Width="100" DisplayMemberBinding="{Binding SizeStr}"/>
+                                        <GridViewColumn Header="@@col_type@@" Width="80" DisplayMemberBinding="{Binding Extension}"/>
+                                        <GridViewColumn Header="@@col_location@@" Width="350" DisplayMemberBinding="{Binding Folder}"/>
+                                        <GridViewColumn Header="@@col_date@@" Width="140" DisplayMemberBinding="{Binding Date}"/>
                                     </GridView>
                                 </ListView.View>
                             </ListView>
@@ -3635,7 +4041,7 @@ $xaml = @"
                         </Grid>
                     </TabItem>
 					<!-- ÇÖKME VE HATA DEDEKTİFİ (KARA KUTU) -->
-                    <TabItem Header="Çökme Analizi" x:Name="tabCrash">
+                    <TabItem Header="@@tab_crash@@" x:Name="tabCrash">
                         <Grid Margin="10,0,5,5">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -3658,9 +4064,9 @@ $xaml = @"
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="Auto"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="0" Text="🗃️ Sistem Kara Kutusu" Foreground="#4CC2FF" FontSize="14" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                        <TextBlock Grid.Column="0" Text="@@crash_blackbox@@" Foreground="#4CC2FF" FontSize="14" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                         <Ellipse x:Name="shpBlackBoxStatus" Grid.Column="1" Width="12" Height="12" Fill="#888" VerticalAlignment="Center"/>
-                                        <Button x:Name="btnFixBlackBox" Grid.Column="3" Content="🔧 Kara Kutuyu Aç" Background="#A00" Foreground="White" FontWeight="Bold" Padding="15,5" VerticalAlignment="Center" Visibility="Collapsed" Tag="off"
+                                        <Button x:Name="btnFixBlackBox" Grid.Column="3" Content="@@btn_fixblackbox@@" Background="#A00" Foreground="White" FontWeight="Bold" Padding="15,5" VerticalAlignment="Center" Visibility="Collapsed" Tag="off"
                                                 ToolTip="3 şeyi kontrol eder: (1) WER servisi çalışıyor mu, (2) Mavi Ekran (BSOD) dökümü açık mı, (3) Uygulama/oyun çökünce .dmp toplanıyor mu (LocalDumps). 3. madde Windows'ta varsayılan KAPALIDIR — 'Aç' dersen bundan sonraki çökmelerde otomatik .dmp toplanır. Önce 'Log/Dump Bul' ile mevcut dosyalara bakman yeterli olabilir."/>
                                     </Grid>
                                     <TextBlock x:Name="txtBlackBoxStatus" Grid.Row="1" Text="Durum kontrol ediliyor..." Foreground="#CCC" FontSize="12" TextWrapping="Wrap" Margin="0,8,0,0"/>
@@ -3682,22 +4088,22 @@ $xaml = @"
                                         <ColumnDefinition Width="8"/>
                                         <ColumnDefinition Width="Auto"/>
                                     </Grid.ColumnDefinitions>
-                                    <TextBlock Text="Zaman Aralığı:" Foreground="#AAA" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                    <TextBlock Text="@@crash_timerange@@" Foreground="#AAA" VerticalAlignment="Center" Margin="0,0,10,0"/>
                                     <ComboBox x:Name="cbCrashTime" Grid.Column="1" Height="30" VerticalContentAlignment="Center" SelectedIndex="2">
-                                        <ComboBoxItem Content="Son 1 Saat" Tag="1"/>
-                                        <ComboBoxItem Content="Son 4 Saat" Tag="4"/>
-                                        <ComboBoxItem Content="Son 24 Saat (Tavsiye)" Tag="24"/>
-                                        <ComboBoxItem Content="Son 3 Gün" Tag="72"/>
-                                        <ComboBoxItem Content="Son 7 Gün" Tag="168"/>
+                                        <ComboBoxItem Content="@@crash_t1h@@" Tag="1"/>
+                                        <ComboBoxItem Content="@@crash_t4h@@" Tag="4"/>
+                                        <ComboBoxItem Content="@@crash_t24h@@" Tag="24"/>
+                                        <ComboBoxItem Content="@@crash_t3d@@" Tag="72"/>
+                                        <ComboBoxItem Content="@@crash_t7d@@" Tag="168"/>
                                     </ComboBox>
-                                    <Button x:Name="btnScanCrashes" Grid.Column="3" Content="🔍 Çökme Analizi" Background="#E68A00" Foreground="White" FontWeight="Bold" Width="150" Height="36">
+                                    <Button x:Name="btnScanCrashes" Grid.Column="3" Content="@@btn_scancrashes@@" Background="#E68A00" Foreground="White" FontWeight="Bold" Width="150" Height="36">
                                         <Button.Effect>
                                             <DropShadowEffect Color="#E68A00" BlurRadius="10" ShadowDepth="0" Opacity="0.5"/>
                                         </Button.Effect>
                                     </Button>
-                                    <Button x:Name="btnScanLogs" Grid.Column="5" Content="📂 Log/Dump Bul" Background="#0066AA" Foreground="White" FontWeight="Bold" Width="150" Height="36"/>
+                                    <Button x:Name="btnScanLogs" Grid.Column="5" Content="@@btn_scanlogs@@" Background="#0066AA" Foreground="White" FontWeight="Bold" Width="150" Height="36"/>
                                 </Grid>
-                                <TextBlock Grid.Row="1" Text="💡 Oyun/sistem çöktükten sonra bu butonlara bas. 'Çökme Analizi' Olay Görüntüleyici'yi tarayıp sebebi yorumlar; 'Log/Dump Bul' son oluşan log/dump/anti-cheat dosyalarını listeler (çift tık → konumu açar)." Foreground="#888" FontSize="11" FontStyle="Italic" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                                <TextBlock Grid.Row="1" Text="@@crash_hint@@" Foreground="#888" FontSize="11" FontStyle="Italic" TextWrapping="Wrap" Margin="0,8,0,0"/>
                             </Grid>
 
                             <!-- ARAMA/FİLTRE KUTUSU (v1.2.26) -->
@@ -3707,7 +4113,7 @@ $xaml = @"
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="🔎 Filtre:" Foreground="#AAA" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Grid.Column="0" Text="@@crash_filter@@" Foreground="#AAA" VerticalAlignment="Center" Margin="0,0,8,0"/>
                                 <TextBox x:Name="txtCrashFilter" Grid.Column="1" Height="30" Background="#222" Foreground="White" BorderBrush="#444" VerticalContentAlignment="Center" Padding="6,0"
                                          ToolTip="Yazdıkça listeyi daraltır — dosya adı, tür, konum, açıklama içinde arar (örn: bf6, ntdll, .dmp, EA)"/>
                                 <TextBlock x:Name="txtCrashCount" Grid.Column="2" Text="" Foreground="#888" FontSize="11" VerticalAlignment="Center" Margin="10,0,0,0"/>
@@ -3717,24 +4123,24 @@ $xaml = @"
                             <ListView x:Name="lvCrashes" Grid.Row="3" Background="#1E1E1E" BorderThickness="1" BorderBrush="#444">
                                 <ListView.ContextMenu>
                                     <ContextMenu>
-                                        <MenuItem Header="📋 Detayı Kopyala" Name="ctxCopyCrash" FontWeight="Bold" Foreground="#4CC2FF"/>
-                                        <MenuItem Header="🌐 Google'da Çözüm Ara" Name="ctxSearchCrash" Foreground="#00CC00"/>
+                                        <MenuItem Header="@@ctx_copydetail@@" Name="ctxCopyCrash" FontWeight="Bold" Foreground="#4CC2FF"/>
+                                        <MenuItem Header="@@ctx_googlesearch@@" Name="ctxSearchCrash" Foreground="#00CC00"/>
                                         <Separator/>
-                                        <MenuItem Header="📂 Dosya/Dump Konumunu Aç" Name="ctxOpenDump" Foreground="#FFCC00" FontWeight="Bold"/>
+                                        <MenuItem Header="@@ctx_opendump@@" Name="ctxOpenDump" Foreground="#FFCC00" FontWeight="Bold"/>
                                     </ContextMenu>
                                 </ListView.ContextMenu>
                                 <ListView.View>
                                     <GridView>
-                                        <GridViewColumn Header="ZAMAN" Width="130" DisplayMemberBinding="{Binding Time}"/>
-                                        <GridViewColumn Header="TÜR" Width="150">
+                                        <GridViewColumn Header="@@col_time@@" Width="130" DisplayMemberBinding="{Binding Time}"/>
+                                        <GridViewColumn Header="@@col_type@@" Width="150">
                                             <GridViewColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <TextBlock Text="{Binding Category}" Foreground="{Binding Color}" FontWeight="Bold"/>
                                                 </DataTemplate>
                                             </GridViewColumn.CellTemplate>
                                         </GridViewColumn>
-                                        <GridViewColumn Header="DOSYA / MODÜL" Width="180" DisplayMemberBinding="{Binding FaultingModule}"/>
-                                        <GridViewColumn Header="AÇIKLAMA / KONUM" Width="480">
+                                        <GridViewColumn Header="@@col_filemodule@@" Width="180" DisplayMemberBinding="{Binding FaultingModule}"/>
+                                        <GridViewColumn Header="@@col_desc_loc@@" Width="480">
                                             <GridViewColumn.CellTemplate>
                                                 <DataTemplate>
                                                     <TextBlock Text="{Binding Description}" TextWrapping="Wrap"/>
@@ -3755,10 +4161,10 @@ $xaml = @"
             <Grid>
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                 <Grid Grid.Row="0" Margin="0,0,0,5">
-                    <TextBlock Text="İşlem Kayıtları" Foreground="#AAA" FontWeight="Bold" VerticalAlignment="Center"/>
+                    <TextBlock Text="@@log_title@@" Foreground="#AAA" FontWeight="Bold" VerticalAlignment="Center"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <Button x:Name="btnCopyLog" Content="Kopyala" Padding="10,4" Background="#333" FontSize="11" Margin="0,0,5,0"/>
-                        <Button x:Name="btnClearLog" Content="Temizle" Padding="10,4" Background="#333" Foreground="#FF5555" FontSize="11"/>
+                        <Button x:Name="btnCopyLog" Content="@@log_copy@@" Padding="10,4" Background="#333" FontSize="11" Margin="0,0,5,0"/>
+                        <Button x:Name="btnClearLog" Content="@@log_clear@@" Padding="10,4" Background="#333" Foreground="#FF5555" FontSize="11"/>
                     </StackPanel>
                 </Grid>
                 <TextBox x:Name="txtLog" Grid.Row="1" Background="#1E1E1E" Foreground="#CCC" BorderThickness="0" VerticalScrollBarVisibility="Auto" IsReadOnly="True" TextWrapping="Wrap" FontFamily="Consolas" Padding="5"/>
@@ -3778,21 +4184,21 @@ $xaml = @"
             <TextBlock x:Name="lblDetail" Text="İşlem bekleniyor..." Foreground="#AAA" FontSize="12" Margin="0,0,0,8" TextTrimming="CharacterEllipsis"/>
             <Grid> <Border Height="4" Background="#333" CornerRadius="2"/> <ProgressBar x:Name="pbMain" Height="4" Background="Transparent" Foreground="{StaticResource AccentColor}" BorderThickness="0" Value="0"/> </Grid>
             <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                <CheckBox x:Name="chkDebug" Content="Debug Mode" Foreground="#666" FontSize="10" Margin="0,0,15,0" Style="{StaticResource ToggleSwitch}"/>
-                <Button x:Name="btnOpenData" Content="📂 Veri Klasörü" Background="Transparent" Foreground="#555" FontSize="10" BorderThickness="0" Padding="0" Margin="0,0,10,0"/>
+                <CheckBox x:Name="chkDebug" Content="@@chk_debug@@" Foreground="#666" FontSize="10" Margin="0,0,15,0" Style="{StaticResource ToggleSwitch}"/>
+                <Button x:Name="btnOpenData" Content="@@btn_opendata@@" Background="Transparent" Foreground="#555" FontSize="10" BorderThickness="0" Padding="0" Margin="0,0,10,0"/>
             </StackPanel>
         </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0,0,0">
             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,10,5">
-            <TextBlock Text="Silme Yöntemi:" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
+            <TextBlock Text="@@footer_deletemethod@@" Foreground="#888" FontSize="11" Margin="0,0,0,2"/>
             <ComboBox x:Name="cbSecureDelete" Width="180" Height="30" SelectedIndex="0" VerticalContentAlignment="Center">
-                <ComboBoxItem Content="Hızlı Silme (Standart)"/>
-                <ComboBoxItem Content="Güvenli (Sıfırla - Zeroes)"/>
-                <ComboBoxItem Content="Güvenli (Random Data)"/>
+                <ComboBoxItem Content="@@del_fast@@"/>
+                <ComboBoxItem Content="@@del_secure_zero@@"/>
+                <ComboBoxItem Content="@@del_secure_random@@"/>
             </ComboBox>
 			</StackPanel>
-            <Button x:Name="btnAnalyze" Content="ANALİZ ET" Width="110" Height="45" Background="#333" BorderThickness="1" BorderBrush="#555" Margin="0,0,10,0"/>
-            <Button x:Name="btnRun" Content="BAŞLAT" Width="140" Height="45" Background="{StaticResource AccentColor}" FontWeight="Bold" FontSize="16">
+            <Button x:Name="btnAnalyze" Content="@@btn_analyze@@" Width="110" Height="45" Background="#333" BorderThickness="1" BorderBrush="#555" Margin="0,0,10,0"/>
+            <Button x:Name="btnRun" Content="@@btn_start@@" Width="140" Height="45" Background="{StaticResource AccentColor}" FontWeight="Bold" FontSize="16">
                 <Button.Effect> <DropShadowEffect Color="#007ACC" BlurRadius="20" ShadowDepth="0" Opacity="0.4"/> </Button.Effect>
             </Button>
         </StackPanel>
@@ -3804,14 +4210,14 @@ $xaml = @"
 
 # --- DİĞER XAML DOSYALARI (AYNEN KORUNDU) ---
 $xamlToolMgr = @"
-<Window xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='Web Araçları Yöneticisi' Height='600' Width='600' Background='#181818' WindowStartupLocation='CenterScreen' WindowStyle='ToolWindow'><Window.Resources><Style TargetType='TextBox'><Setter Property='Background' Value='#252526'/><Setter Property='Foreground' Value='White'/><Setter Property='Padding' Value='5'/></Style><Style TargetType='TextBlock'><Setter Property='Foreground' Value='#AAA'/><Setter Property='Margin' Value='0,0,0,5'/></Style></Window.Resources><Grid Margin='15'><Grid.ColumnDefinitions><ColumnDefinition Width='200'/><ColumnDefinition Width='20'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><Grid Grid.Column='0'><Grid.RowDefinitions><RowDefinition Height='*'/><RowDefinition Height='Auto'/></Grid.RowDefinitions><ListBox x:Name='lstTools' Grid.Row='0' Background='#222' Foreground='White' BorderThickness='1' BorderBrush='#444'/><StackPanel Grid.Row='1' Orientation='Horizontal' Margin='0,10,0,0'><Button x:Name='btnNew' Content='Yeni' Width='60' Background='#006600' Foreground='White'/><Button x:Name='btnDel' Content='Sil' Width='60' Background='#A00' Foreground='White' Margin='5,0,0,0'/><Button x:Name='btnSaveAll' Content='Kaydet' Width='65' Background='#007ACC' Foreground='White' Margin='5,0,0,0'/></StackPanel></Grid><StackPanel Grid.Column='2'><TextBlock Text='Araç Adı:' Foreground='#4CC2FF' FontWeight='Bold'/><TextBox x:Name='txtName' Margin='0,0,0,15'/><TextBlock Text='URL:' Foreground='#4CC2FF' FontWeight='Bold'/><TextBox x:Name='txtUrl' Margin='0,0,0,5'/><TextBlock Text='Örn: https://site.com/tools/' FontSize='10' Margin='0,0,0,15'/><Border BorderBrush='#444' BorderThickness='1' Padding='10' CornerRadius='5' Background='#222' Margin='0,0,0,15'><StackPanel><TextBlock Text='🔍 Akıllı Arama' Foreground='#E68A00' FontWeight='Bold' Margin='0,0,0,5'/><TextBlock Text='Anahtar Kelime:' Foreground='White'/><TextBox x:Name='txtKeyword' Margin='0,5,0,5'/><TextBlock Text='Örn: Magician' FontSize='10' Foreground='#888'/></StackPanel></Border><Expander Header='Gelişmiş (Regex)' Foreground='#AAA' Margin='0,0,0,15'><StackPanel Margin='0,5,0,0'><TextBlock Text='Regex:'/><TextBox x:Name='txtRegex' Margin='0,0,0,5'/></StackPanel></Expander><TextBlock Text='İndirme Klasörü:' Foreground='#4CC2FF' FontWeight='Bold' Margin='0,0,0,5'/><Grid Margin='0,0,0,15'><Grid.ColumnDefinitions><ColumnDefinition Width='*'/><ColumnDefinition Width='35'/></Grid.ColumnDefinitions><TextBox x:Name='txtDownPath' IsReadOnly='True' Cursor='Hand'/><Button x:Name='btnPickPath' Grid.Column='1' Content='...' Background='#444' Foreground='White'/></Grid><Button x:Name='btnTest' Content='TEST ET' Height='35' Background='#E68A00' FontWeight='Bold' Margin='0,0,0,10'/><TextBlock Text='Sonuç:' FontWeight='Bold'/><TextBox x:Name='txtResult' Height='60' TextWrapping='Wrap' IsReadOnly='True' Background='#111' Foreground='#0F0'/></StackPanel></Grid>
+<Window xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation' xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='Web Araçları Yöneticisi' Height='600' Width='600' Background='#181818' WindowStartupLocation='CenterScreen' WindowStyle='ToolWindow'><Window.Resources><Style TargetType='TextBox'><Setter Property='Background' Value='#252526'/><Setter Property='Foreground' Value='White'/><Setter Property='Padding' Value='5'/></Style><Style TargetType='TextBlock'><Setter Property='Foreground' Value='#AAA'/><Setter Property='Margin' Value='0,0,0,5'/></Style></Window.Resources><Grid Margin='15'><Grid.ColumnDefinitions><ColumnDefinition Width='200'/><ColumnDefinition Width='20'/><ColumnDefinition Width='*'/></Grid.ColumnDefinitions><Grid Grid.Column='0'><Grid.RowDefinitions><RowDefinition Height='*'/><RowDefinition Height='Auto'/></Grid.RowDefinitions><ListBox x:Name='lstTools' Grid.Row='0' Background='#222' Foreground='White' BorderThickness='1' BorderBrush='#444'/><StackPanel Grid.Row='1' Orientation='Horizontal' Margin='0,10,0,0'><Button x:Name='btnNew' Content='Yeni' Width='60' Background='#006600' Foreground='White'/><Button x:Name='btnDel' Content='@@m_delete@@' Width='60' Background='#A00' Foreground='White' Margin='5,0,0,0'/><Button x:Name='btnSaveAll' Content='@@m_save@@' Width='65' Background='#007ACC' Foreground='White' Margin='5,0,0,0'/></StackPanel></Grid><StackPanel Grid.Column='2'><TextBlock Text='Araç Adı:' Foreground='#4CC2FF' FontWeight='Bold'/><TextBox x:Name='txtName' Margin='0,0,0,15'/><TextBlock Text='URL:' Foreground='#4CC2FF' FontWeight='Bold'/><TextBox x:Name='txtUrl' Margin='0,0,0,5'/><TextBlock Text='Örn: https://site.com/tools/' FontSize='10' Margin='0,0,0,15'/><Border BorderBrush='#444' BorderThickness='1' Padding='10' CornerRadius='5' Background='#222' Margin='0,0,0,15'><StackPanel><TextBlock Text='🔍 Akıllı Arama' Foreground='#E68A00' FontWeight='Bold' Margin='0,0,0,5'/><TextBlock Text='Anahtar Kelime:' Foreground='White'/><TextBox x:Name='txtKeyword' Margin='0,5,0,5'/><TextBlock Text='Örn: Magician' FontSize='10' Foreground='#888'/></StackPanel></Border><Expander Header='Gelişmiş (Regex)' Foreground='#AAA' Margin='0,0,0,15'><StackPanel Margin='0,5,0,0'><TextBlock Text='Regex:'/><TextBox x:Name='txtRegex' Margin='0,0,0,5'/></StackPanel></Expander><TextBlock Text='İndirme Klasörü:' Foreground='#4CC2FF' FontWeight='Bold' Margin='0,0,0,5'/><Grid Margin='0,0,0,15'><Grid.ColumnDefinitions><ColumnDefinition Width='*'/><ColumnDefinition Width='35'/></Grid.ColumnDefinitions><TextBox x:Name='txtDownPath' IsReadOnly='True' Cursor='Hand'/><Button x:Name='btnPickPath' Grid.Column='1' Content='...' Background='#444' Foreground='White'/></Grid><Button x:Name='btnTest' Content='TEST ET' Height='35' Background='#E68A00' FontWeight='Bold' Margin='0,0,0,10'/><TextBlock Text='Sonuç:' FontWeight='Bold'/><TextBox x:Name='txtResult' Height='60' TextWrapping='Wrap' IsReadOnly='True' Background='#111' Foreground='#0F0'/></StackPanel></Grid>
 </Window>
 "@
 
 $xamlSettings = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Program Ayarları" Height="930" Width="520"
+        Title="@@win_settings_title@@" Height="930" Width="520"
         Background="#181818" WindowStartupLocation="CenterScreen" WindowStyle="ToolWindow" ResizeMode="NoResize">
     <Window.Resources>
         <Style TargetType="Button">
@@ -3834,10 +4240,14 @@ $xamlSettings = @"
         <!-- 1. GÖRÜNÜM -->
         <Border Grid.Row="0" BorderBrush="#444" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,0,15" Background="#222">
             <StackPanel>
-                <TextBlock Text="Görünüm Tercihi" Foreground="#007ACC" FontWeight="Bold" Margin="0,0,0,5"/>
+                <TextBlock Text="@@set_appearance@@" Foreground="#007ACC" FontWeight="Bold" Margin="0,0,0,5"/>
                 <StackPanel Orientation="Horizontal">
-                    <RadioButton x:Name="rbLayoutLeft" Content="Modern (Sol Menü)" Foreground="White" Margin="0,0,15,0" IsChecked="True"/>
-                    <RadioButton x:Name="rbLayoutTop" Content="Klasik (Üst Menü)" Foreground="White"/>
+                    <RadioButton x:Name="rbLayoutLeft" Content="@@set_layout_modern@@" Foreground="White" Margin="0,0,15,0" IsChecked="True"/>
+                    <RadioButton x:Name="rbLayoutTop" Content="@@set_layout_classic@@" Foreground="White"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                    <TextBlock Text="@@set_language@@:" Foreground="White" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <ComboBox x:Name="cmbLanguage" Width="170" Height="26"/>
                 </StackPanel>
             </StackPanel>
         </Border>
@@ -3845,19 +4255,19 @@ $xamlSettings = @"
         <!-- 2. GELİŞTİRİCİ MODU -->
         <Border Grid.Row="1" BorderBrush="#444" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,0,15" Background="#222">
             <StackPanel>
-                <TextBlock Text="Geliştirici Modu (Önbellek)" Foreground="#E68A00" FontWeight="Bold" Margin="0,0,0,5"/>
-                <CheckBox x:Name="chkDisableCache" Content="Önbelleği ve Yapılandırmayı Devre Dışı Bırak" Foreground="White" FontSize="13"/>
+                <TextBlock Text="@@set_dev_title@@" Foreground="#E68A00" FontWeight="Bold" Margin="0,0,0,5"/>
+                <CheckBox x:Name="chkDisableCache" Content="@@set_dev_cache@@" Foreground="White" FontSize="13"/>
             </StackPanel>
         </Border>
 
         <!-- 3. LİSTE YÖNETİMİ -->
         <Border Grid.Row="2" BorderBrush="#444" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,0,15" Background="#222">
             <StackPanel>
-                <TextBlock Text="Liste ve Kural Yönetimi" Foreground="#4CC2FF" FontWeight="Bold" Margin="0,0,0,10"/>
+                <TextBlock Text="@@set_list_title@@" Foreground="#4CC2FF" FontWeight="Bold" Margin="0,0,0,10"/>
                 <StackPanel Orientation="Horizontal">
-                    <Button x:Name="btnOpenBlacklist" Content="🚫 Yoksayılanlar" Width="120" Margin="0,0,10,0"/>
-                    <Button x:Name="btnOpenCustom" Content="📂 Özel Kurallar" Width="120" Margin="0,0,10,0"/>
-					<Button x:Name="btnEditWinapp2" Content="📝 Winapp2 Düzenle" Background="#E68A00" Foreground="White" Margin="0,0,10,0"/>
+                    <Button x:Name="btnOpenBlacklist" Content="@@set_ignored@@" Width="120" Margin="0,0,10,0"/>
+                    <Button x:Name="btnOpenCustom" Content="@@set_customrules@@" Width="120" Margin="0,0,10,0"/>
+					<Button x:Name="btnEditWinapp2" Content="@@set_winapp2edit@@" Background="#E68A00" Foreground="White" Margin="0,0,10,0"/>
                 </StackPanel>
             </StackPanel>
         </Border>
@@ -3865,16 +4275,16 @@ $xamlSettings = @"
         <!-- 4. SİSTEM GERİ YÜKLEME (YENİ) -->
         <Border Grid.Row="3" BorderBrush="#444" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,0,15" Background="#222">
             <StackPanel>
-                <TextBlock Text="Sistem Geri Yükleme (Tweak Uygulamadan Önce)" Foreground="#4CC2FF" FontWeight="Bold" Margin="0,0,0,10"/>
+                <TextBlock Text="@@set_restore_title@@" Foreground="#4CC2FF" FontWeight="Bold" Margin="0,0,0,10"/>
                 <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-                    <RadioButton x:Name="rbRPAsk"   Content="Her seferinde sor"  GroupName="RPMode" Foreground="White" Margin="0,0,12,0"/>
-                    <RadioButton x:Name="rbRPAuto"  Content="Sormadan oluştur"   GroupName="RPMode" Foreground="White" Margin="0,0,12,0"/>
-                    <RadioButton x:Name="rbRPNever" Content="Asla oluşturma"     GroupName="RPMode" Foreground="White"/>
+                    <RadioButton x:Name="rbRPAsk"   Content="@@set_rp_ask@@"  GroupName="RPMode" Foreground="White" Margin="0,0,12,0"/>
+                    <RadioButton x:Name="rbRPAuto"  Content="@@set_rp_auto@@"   GroupName="RPMode" Foreground="White" Margin="0,0,12,0"/>
+                    <RadioButton x:Name="rbRPNever" Content="@@set_rp_never@@"     GroupName="RPMode" Foreground="White"/>
                 </StackPanel>
                 <TextBlock x:Name="txtRPInfo" Text="Son nokta: -- • VSS servisi: --" Foreground="#888" FontSize="11" Margin="0,6,0,10"/>
                 <StackPanel Orientation="Horizontal">
-                    <Button x:Name="btnRPManualCreate" Content="🔄 Şimdi Manuel Oluştur" Width="180" Margin="0,0,10,0"/>
-                    <Button x:Name="btnRPWindowsPanel" Content="📂 Windows Geri Yükleme Paneli" Width="230"/>
+                    <Button x:Name="btnRPManualCreate" Content="@@set_rp_manual@@" Width="180" Margin="0,0,10,0"/>
+                    <Button x:Name="btnRPWindowsPanel" Content="@@set_rp_panel@@" Width="230"/>
                 </StackPanel>
             </StackPanel>
         </Border>
@@ -3882,25 +4292,25 @@ $xamlSettings = @"
         <!-- 5. PROGRAM GÜNCELLEMESİ -->
         <Border Grid.Row="4" BorderBrush="#444" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,0,15" Background="#222">
             <StackPanel>
-                <TextBlock Text="Program Güncellemesi" Foreground="#4CC2FF" FontWeight="Bold" Margin="0,0,0,8"/>
+                <TextBlock Text="@@set_update_title@@" Foreground="#4CC2FF" FontWeight="Bold" Margin="0,0,0,8"/>
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="Mevcut Sürüm" Foreground="#888" FontSize="11"/>
+                        <TextBlock Text="@@set_curver@@" Foreground="#888" FontSize="11"/>
                         <TextBlock x:Name="txtCurrentVersion" Text="v?.?.?" Foreground="White" FontWeight="Bold" FontSize="14" Margin="0,2,0,0"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1">
-                        <TextBlock Text="GitHub Repo" Foreground="#888" FontSize="11"/>
+                        <TextBlock Text="@@set_ghrepo@@" Foreground="#888" FontSize="11"/>
                         <TextBlock x:Name="txtAppRepo" Text="" Foreground="#4CC2FF" FontSize="12" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
                     </StackPanel>
                 </Grid>
                 <TextBlock x:Name="txtUpdateStatus" Text="Sürüm kontrolü için 'Şimdi Kontrol Et'e basın." Foreground="#888" FontSize="11" Margin="0,4,0,8" TextWrapping="Wrap"/>
                 <StackPanel Orientation="Horizontal">
-                    <Button x:Name="btnCheckUpdate" Content="🔄 Şimdi Kontrol Et" Width="170" Margin="0,0,10,0"/>
-                    <Button x:Name="btnOpenReleases" Content="🌐 Releases Sayfası" Width="180"/>
+                    <Button x:Name="btnCheckUpdate" Content="@@set_checkupdate@@" Width="170" Margin="0,0,10,0"/>
+                    <Button x:Name="btnOpenReleases" Content="@@set_releases@@" Width="180"/>
                 </StackPanel>
             </StackPanel>
         </Border>
@@ -3908,23 +4318,23 @@ $xamlSettings = @"
         <!-- 6. GERİ BİLDİRİM & İLETİŞİM (v1.2.3) -->
         <Border Grid.Row="5" BorderBrush="#444" BorderThickness="1" CornerRadius="5" Padding="10" Margin="0,0,0,15" Background="#222">
             <StackPanel>
-                <TextBlock Text="Geri Bildirim &amp; İletişim" Foreground="#4CC2FF" FontWeight="Bold" Margin="0,0,0,4"/>
-                <TextBlock Text="Hata bildir, öneri yap, ya da soru sor — Discord kanalına anonim olarak ulaşır." Foreground="#888" FontSize="11" Margin="0,0,0,8" TextWrapping="Wrap"/>
-                <Button x:Name="btnOpenFeedback" Content="💬 Geri Bildirim Gönder" Width="220" HorizontalAlignment="Left"/>
+                <TextBlock Text="@@set_feedback_title@@" Foreground="#4CC2FF" FontWeight="Bold" Margin="0,0,0,4"/>
+                <TextBlock Text="@@set_feedback_desc@@" Foreground="#888" FontSize="11" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                <Button x:Name="btnOpenFeedback" Content="@@set_feedback_btn@@" Width="220" HorizontalAlignment="Left"/>
             </StackPanel>
         </Border>
 
         <!-- 7. DOSYA YÖNETİMİ -->
-        <TextBlock Grid.Row="6" Text="Veri Dosyaları" Foreground="#CCC" FontWeight="Bold" Margin="0,0,0,5"/>
+        <TextBlock Grid.Row="6" Text="@@set_datafiles@@" Foreground="#CCC" FontWeight="Bold" Margin="0,0,0,5"/>
         <ListBox x:Name="lstFiles" Grid.Row="6" Background="#1E1E1E" Foreground="White" BorderBrush="#444" SelectionMode="Extended" Margin="0,20,0,10"/>
 
         <!-- 8. ALT BUTONLAR -->
         <Grid Grid.Row="7">
             <Grid.ColumnDefinitions> <ColumnDefinition Width="Auto"/> <ColumnDefinition Width="*"/> <ColumnDefinition Width="Auto"/> </Grid.ColumnDefinitions>
-            <Button x:Name="btnDeleteFiles" Grid.Column="0" Content="🗑 SEÇİLENLERİ SİL" Background="#A00" FontWeight="Bold"/>
+            <Button x:Name="btnDeleteFiles" Grid.Column="0" Content="@@set_delete_sel@@" Background="#A00" FontWeight="Bold"/>
             <StackPanel Grid.Column="2" Orientation="Horizontal">
-                <Button x:Name="btnImportUI" Content="İçe Aktar" Background="#007ACC" Margin="0,0,5,0"/>
-                <Button x:Name="btnExportUI" Content="Dışa Aktar" Background="#007ACC"/>
+                <Button x:Name="btnImportUI" Content="@@set_import@@" Background="#007ACC" Margin="0,0,5,0"/>
+                <Button x:Name="btnExportUI" Content="@@set_export@@" Background="#007ACC"/>
             </StackPanel>
         </Grid>
     </Grid>
@@ -3934,7 +4344,7 @@ $xamlSettings = @"
 $xamlNightMode = @"
 <Window xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
         xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
-        Title='🌙 Akıllı Gece Modu' Height='450' Width='550' Background='#121212' WindowStartupLocation='CenterOwner' WindowStyle='ToolWindow' ResizeMode='NoResize'>
+        Title='@@nm_title@@' Height='450' Width='550' Background='#121212' WindowStartupLocation='CenterOwner' WindowStyle='ToolWindow' ResizeMode='NoResize'>
     
     <Window.Resources>
         <!-- BUTON STİLİ (Renk sorunu çözüldü) -->
@@ -3971,8 +4381,8 @@ $xamlNightMode = @"
             <RowDefinition Height='Auto'/>
         </Grid.RowDefinitions>
 
-        <TextBlock Text='Otomatik Sistem Kapatma' Foreground='#4CC2FF' FontSize='20' FontWeight='Bold' HorizontalAlignment='Center'/>
-        <TextBlock Grid.Row='1' Text='Bilgisayarınızın ne zaman kapatılacağını seçin.' Foreground='#888' FontSize='12' HorizontalAlignment='Center' Margin='0,5,0,20'/>
+        <TextBlock Text='@@nm_autoshut@@' Foreground='#4CC2FF' FontSize='20' FontWeight='Bold' HorizontalAlignment='Center'/>
+        <TextBlock Grid.Row='1' Text='@@nm_choosewhen@@' Foreground='#888' FontSize='12' HorizontalAlignment='Center' Margin='0,5,0,20'/>
 
         <!-- SEKMELER -->
         <TabControl x:Name='tcNightMode' Grid.Row='2' Background='Transparent' BorderThickness='0'>
@@ -4001,22 +4411,22 @@ $xamlNightMode = @"
             </TabControl.Resources>
 
             <!-- 1. SÜRE MODU -->
-            <TabItem Header='⏳ Süreye Göre'>
+            <TabItem Header='@@nm_tab_time@@'>
                 <StackPanel Margin='0,20,0,0'>
-                    <TextBlock Text='Sistem şu kadar zaman sonra kapatılsın:' Foreground='White' FontSize='14' Margin='0,0,0,10'/>
+                    <TextBlock Text='@@nm_after@@' Foreground='White' FontSize='14' Margin='0,0,0,10'/>
                     <StackPanel Orientation='Horizontal'>
                         <TextBox x:Name='txtHours' Width='50' Height='35' FontSize='16' TextAlignment='Center' VerticalContentAlignment='Center' Text='1'/>
-                        <TextBlock Text='Saat' Foreground='#AAA' VerticalAlignment='Center' Margin='10,0,20,0'/>
+                        <TextBlock Text='@@nm_hours@@' Foreground='#AAA' VerticalAlignment='Center' Margin='10,0,20,0'/>
                         <TextBox x:Name='txtMins' Width='50' Height='35' FontSize='16' TextAlignment='Center' VerticalContentAlignment='Center' Text='30'/>
-                        <TextBlock Text='Dakika' Foreground='#AAA' VerticalAlignment='Center' Margin='10,0,0,0'/>
+                        <TextBlock Text='@@nm_mins@@' Foreground='#AAA' VerticalAlignment='Center' Margin='10,0,0,0'/>
                     </StackPanel>
                 </StackPanel>
             </TabItem>
 
             <!-- 2. AĞ MODU (Siyah zorlaması silindi, orjinal beyaz oldu) -->
-            <TabItem Header='🌐 Genel Ağ Trafiği'>
+            <TabItem Header='@@nm_tab_net@@'>
                 <StackPanel Margin='0,20,0,0'>
-                    <TextBlock Text='İndirme hızı şu değerin altına düşerse kapat:' Foreground='White' FontSize='14' Margin='0,0,0,10'/>
+                    <TextBlock Text='@@nm_belowspeed@@' Foreground='White' FontSize='14' Margin='0,0,0,10'/>
                     <StackPanel Orientation='Horizontal' Margin='0,0,0,15'>
                         <ComboBox x:Name='cbNetSpeed' Width='120' Height='30' VerticalContentAlignment='Center'>
                             <ComboBoxItem Content='0.5 Mbps' Tag='0.5'/>
@@ -4024,22 +4434,22 @@ $xamlNightMode = @"
                             <ComboBoxItem Content='5 Mbps' Tag='5'/>
                         </ComboBox>
                     </StackPanel>
-                    <TextBlock Text='Emin olmak için bekleme süresi:' Foreground='White' FontSize='14' Margin='0,0,0,10'/>
+                    <TextBlock Text='@@nm_waittime@@' Foreground='White' FontSize='14' Margin='0,0,0,10'/>
                     <ComboBox x:Name='cbNetWait' Width='120' Height='30' VerticalContentAlignment='Center'>
-                        <ComboBoxItem Content='2 Dakika' Tag='2'/>
-                        <ComboBoxItem Content='5 Dakika' Tag='5' IsSelected='True'/>
-                        <ComboBoxItem Content='10 Dakika' Tag='10'/>
+                        <ComboBoxItem Content='@@nm_2min@@' Tag='2'/>
+                        <ComboBoxItem Content='@@nm_5min@@' Tag='5' IsSelected='True'/>
+                        <ComboBoxItem Content='@@nm_10min@@' Tag='10'/>
                     </ComboBox>
                 </StackPanel>
             </TabItem>
 
             <!-- 3. UYGULAMA MODU (Siyah zorlaması silindi, orjinal beyaz oldu) -->
-            <TabItem Header='🎯 Uygulama Takibi'>
+            <TabItem Header='@@nm_tab_app@@'>
                 <StackPanel Margin='0,20,0,0'>
-                    <TextBlock Text='İndirme yapan programı (Client) seçin:' Foreground='White' FontSize='14' Margin='0,0,0,10'/>
+                    <TextBlock Text='@@nm_pickclient@@' Foreground='White' FontSize='14' Margin='0,0,0,10'/>
                     <ComboBox x:Name='cbProcess' Height='30' VerticalContentAlignment='Center' Margin='0,0,0,15'/>
-                    <TextBlock Text='Olay:' Foreground='White' FontSize='14' Margin='0,0,0,10'/>
-                    <TextBlock Text='Program kapatıldığında VEYA diske/ağa veri yazması 5 dakika boyunca durduğunda sistem kapatılır.' Foreground='#E68A00' FontSize='12' TextWrapping='Wrap'/>
+                    <TextBlock Text='@@nm_event@@' Foreground='White' FontSize='14' Margin='0,0,0,10'/>
+                    <TextBlock Text='@@nm_eventdesc@@' Foreground='#E68A00' FontSize='12' TextWrapping='Wrap'/>
                 </StackPanel>
             </TabItem>
         </TabControl>
@@ -4051,11 +4461,11 @@ $xamlNightMode = @"
                 <ColumnDefinition Width='Auto'/>
                 <ColumnDefinition Width='Auto'/>
             </Grid.ColumnDefinitions>
-            <TextBlock x:Name='txtStatus' Grid.Column='0' Text='Gece Modu Kapalı.' Foreground='#888' VerticalAlignment='Center' TextWrapping='Wrap'/>
+            <TextBlock x:Name='txtStatus' Grid.Column='0' Text='@@nm_status_off@@' Foreground='#888' VerticalAlignment='Center' TextWrapping='Wrap'/>
             
             <!-- Butonların kendi içindeki 'Foreground=White' kodu silindi. Artık en üstteki Stilden rengini çekecek. -->
-            <Button x:Name='btnStop' Grid.Column='1' Content='DURDUR' Width='90' Height='35' Background='#A00' Margin='0,0,10,0' IsEnabled='False'/>
-            <Button x:Name='btnStart' Grid.Column='2' Content='BAŞLAT' Width='120' Height='35' Background='#006600'/>
+            <Button x:Name='btnStop' Grid.Column='1' Content='@@btn_stop@@' Width='90' Height='35' Background='#A00' Margin='0,0,10,0' IsEnabled='False'/>
+            <Button x:Name='btnStart' Grid.Column='2' Content='@@btn_start@@' Width='120' Height='35' Background='#006600'/>
         </Grid>
     </Grid>
 </Window>
@@ -4065,7 +4475,7 @@ $xamlNightMode = @"
 $xamlCountdown = @"
 <Window xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
         xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
-        Title='Sistem Kapatılıyor' WindowStyle='None' WindowState='Maximized' Topmost='True' AllowsTransparency='True' Background='#E6000000'>
+        Title='@@cd_title@@' WindowStyle='None' WindowState='Maximized' Topmost='True' AllowsTransparency='True' Background='#E6000000'>
     <Window.Resources>
         <!-- İPTAL BUTONUNA ÖZEL KIRMIZI HOVER STİLİ -->
         <Style TargetType="Button">
@@ -4093,10 +4503,10 @@ $xamlCountdown = @"
     </Window.Resources>
     <Grid>
         <StackPanel HorizontalAlignment='Center' VerticalAlignment='Center'>
-            <TextBlock Text='🌙 Shutdown' Foreground='#4CC2FF' FontSize='36' FontWeight='Bold' HorizontalAlignment='Center' Margin='0,0,0,20'/>
-            <TextBlock Text='Belirlenen hedefe ulaşıldı. Bilgisayar kapatılıyor...' Foreground='White' FontSize='24' HorizontalAlignment='Center' Margin='0,0,0,40'/>
+            <TextBlock Text='@@btn_shutdown@@' Foreground='#4CC2FF' FontSize='36' FontWeight='Bold' HorizontalAlignment='Center' Margin='0,0,0,20'/>
+            <TextBlock Text='@@cd_reached@@' Foreground='White' FontSize='24' HorizontalAlignment='Center' Margin='0,0,0,40'/>
             <TextBlock x:Name='txtSeconds' Text='60' Foreground='#FF4444' FontSize='120' FontWeight='Bold' HorizontalAlignment='Center' Margin='0,0,0,50'/>
-            <Button x:Name='btnAbort' Content='İPTAL ET (DURDUR)' Width='300' Height='80' FontSize='24' FontWeight='Bold'>
+            <Button x:Name='btnAbort' Content='@@cd_abort@@' Width='300' Height='80' FontSize='24' FontWeight='Bold'>
                 <Button.Effect> <DropShadowEffect Color='Red' BlurRadius='20' ShadowDepth='0' Opacity='0.6'/> </Button.Effect>
             </Button>
         </StackPanel>
@@ -4108,24 +4518,24 @@ $xamlExport = @"
 
 <Window
     xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
-    xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='Dışa Aktar' Height='300' Width='400' Background='#181818' WindowStartupLocation='CenterScreen' WindowStyle='ToolWindow' ResizeMode='NoResize'>
+    xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='@@set_export@@' Height='300' Width='400' Background='#181818' WindowStartupLocation='CenterScreen' WindowStyle='ToolWindow' ResizeMode='NoResize'>
     <Grid Margin='20'>
         <Grid.RowDefinitions>
             <RowDefinition Height='Auto'/>
             <RowDefinition Height='*'/>
             <RowDefinition Height='Auto'/>
         </Grid.RowDefinitions>
-        <TextBlock Text='Neler yedeklensin?' Foreground='#4CC2FF' FontWeight='Bold' Margin='0,0,0,15'/>
+        <TextBlock Text='@@exp_whatbackup@@' Foreground='#4CC2FF' FontWeight='Bold' Margin='0,0,0,15'/>
         <StackPanel Grid.Row='1'>
-            <CheckBox x:Name='chkBlacklist' Content='Yoksayılanlar' Foreground='White' IsChecked='True' Margin='0,0,0,8'/>
-            <CheckBox x:Name='chkPathOverrides' Content='Özel Yollar' Foreground='White' IsChecked='True' Margin='0,0,0,8'/>
-            <CheckBox x:Name='chkCustomRules' Content='Özel Kurallar' Foreground='White' IsChecked='True' Margin='0,0,0,8'/>
-            <CheckBox x:Name='chkWinget' Content='Winget Listesi' Foreground='White' IsChecked='True' Margin='0,0,0,8'/>
-            <CheckBox x:Name='chkTweaks' Content='Tweak Ayarları' Foreground='White' IsChecked='True' Margin='0,0,0,8'/>
-            <CheckBox x:Name='chkTools' Content='Web Araçları' Foreground='White' IsChecked='True' Margin='0,0,0,8'/>
-            <CheckBox x:Name='chkMyProfile' Content='Profilim' Foreground='White' IsChecked='True' Margin='0,0,0,8'/>
+            <CheckBox x:Name='chkBlacklist' Content='@@exp_blacklist@@' Foreground='White' IsChecked='True' Margin='0,0,0,8'/>
+            <CheckBox x:Name='chkPathOverrides' Content='@@exp_custompaths@@' Foreground='White' IsChecked='True' Margin='0,0,0,8'/>
+            <CheckBox x:Name='chkCustomRules' Content='@@exp_customrules@@' Foreground='White' IsChecked='True' Margin='0,0,0,8'/>
+            <CheckBox x:Name='chkWinget' Content='@@exp_winget@@' Foreground='White' IsChecked='True' Margin='0,0,0,8'/>
+            <CheckBox x:Name='chkTweaks' Content='@@exp_tweaks@@' Foreground='White' IsChecked='True' Margin='0,0,0,8'/>
+            <CheckBox x:Name='chkTools' Content='@@exp_tools@@' Foreground='White' IsChecked='True' Margin='0,0,0,8'/>
+            <CheckBox x:Name='chkMyProfile' Content='@@exp_profile@@' Foreground='White' IsChecked='True' Margin='0,0,0,8'/>
         </StackPanel>
-        <Button x:Name='btnDoExport' Grid.Row='2' Content='DIŞA AKTAR' Height='35' Background='#007ACC' Foreground='White' FontWeight='Bold'/>
+        <Button x:Name='btnDoExport' Grid.Row='2' Content='@@exp_do@@' Height='35' Background='#007ACC' Foreground='White' FontWeight='Bold'/>
     </Grid>
 </Window>
 "@
@@ -4133,7 +4543,7 @@ $xamlWingetMgr = @"
 
 <Window
     xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
-    xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='Liste Yöneticisi' Height='480' Width='500' Background='#181818' WindowStartupLocation='CenterScreen' WindowStyle='ToolWindow'>
+    xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='@@wm_title@@' Height='480' Width='500' Background='#181818' WindowStartupLocation='CenterScreen' WindowStyle='ToolWindow'>
     <Window.Resources>
         <Style TargetType='TextBox'>
             <Setter Property='Background' Value='#252526'/>
@@ -4156,10 +4566,10 @@ $xamlWingetMgr = @"
             <RowDefinition Height='Auto'/>
         </Grid.RowDefinitions>
         <StackPanel Grid.Row='0' Orientation='Horizontal' HorizontalAlignment='Center' Margin='0,0,0,15'>
-            <RadioButton Name='rbModeWinget' Content='Winget' IsChecked='True' GroupName='Mode'/>
-            <RadioButton Name='rbModeAppx' Content='Windows' GroupName='Mode'/>
+            <RadioButton Name='rbModeWinget' Content='@@tab_winget@@' IsChecked='True' GroupName='Mode'/>
+            <RadioButton Name='rbModeAppx' Content='@@wm_windows@@' GroupName='Mode'/>
         </StackPanel>
-        <TextBlock Name='lblTitle' Grid.Row='1' Text='Ekle:' Foreground='#4CC2FF' FontWeight='Bold' Margin='0,0,0,10'/>
+        <TextBlock Name='lblTitle' Grid.Row='1' Text='@@wm_addlabel@@' Foreground='#4CC2FF' FontWeight='Bold' Margin='0,0,0,10'/>
         <Grid Grid.Row='2' Margin='0,0,0,15'>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width='*'/>
@@ -4167,20 +4577,20 @@ $xamlWingetMgr = @"
                 <ColumnDefinition Width='80'/>
             </Grid.ColumnDefinitions>
             <StackPanel Grid.Column='0' Margin='0,0,5,0'>
-                <TextBlock Text='Ad' Foreground='#888' FontSize='11'/>
+                <TextBlock Text='@@wm_name@@' Foreground='#888' FontSize='11'/>
                 <TextBox x:Name='txtName'/>
             </StackPanel>
             <StackPanel Grid.Column='1' Margin='0,0,5,0'>
                 <TextBlock x:Name='lblID' Text='ID' Foreground='#888' FontSize='11'/>
                 <TextBox x:Name='txtID'/>
             </StackPanel>
-            <Button x:Name='btnAddW' Grid.Column='2' Content='EKLE' Background='#006600' Foreground='White' Height='38' VerticalAlignment='Bottom'/>
+            <Button x:Name='btnAddW' Grid.Column='2' Content='@@m_add_caps@@' Background='#006600' Foreground='White' Height='38' VerticalAlignment='Bottom'/>
         </Grid>
         <ListBox x:Name='lstWinget' Grid.Row='3' Background='#222' Foreground='White' BorderThickness='0' Margin='0,0,0,10'/>
         <StackPanel Grid.Row='4' Orientation='Horizontal' HorizontalAlignment='Right'>
-            <Button x:Name='btnEditW' Content='Düzenle' Background='#444' Foreground='White' Width='80' Height='30' Margin='0,0,10,0'/>
-            <Button x:Name='btnDelW' Content='Sil' Background='#A00' Foreground='White' Width='100' Height='30' Margin='0,0,10,0'/>
-            <Button x:Name='btnCloseW' Content='Kaydet' Background='#007ACC' Foreground='White' Width='120' Height='30'/>
+            <Button x:Name='btnEditW' Content='@@m_edit@@' Background='#444' Foreground='White' Width='80' Height='30' Margin='0,0,10,0'/>
+            <Button x:Name='btnDelW' Content='@@m_delete@@' Background='#A00' Foreground='White' Width='100' Height='30' Margin='0,0,10,0'/>
+            <Button x:Name='btnCloseW' Content='@@m_save@@' Background='#007ACC' Foreground='White' Width='120' Height='30'/>
         </StackPanel>
     </Grid>
 </Window>
@@ -4219,7 +4629,7 @@ $xamlTweakMgr = @"
             <StackPanel Grid.Row='1' Orientation='Horizontal' HorizontalAlignment='Center' Margin='0,10,0,0'>
                 <Button x:Name='btnNewTweak' Content='+ Yeni' Width='80' Height='30' Background='#006600' Foreground='White' Margin='0,0,5,0'/>
                 <Button x:Name='btnCloneTweak' Content='🔁 Klonla' Width='90' Height='30' Background='#007ACC' Foreground='White' Margin='0,0,5,0' ToolTip='Seçili ayarı kopyalayarak yeni bir ayar oluşturur.'/>
-                <Button x:Name='btnDelTweak' Content='Sil' Width='70' Height='30' Background='#A00' Foreground='White'/>
+                <Button x:Name='btnDelTweak' Content='@@m_delete@@' Width='70' Height='30' Background='#A00' Foreground='White'/>
             </StackPanel>
         </Grid>
         <Border Grid.Column='2' Background='#222' CornerRadius='5' Padding='15'>
@@ -4410,7 +4820,7 @@ $xamlPrivacyWarn = @"
 
 <Window
     xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
-    xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='Bilgilendirme' SizeToContent='Height' Width='450' MaxHeight='600' Background='#181818' WindowStartupLocation='CenterScreen' WindowStyle='ToolWindow' ResizeMode='NoResize'>
+    xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='@@pw_title@@' SizeToContent='Height' Width='450' MaxHeight='600' Background='#181818' WindowStartupLocation='CenterScreen' WindowStyle='ToolWindow' ResizeMode='NoResize'>
     <Grid Margin='20'>
         <Grid.RowDefinitions>
             <RowDefinition Height='*'/>
@@ -4419,12 +4829,12 @@ $xamlPrivacyWarn = @"
         </Grid.RowDefinitions>
         <ScrollViewer Grid.Row='0' VerticalScrollBarVisibility='Auto' Margin='0,0,0,10'>
             <StackPanel>
-                <TextBlock Text='⚠️ Uygulama İzinleri' Foreground='#FFCC00' FontSize='16' FontWeight='Bold' Margin='0,0,0,15' HorizontalAlignment='Center'/>
-                <TextBlock Text='Manuel müdahaleler (Ayarlar menüsünden kapatmak) programın yetkisini kısıtlayabilir. Bu program üzerinden yaptığınız değişiklikleri yine bu programla geri alabilirsiniz.' Foreground='White' TextWrapping='Wrap'/>
+                <TextBlock Text='@@pw_perms@@' Foreground='#FFCC00' FontSize='16' FontWeight='Bold' Margin='0,0,0,15' HorizontalAlignment='Center'/>
+                <TextBlock Text='@@pw_desc@@' Foreground='White' TextWrapping='Wrap'/>
             </StackPanel>
         </ScrollViewer>
-        <CheckBox x:Name='chkDontShowAgain' Grid.Row='1' Content='Bir daha gösterme' Foreground='White' Margin='0,5,0,15'/>
-        <Button x:Name='btnOk' Grid.Row='2' Content='TAMAM' Background='#007ACC' Foreground='White' FontWeight='Bold' Height='35'/>
+        <CheckBox x:Name='chkDontShowAgain' Grid.Row='1' Content='@@pw_dontshow@@' Foreground='White' Margin='0,5,0,15'/>
+        <Button x:Name='btnOk' Grid.Row='2' Content='@@m_ok@@' Background='#007ACC' Foreground='White' FontWeight='Bold' Height='35'/>
     </Grid>
 </Window>
 "@
@@ -4432,18 +4842,18 @@ $xamlBlacklist = @"
 
 <Window
     xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
-    xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='Yoksayılanlar' Height='400' Width='400' Background='#181818' WindowStartupLocation='CenterScreen' WindowStyle='ToolWindow'>
+    xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='@@exp_blacklist@@' Height='400' Width='400' Background='#181818' WindowStartupLocation='CenterScreen' WindowStyle='ToolWindow'>
     <Grid Margin='15'>
         <Grid.RowDefinitions>
             <RowDefinition Height='Auto'/>
             <RowDefinition Height='*'/>
             <RowDefinition Height='Auto'/>
         </Grid.RowDefinitions>
-        <TextBlock Text='Bu uygulamalar taranmaz:' Foreground='#AAA' Margin='0,0,0,10'/>
+        <TextBlock Text='@@bl_notscanned@@' Foreground='#AAA' Margin='0,0,0,10'/>
         <ListBox x:Name='lstBlacklist' Grid.Row='1' Background='#222' BorderThickness='0' Foreground='White' Margin='0,0,0,10' SelectionMode='Extended'/>
         <StackPanel Grid.Row='2' Orientation='Horizontal' HorizontalAlignment='Right'>
-            <Button x:Name='btnRestore' Content='Çıkar' Background='#007ACC' Foreground='White' Width='80' Height='30' Margin='0,0,10,0'/>
-            <Button x:Name='btnClose' Content='Kapat' Background='#333' Foreground='White' Width='80' Height='30'/>
+            <Button x:Name='btnRestore' Content='@@m_remove@@' Background='#007ACC' Foreground='White' Width='80' Height='30' Margin='0,0,10,0'/>
+            <Button x:Name='btnClose' Content='@@m_close@@' Background='#333' Foreground='White' Width='80' Height='30'/>
         </StackPanel>
     </Grid>
 </Window>
@@ -4452,20 +4862,20 @@ $xamlCustomMgr = @"
 
 <Window
     xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
-    xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='Özel Temizlik' Height='450' Width='600' Background='#181818' WindowStartupLocation='CenterScreen' WindowStyle='ToolWindow'>
+    xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='@@cm_title@@' Height='450' Width='600' Background='#181818' WindowStartupLocation='CenterScreen' WindowStyle='ToolWindow'>
     <Grid Margin='15'>
         <Grid.RowDefinitions>
             <RowDefinition Height='Auto'/>
             <RowDefinition Height='*'/>
             <RowDefinition Height='Auto'/>
         </Grid.RowDefinitions>
-        <TextBlock Text='Özel Klasörler:' Foreground='#4CC2FF' FontWeight='Bold' Margin='0,0,0,10'/>
+        <TextBlock Text='@@cm_folders@@' Foreground='#4CC2FF' FontWeight='Bold' Margin='0,0,0,10'/>
         <ListBox x:Name='lstCustomRules' Grid.Row='1' Background='#222' BorderThickness='1' BorderBrush='#444' Foreground='White' Margin='0,0,0,10' SelectionMode='Extended'/>
         <StackPanel Grid.Row='2' Orientation='Horizontal' HorizontalAlignment='Right'>
-            <Button x:Name='btnEditCustom' Content='Düzenle' Background='#333' Foreground='White' Width='80' Height='30' Margin='0,0,10,0'/>
-            <Button x:Name='btnAddCustom' Content='Ekle' Background='#006600' Foreground='White' Width='80' Height='30' Margin='0,0,10,0'/>
-            <Button x:Name='btnDeleteCustom' Content='Sil' Background='#A00' Foreground='White' Width='80' Height='30' Margin='0,0,10,0'/>
-            <Button x:Name='btnCloseCustom' Content='Kapat' Background='#333' Foreground='White' Width='80' Height='30'/>
+            <Button x:Name='btnEditCustom' Content='@@m_edit@@' Background='#333' Foreground='White' Width='80' Height='30' Margin='0,0,10,0'/>
+            <Button x:Name='btnAddCustom' Content='@@m_add@@' Background='#006600' Foreground='White' Width='80' Height='30' Margin='0,0,10,0'/>
+            <Button x:Name='btnDeleteCustom' Content='@@m_delete@@' Background='#A00' Foreground='White' Width='80' Height='30' Margin='0,0,10,0'/>
+            <Button x:Name='btnCloseCustom' Content='@@m_close@@' Background='#333' Foreground='White' Width='80' Height='30'/>
         </StackPanel>
     </Grid>
 </Window>
@@ -4475,7 +4885,7 @@ $xamlFeedback = @"
 <Window
     xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
     xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
-    Title='💬 Geri Bildirim Gönder' Height='600' Width='620'
+    Title='@@set_feedback_btn@@' Height='600' Width='620'
     Background='#181818' WindowStartupLocation='CenterScreen' WindowStyle='ToolWindow' ResizeMode='NoResize'>
     <Window.Resources>
         <!-- Ana pencereden birebir kopya — Silme Yontemi dropdown'u ile ayni stil -->
@@ -4549,8 +4959,8 @@ $xamlFeedback = @"
             <RowDefinition Height='Auto'/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row='0' Text='Geri Bildirim Gönder' Foreground='White' FontSize='18' FontWeight='Bold' Margin='0,0,0,4'/>
-        <TextBlock Grid.Row='1' Text='Hata bildir, öneri yap, ya da soru sor. 3 gönderim seçeneği: Panoya kopyala (manuel paylaş), GitHub Issue (browser açar), Discord (anonim webhook — Türkiye dahil bazı ülkelerde erişim engelli olabilir).' Foreground='#888' FontSize='11' Margin='0,0,0,12' TextWrapping='Wrap'/>
+        <TextBlock Grid.Row='0' Text='@@fb_header@@' Foreground='White' FontSize='18' FontWeight='Bold' Margin='0,0,0,4'/>
+        <TextBlock Grid.Row='1' Text='@@fb_desc@@' Foreground='#888' FontSize='11' Margin='0,0,0,12' TextWrapping='Wrap'/>
 
         <!-- TUR + BASLIK -->
         <Grid Grid.Row='2' Margin='0,0,0,10'>
@@ -4559,15 +4969,15 @@ $xamlFeedback = @"
                 <ColumnDefinition Width='*'/>
             </Grid.ColumnDefinitions>
             <ComboBox x:Name='cbFeedbackType' Grid.Column='0' Background='#222' Foreground='White' BorderBrush='#444' Padding='6' SelectedIndex='0'>
-                <ComboBoxItem Content='🐛 Hata' Tag='bug'/>
-                <ComboBoxItem Content='💡 Öneri' Tag='suggestion'/>
-                <ComboBoxItem Content='❓ Soru' Tag='question'/>
+                <ComboBoxItem Content='@@fb_bug@@' Tag='bug'/>
+                <ComboBoxItem Content='@@fb_suggestion@@' Tag='suggestion'/>
+                <ComboBoxItem Content='@@fb_question@@' Tag='question'/>
             </ComboBox>
             <TextBox x:Name='txtFeedbackTitle' Grid.Column='1' Margin='10,0,0,0' Background='#222' Foreground='White' BorderBrush='#444' Padding='6' Tag='Başlık (kısa, açıklayıcı)'/>
         </Grid>
 
         <!-- MESAJ ETIKETI -->
-        <TextBlock Grid.Row='3' Text='Mesaj (ne oldu, ne bekliyordun, adımlar):' Foreground='#CCC' FontSize='12' Margin='0,0,0,4'/>
+        <TextBlock Grid.Row='3' Text='@@fb_msglabel@@' Foreground='#CCC' FontSize='12' Margin='0,0,0,4'/>
 
         <!-- MESAJ TEXTAREA (MaxLength: Discord/GitHub limitlerini asmasin) -->
         <TextBox x:Name='txtFeedbackBody' Grid.Row='4' Background='#222' Foreground='White' BorderBrush='#444' Padding='6'
@@ -4579,14 +4989,14 @@ $xamlFeedback = @"
                 <ColumnDefinition Width='Auto'/>
                 <ColumnDefinition Width='*'/>
             </Grid.ColumnDefinitions>
-            <TextBlock Grid.Column='0' Text='E-posta (opsiyonel):' Foreground='#CCC' FontSize='12' VerticalAlignment='Center' Margin='0,0,10,0'/>
+            <TextBlock Grid.Column='0' Text='@@fb_email@@' Foreground='#CCC' FontSize='12' VerticalAlignment='Center' Margin='0,0,10,0'/>
             <TextBox x:Name='txtFeedbackEmail' Grid.Column='1' Background='#222' Foreground='White' BorderBrush='#444' Padding='6'/>
         </Grid>
 
         <!-- SISTEM BILGILERI CHECKBOX -->
         <CheckBox x:Name='chkIncludeSystem' Grid.Row='6' Foreground='#CCC' FontSize='12' IsChecked='True' Margin='0,8,0,0'>
             <CheckBox.Content>
-                <TextBlock Text='Sistem bilgilerini ekle (Windows sürümü + MrClean sürümü + son 30 log satırı)' TextWrapping='Wrap'/>
+                <TextBlock Text='@@fb_includesys@@' TextWrapping='Wrap'/>
             </CheckBox.Content>
         </CheckBox>
 
@@ -4595,10 +5005,10 @@ $xamlFeedback = @"
 
         <!-- BUTONLAR -->
         <StackPanel Grid.Row='8' Orientation='Horizontal' HorizontalAlignment='Right' Margin='0,12,0,0'>
-            <Button x:Name='btnFeedbackCancel' Content='İptal' Background='#444' Foreground='White' Width='85' Height='32' Margin='0,0,8,0'/>
-            <Button x:Name='btnFeedbackClipboard' Content='📋 Panoya Kopyala' Background='#444' Foreground='White' Width='150' Height='32' Margin='0,0,8,0'/>
-            <Button x:Name='btnFeedbackGitHub' Content='🐙 GitHub Issue' Background='#24292E' Foreground='White' Width='130' Height='32' Margin='0,0,8,0'/>
-            <Button x:Name='btnFeedbackSend' Content='💬 Discord' Background='#5865F2' Foreground='White' Width='110' Height='32' FontWeight='Bold'/>
+            <Button x:Name='btnFeedbackCancel' Content='@@m_cancel@@' Background='#444' Foreground='White' Width='85' Height='32' Margin='0,0,8,0'/>
+            <Button x:Name='btnFeedbackClipboard' Content='@@fb_clipboard@@' Background='#444' Foreground='White' Width='150' Height='32' Margin='0,0,8,0'/>
+            <Button x:Name='btnFeedbackGitHub' Content='@@fb_github@@' Background='#24292E' Foreground='White' Width='130' Height='32' Margin='0,0,8,0'/>
+            <Button x:Name='btnFeedbackSend' Content='@@fb_discord@@' Background='#5865F2' Foreground='White' Width='110' Height='32' FontWeight='Bold'/>
         </StackPanel>
     </Grid>
 </Window>
@@ -4608,7 +5018,7 @@ $xamlAddCustom = @"
 
 <Window
     xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
-    xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='Klasör Ekle/Düzenle' Height='330' Width='500' Background='#181818' WindowStartupLocation='CenterScreen' WindowStyle='ToolWindow' ResizeMode='NoResize'>
+    xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='@@ac_title@@' Height='330' Width='500' Background='#181818' WindowStartupLocation='CenterScreen' WindowStyle='ToolWindow' ResizeMode='NoResize'>
     <Grid Margin='20'>
         <Grid.RowDefinitions>
             <RowDefinition Height='Auto'/>
@@ -4617,7 +5027,7 @@ $xamlAddCustom = @"
             <RowDefinition Height='Auto'/>
             <RowDefinition Height='*'/>
         </Grid.RowDefinitions>
-        <TextBlock Text='Yol:' Foreground='White' Margin='0,0,0,5'/>
+        <TextBlock Text='@@ac_path@@' Foreground='White' Margin='0,0,0,5'/>
         <Grid Grid.Row='1' Margin='0,0,0,15'>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width='*'/>
@@ -4626,14 +5036,14 @@ $xamlAddCustom = @"
             <TextBox x:Name='txtCustomPath' Height='28'/>
             <Button x:Name='btnBrowse' Grid.Column='1' Content='...' Width='35' Height='28' Margin='5,0,0,0' Background='#444' Foreground='White'/>
         </Grid>
-        <TextBlock Grid.Row='2' Text='Filtre (*.*):' Foreground='White' Margin='0,0,0,5'/>
+        <TextBlock Grid.Row='2' Text='@@ac_filter@@' Foreground='White' Margin='0,0,0,5'/>
         <TextBox Grid.Row='3' x:Name='txtFilter' Text='*.*' Height='28' Margin='0,0,0,15'/>
         <StackPanel Grid.Row='4'>
-            <CheckBox x:Name='chkRecurse' Content='Alt Klasörleri Dahil Et' Foreground='White' IsChecked='True' Margin='0,0,0,10'/>
-            <CheckBox x:Name='chkDeleteFolder' Content='Klasörü de Sil' Foreground='#FF5555' IsChecked='False' Margin='0,0,0,20'/>
+            <CheckBox x:Name='chkRecurse' Content='@@ac_recurse@@' Foreground='White' IsChecked='True' Margin='0,0,0,10'/>
+            <CheckBox x:Name='chkDeleteFolder' Content='@@ac_deletefolder@@' Foreground='#FF5555' IsChecked='False' Margin='0,0,0,20'/>
             <StackPanel Orientation='Horizontal' HorizontalAlignment='Right'>
-                <Button x:Name='btnAdd' Content='Kaydet' Background='#006600' Foreground='White' Width='100' Height='30'/>
-                <Button x:Name='btnCancel' Content='İptal' Background='#333' Foreground='White' Width='80' Height='30' Margin='10,0,0,0'/>
+                <Button x:Name='btnAdd' Content='@@m_save@@' Background='#006600' Foreground='White' Width='100' Height='30'/>
+                <Button x:Name='btnCancel' Content='@@m_cancel@@' Background='#333' Foreground='White' Width='80' Height='30' Margin='10,0,0,0'/>
             </StackPanel>
         </StackPanel>
     </Grid>
@@ -4643,7 +5053,7 @@ $xamlPathEdit = @"
 
 <Window
     xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
-    xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='Yolları Düzenle' Height='450' Width='600' Background='#181818' WindowStartupLocation='CenterScreen' WindowStyle='ToolWindow'>
+    xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml' Title='@@pe_title@@' Height='450' Width='600' Background='#181818' WindowStartupLocation='CenterScreen' WindowStyle='ToolWindow'>
     <Grid Margin='15'>
         <Grid.RowDefinitions>
             <RowDefinition Height='Auto'/>
@@ -4652,13 +5062,13 @@ $xamlPathEdit = @"
         </Grid.RowDefinitions>
         <StackPanel Grid.Row='0' Margin='0,0,0,10'>
             <TextBlock x:Name='lblAppName' Text='Uygulama' Foreground='#4CC2FF' FontSize='16' FontWeight='Bold'/>
-            <TextBlock Text='Her satıra bir kural girin.' Foreground='#888' FontSize='12'/>
+            <TextBlock Text='@@pe_onerule@@' Foreground='#888' FontSize='12'/>
         </StackPanel>
         <TextBox x:Name='txtRules' Grid.Row='1' AcceptsReturn='True' VerticalScrollBarVisibility='Auto' Background='#222' Foreground='#EEE' FontFamily='Consolas' Padding='5'/>
         <StackPanel Grid.Row='2' Orientation='Horizontal' HorizontalAlignment='Right' Margin='0,15,0,0'>
-            <Button x:Name='btnResetRules' Content='Sıfırla' Background='#A00' Foreground='White' Width='80' Height='30' Margin='0,0,10,0'/>
-            <Button x:Name='btnSaveRules' Content='Kaydet' Background='#007ACC' Foreground='White' Width='100' Height='30' Margin='0,0,10,0'/>
-            <Button x:Name='btnCloseEdit' Content='İptal' Background='#333' Foreground='White' Width='80' Height='30'/>
+            <Button x:Name='btnResetRules' Content='@@m_reset@@' Background='#A00' Foreground='White' Width='80' Height='30' Margin='0,0,10,0'/>
+            <Button x:Name='btnSaveRules' Content='@@m_save@@' Background='#007ACC' Foreground='White' Width='100' Height='30' Margin='0,0,10,0'/>
+            <Button x:Name='btnCloseEdit' Content='@@m_cancel@@' Background='#333' Foreground='White' Width='80' Height='30'/>
         </StackPanel>
     </Grid>
 </Window>
@@ -4674,7 +5084,7 @@ $xamlPathEdit = @"
 
 # --- XAML LOAD ---
 try {
-    $reader = New-Object System.Xml.XmlNodeReader ([xml]$xaml)
+    $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xaml))
     $Win = [Windows.Markup.XamlReader]::Load($reader)
 } catch { Write-Error "XAML hatası: $($_.Exception.Message)"; exit 1 }
 
@@ -5237,6 +5647,7 @@ function Save-User-Config {
         "RestorePointMode"   = $global:RestorePointMode
         "AppLayout"          = $global:AppLayout
         "ItemDescriptions"   = $global:ItemDescriptions
+        "Language"           = $global:CurrentLang
     }
 
     # ATOMIC WRITE + AUTO-BACKUP
@@ -6117,27 +6528,27 @@ function Invoke-RestorePointAsync {
     $xamlRP = @"
 <Window xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
         xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
-        Title='Geri Yukleme Noktasi' Height='180' Width='460'
+        Title='@@rp_title@@' Height='180' Width='460'
         Background='#181818' WindowStartupLocation='CenterOwner'
         WindowStyle='ToolWindow' ResizeMode='NoResize' ShowInTaskbar='False'>
     <Grid Margin='20'>
         <StackPanel VerticalAlignment='Center'>
-            <TextBlock Text='🔒 Sistem Geri Yukleme Noktasi Olusturuluyor'
+            <TextBlock Text='@@rp_creating@@'
                        Foreground='#4CC2FF' FontSize='14' FontWeight='Bold'
                        HorizontalAlignment='Center'/>
-            <TextBlock x:Name='txtRPStatus' Text='Windows VSS servisinden cevap bekleniyor...'
+            <TextBlock x:Name='txtRPStatus' Text='@@rp_waiting@@'
                        Foreground='#AAA' FontSize='11' Margin='0,10,0,10'
                        HorizontalAlignment='Center' TextAlignment='Center' TextWrapping='Wrap'/>
             <ProgressBar x:Name='pbRP' IsIndeterminate='True' Height='6'
                          Background='#333' Foreground='#4CC2FF' BorderThickness='0'/>
-            <TextBlock Text='Bu islem genelde 20-40 saniye surer. Lutfen bekleyin.'
+            <TextBlock Text='@@rp_takes@@'
                        Foreground='#555' FontSize='10' Margin='0,10,0,0'
                        HorizontalAlignment='Center'/>
         </StackPanel>
     </Grid>
 </Window>
 "@
-    $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlRP)
+    $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlRP))
     $winRP = [Windows.Markup.XamlReader]::Load($reader)
     if (-not $winRP) {
         WpfLog "[HATA] Restore point penceresi yuklenemedi (XAML parse)."
@@ -6261,7 +6672,7 @@ function Invoke-HiddenCommand {
 $global:TimerResTaskName    = "MrClean-TimerRes"
 $global:TimerResHelperPath  = Join-Path $env:APPDATA "MrClean\TimerResHelper.ps1"
 $global:TimerResVbsPath     = Join-Path $env:APPDATA "MrClean\TimerResHelperLauncher.vbs"
-$global:TRTSettingsPath     = Join-Path $env:APPDATA "MrClean\trt_settings.json"
+$global:TRTSettingsPath     = Join-Path $ConfigDir "trt_settings.json"
 
 # Timer Resolution Test ayarlarini JSON'dan oku. Yoksa veya bozuksa default'lar (SwiftyPop appsettings.json
 # fine-tune profili: 0.5-0.51 ms, 0.002 step, 20 sample, + 50 sn stress duration).
@@ -6865,7 +7276,7 @@ function Show-Privacy-Warning {
     if (-not $global:ShowPrivacyWarning) { return }
 
     try {
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlPrivacyWarn)
+        $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlPrivacyWarn))
         $winWarn = [Windows.Markup.XamlReader]::Load($reader)
         
         $chk = $winWarn.FindName('chkDontShowAgain')
@@ -6921,7 +7332,7 @@ function Apply-System-Tweaks {
     Scan-Nodes $tvTweaks.Items
 
     $totalOps = $toEnable.Count + $toDisable.Count
-    if ($totalOps -eq 0) {[System.Windows.MessageBox]::Show("Herhangi bir değişiklik yapılmadı. Sistem zaten seçimlerinizle aynı durumda.", "Bilgi") | Out-Null; return }
+    if ($totalOps -eq 0) {[System.Windows.MessageBox]::Show((T 'mbx_nochange'), (T 'mb_info')) | Out-Null; return }
 
     # --- MESAJ GÜNCELLEMESİ (Daha Anlaşılır) ---
     $msg = "Seçimleriniz (Açık/Kapalı durumları) sisteminizle eşitlenecek.`n`n"
@@ -7179,7 +7590,7 @@ function Apply-System-Tweaks {
 function Show-TweakManager {
     param($TargetTweak = $null)
     try {
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlTweakMgr)
+        $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlTweakMgr))
         $winTM = [Windows.Markup.XamlReader]::Load($reader)
         
         # Kontroller
@@ -7670,7 +8081,7 @@ ipconfig /flushdns > $null
 
             $global:TweakList[$catName] += $newObj
             Mark-ConfigDirty; Refresh-List; Load-Tweak-Tree
-            [System.Windows.MessageBox]::Show("Kaydedildi.") | Out-Null
+            [System.Windows.MessageBox]::Show((T 'mbx_saved')) | Out-Null
         })
         
         # SİL BUTONU
@@ -7715,7 +8126,7 @@ function Write-TweakAuditLog {
         $Undone  = @()
     )
     if (-not $AppDataPath) { return }
-    $logPath = Join-Path $AppDataPath "tweak_history.log"
+    $logPath = Join-Path $LogsDir "tweak_history.log"
     try {
         $ts = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
         $sb = New-Object System.Text.StringBuilder
@@ -8234,7 +8645,7 @@ function Compare-BenchSnapshots {
 # =========================================================
 function Invoke-QuickUndo {
     if (-not $global:LastTweakOperation) {
-        [System.Windows.MessageBox]::Show("Geri alinacak son islem yok.", "Bilgi") | Out-Null
+        [System.Windows.MessageBox]::Show((T 'mbx_noundo'), (T 'mb_info')) | Out-Null
         return
     }
     $op = $global:LastTweakOperation
@@ -8327,7 +8738,7 @@ $script:TweakScanTimer       = $null
 
 function Get-TweakStatusCachePath {
     if ($global:TweakStatusCachePath) { return $global:TweakStatusCachePath }
-    if ($AppDataPath) { return (Join-Path $AppDataPath "tweak_status_cache.json") }
+    if ($AppDataPath) { return (Join-Path $CacheDir "tweak_status_cache.json") }
     return $null
 }
 
@@ -8551,7 +8962,7 @@ function Check-And-Close-Browsers {
     if ($uniqueTargets) {
         $running = Get-Process -Name $uniqueTargets -ErrorAction SilentlyContinue
         if ($running) {
-            if ([System.Windows.MessageBox]::Show("Açık tarayıcılar var. Temizlik için kapatılsın mı?", "Uyarı", [System.Windows.MessageBoxButton]::YesNo) -eq 'Yes') { $running | Stop-Process -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2 }
+            if ([System.Windows.MessageBox]::Show((T 'mbx_clean_browsers'), (T 'mb_warn'), [System.Windows.MessageBoxButton]::YesNo) -eq 'Yes') { $running | Stop-Process -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2 }
         }
     }
 }
@@ -8561,7 +8972,7 @@ function Check-Browser-Safety {
     function Scan-Risky($items) { foreach ($item in $items) { $chk = Get-CheckFromItem $item; if ($chk.IsChecked) { $name = $chk.Content.ToString(); $isRisky = $false; foreach ($kw in $keywords) { if ($name -match $kw) { $isRisky = $true; break } } if ($name -match "Search Engine") { $isRisky = $false } if ($isRisky) { $riskyItems.Add($item) | Out-Null } } if ($item.Items.Count -gt 0) { Scan-Risky $item.Items } } }
     Scan-Risky $tvBrowser.Items
     if ($riskyItems.Count -gt 0) {
-        $res = [System.Windows.MessageBox]::Show("DİKKAT! Şifreler veya Yer İmleri gibi kritik veriler seçildi. Devam edilsin mi?", "Uyarı", [System.Windows.MessageBoxButton]::YesNoCancel, [System.Windows.MessageBoxImage]::Warning)
+        $res = [System.Windows.MessageBox]::Show((T 'mbx_clean_critical'), (T 'mb_warn'), [System.Windows.MessageBoxButton]::YesNoCancel, [System.Windows.MessageBoxImage]::Warning)
         if ($res -eq 'Cancel') { return "STOP" }
         if ($res -eq 'No') { foreach ($i in $riskyItems) { (Get-CheckFromItem $i).IsChecked = $false }; WpfLog "[GÜVENLİK] Kritik öğelerin seçimi kaldırıldı."; return "GO" }
     }
@@ -8764,7 +9175,7 @@ function Start-Winapp2-Process {
                             $uiCtrl.Text = "Yeni Sürüm Mevcut!"
                             $global:Winapp2UpdateAvailable = $true
                             if ($btnRef) {
-                                $btnRef.Content = "🔔 Güncelle (Yeni!)"
+                                $btnRef.Content = (T 'btn_update_new')
                                 $btnRef.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#137333")
                                 $btnRef.ToolTip = "Yeni winapp2 temizlik veritabanı sürümü mevcut - tıklayıp güncelleyin."
                             }
@@ -8773,7 +9184,7 @@ function Start-Winapp2-Process {
                             $uiCtrl.Text = "Sürüm Güncel."
                             $global:Winapp2UpdateAvailable = $false
                             if ($btnRef) {
-                                $btnRef.Content = "♻ Güncelle"
+                                $btnRef.Content = (T 'btn_update')
                                 $btnRef.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#4f0707")
                                 $btnRef.ToolTip = "Winapp2 veritabanını ve program listesini kontrol et."
                             }
@@ -9210,7 +9621,7 @@ function Run-CMD-Realtime {
             $lblStatus.Text = "DISM: imaj taraması başladı..."
         })
     } else {
-        $Win.Dispatcher.Invoke([action]{ $pbMain.IsIndeterminate = $true; $btnRun.Content = "İŞLENİYOR..." })
+        $Win.Dispatcher.Invoke([action]{ $pbMain.IsIndeterminate = $true; $btnRun.Content = (T 'btn_processing') })
     }
 
     $outputBuilder = New-Object System.Text.StringBuilder
@@ -9347,7 +9758,7 @@ function Run-CMD-Realtime {
     } catch {
         WpfLog "[HATA] Sistem hatası: $($_.Exception.Message)"
     } finally {
-        $Win.Dispatcher.Invoke([action]{ $pbMain.IsIndeterminate = $false; $pbMain.Value = 100; $lblStatus.Text = "Bitti."; $btnRun.Content = "BAŞLAT" })
+        $Win.Dispatcher.Invoke([action]{ $pbMain.IsIndeterminate = $false; $pbMain.Value = 100; $lblStatus.Text = "Bitti."; $btnRun.Content = (T 'btn_start') })
     }
 }
 
@@ -10144,7 +10555,7 @@ $script:RunEmbeddedToolBlock = {
                 $xamlVersionSelect = @"
                 <Window xmlns='http://schemas.microsoft.com/winfx/2006/xaml/presentation'
                         xmlns:x='http://schemas.microsoft.com/winfx/2006/xaml'
-                        Title='Sürüm Seçimi' Height='280' Width='520' 
+                        Title='@@vs_title@@' Height='280' Width='520' 
                         Background='#181818' WindowStartupLocation='CenterOwner' WindowStyle='ToolWindow' ResizeMode='NoResize'>
                     <Window.Resources>
                         <Style TargetType='Button'>
@@ -10174,14 +10585,14 @@ $script:RunEmbeddedToolBlock = {
                             <RowDefinition Height='Auto'/>
                         </Grid.RowDefinitions>
                         
-                        <TextBlock x:Name='txtTitle' Text='Yeni Sürüm Tespit Edildi' Foreground='#4CC2FF' FontSize='18' FontWeight='Bold' HorizontalAlignment='Center'/>
-                        <TextBlock Grid.Row='1' Text='Bu araç için yeni bir test (Beta) sürümü mevcut. Lütfen indirmek istediğiniz versiyonu seçin:' Foreground='#AAA' TextWrapping='Wrap' Margin='0,10,0,20' TextAlignment='Center'/>
+                        <TextBlock x:Name='txtTitle' Text='@@vs_detected@@' Foreground='#4CC2FF' FontSize='18' FontWeight='Bold' HorizontalAlignment='Center'/>
+                        <TextBlock Grid.Row='1' Text='@@vs_desc@@' Foreground='#AAA' TextWrapping='Wrap' Margin='0,10,0,20' TextAlignment='Center'/>
                         
                         <UniformGrid Grid.Row='2' Columns='2'>
                             <!-- STABİL BUTONU -->
                             <Button x:Name='btnStable' Background='#006600' Margin='0,0,5,0'>
                                 <StackPanel Margin='10'>
-                                    <TextBlock Text='🌟 STABİL SÜRÜM' Foreground='White' FontSize='15' FontWeight='Bold' HorizontalAlignment='Center'/>
+                                    <TextBlock Text='@@vs_stable@@' Foreground='White' FontSize='15' FontWeight='Bold' HorizontalAlignment='Center'/>
                                     <TextBlock x:Name='txtStableVer' Text='v...' Foreground='#DDD' FontSize='12' HorizontalAlignment='Center' Margin='0,5,0,0'/>
                                 </StackPanel>
                             </Button>
@@ -10189,17 +10600,17 @@ $script:RunEmbeddedToolBlock = {
                             <!-- BETA BUTONU -->
                             <Button x:Name='btnBeta' Background='#E68A00' Margin='5,0,0,0'>
                                 <StackPanel Margin='10'>
-                                    <TextBlock Text='🧪 BETA SÜRÜM' Foreground='White' FontSize='15' FontWeight='Bold' HorizontalAlignment='Center'/>
+                                    <TextBlock Text='@@vs_beta@@' Foreground='White' FontSize='15' FontWeight='Bold' HorizontalAlignment='Center'/>
                                     <TextBlock x:Name='txtBetaVer' Text='v...' Foreground='#DDD' FontSize='12' HorizontalAlignment='Center' Margin='0,5,0,0'/>
                                 </StackPanel>
                             </Button>
                         </UniformGrid>
                         
-                        <Button x:Name='btnCancel' Grid.Row='3' Content='İptal Et' Background='#333' Foreground='White' Width='100' Height='30' Margin='0,15,0,0' HorizontalAlignment='Right'/>
+                        <Button x:Name='btnCancel' Grid.Row='3' Content='@@vs_cancel@@' Background='#333' Foreground='White' Width='100' Height='30' Margin='0,15,0,0' HorizontalAlignment='Right'/>
                     </Grid>
                 </Window>
 "@
-                $readerVer = New-Object System.Xml.XmlNodeReader ([xml]$xamlVersionSelect)
+                $readerVer = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlVersionSelect))
                 $winVer = [Windows.Markup.XamlReader]::Load($readerVer)
                 $winVer.Owner = $Win
 
@@ -10451,7 +10862,7 @@ $script:RunToolBlock = {
 # Base64 gömme yerine bu yaklaşım: antivirüs dostu + dosya boyutu küçük.
 $script:RunMsiUtilityBlock = {
     $btnTools.IsEnabled = $false
-    $targetPath  = "$AppDataPath\MSI_Utility_V3.exe"
+    $targetPath  = "$ToolsDir\MSI_Utility_V3.exe"
     $downloadUrl = "https://raw.githubusercontent.com/zeugmass/MSI_Utility_v3/main/MSI_util_v3.exe"
 
     # --- CACHE HIT: daha önce indirildiyse direkt çalıştır ---
@@ -10508,7 +10919,7 @@ $script:RunMsiUtilityBlock = {
 function Show-ToolManager {
     try {
         # DÜZELTME: Doğrudan temiz XAML'ı yüklüyoruz, -replace yok.
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlToolMgr)
+        $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlToolMgr))
         $winTM = [Windows.Markup.XamlReader]::Load($reader)
         
         # Kontroller
@@ -10562,7 +10973,7 @@ function Show-ToolManager {
             $global:ToolDownloadPath = $tDP.Text
             
             Mark-ConfigDirty; Refresh-Tools-Menu
-            [System.Windows.MessageBox]::Show("Kaydedildi.")|Out-Null
+            [System.Windows.MessageBox]::Show((T 'mbx_saved'))|Out-Null
         })
         
         $bD.Add_Click({
@@ -10717,7 +11128,7 @@ function Show-RecommendedProfiles {
     $xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Önerilen Profil Seç" Height="560" Width="820"
+        Title="@@rec_title@@" Height="560" Width="820"
         Background="#181818" WindowStartupLocation="CenterOwner"
         WindowStyle="ToolWindow" ResizeMode="NoResize">
     <Window.Resources>
@@ -10753,9 +11164,9 @@ function Show-RecommendedProfiles {
 
         <!-- BASLIK -->
         <StackPanel Grid.Row="0" Margin="0,0,0,14">
-            <TextBlock Text="Önerilen Profil Seç" Foreground="#FFFFFF"
+            <TextBlock Text="@@rec_title@@" Foreground="#FFFFFF"
                        FontSize="18" FontWeight="Bold"/>
-            <TextBlock Text="Bir veya birden fazla profil seçip uygulayabilirsiniz. Profil içeriğini görmek için oka tıklayın."
+            <TextBlock Text="@@rec_desc@@"
                        Foreground="#666" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"/>
         </StackPanel>
 
@@ -10782,9 +11193,9 @@ function Show-RecommendedProfiles {
                         <CheckBox x:Name="chkOyun" Grid.Column="0" Style="{StaticResource ProfileCheck}"
                                   VerticalAlignment="Center"/>
                         <StackPanel Grid.Column="1" Margin="8,0,0,0">
-                            <TextBlock Text="🎮 Oyun / Düşük Gecikme" Foreground="#4CAF50"
+                            <TextBlock Text="@@gen_lowlatency@@" Foreground="#4CAF50"
                                        FontSize="14" FontWeight="Bold"/>
-                            <TextBlock Text="Input lag azaltma, CPU/ağ optimizasyonu"
+                            <TextBlock Text="@@gen_lowlatency_desc@@"
                                        Foreground="#888" FontSize="11" TextWrapping="Wrap"/>
                         </StackPanel>
                         <Button x:Name="btnOyunExpand" Grid.Column="2" Content="▼"
@@ -10903,7 +11314,7 @@ function Show-RecommendedProfiles {
                        Text="" Foreground="#888" FontSize="11"
                        VerticalAlignment="Center"/>
             <Button x:Name="btnProfileCancel" Grid.Column="2"
-                    Content="İptal" Style="{StaticResource ActionBtn}"
+                    Content="@@m_cancel@@" Style="{StaticResource ActionBtn}"
                     Width="90" Background="#2E2E2E"/>
             <Button x:Name="btnProfileApply" Grid.Column="4"
                     Content="✔ Seçip Uygula" Style="{StaticResource ActionBtn}"
@@ -10914,7 +11325,7 @@ function Show-RecommendedProfiles {
 "@
 
     try {
-        $reader  = New-Object System.Xml.XmlNodeReader ([xml]$xaml)
+        $reader  = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xaml))
         $winP    = [Windows.Markup.XamlReader]::Load($reader)
         $winP.Owner = $Win
 
@@ -11150,7 +11561,7 @@ function Show-ExportSourceDialog {
     $xamlEx = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="📤 Dışa Aktar - Kaynak Seç" Height="280" Width="460"
+        Title="@@ex_title@@" Height="280" Width="460"
         Background="#181818" WindowStartupLocation="CenterOwner" WindowStyle="ToolWindow" ResizeMode="NoResize">
     <Window.Resources>
 $global:PMShareBtnStyle
@@ -11162,18 +11573,18 @@ $global:PMShareBtnStyle
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <TextBlock Grid.Row="0" Text="📤 Hangi tweak'ler dışa aktarılsın?" Foreground="#FFFFFF" FontSize="16" FontWeight="Bold" Margin="0,0,0,6"/>
-        <TextBlock Grid.Row="1" Text="Bir profil seçili. Seçili profili mi yoksa şu an Tweaks sekmesinde işaretli olan tweak'leri mi paylaşmak istersin?" Foreground="#999" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,14"/>
+        <TextBlock Grid.Row="0" Text="@@ex_which@@" Foreground="#FFFFFF" FontSize="16" FontWeight="Bold" Margin="0,0,0,6"/>
+        <TextBlock Grid.Row="1" Text="@@ex_desc@@" Foreground="#999" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,14"/>
         <StackPanel Grid.Row="2" VerticalAlignment="Top">
             <Button x:Name="btnExSelProfile" Style="{StaticResource ShareBtn}" Height="42" Margin="0,0,0,10" Background="#2E5E2E" Content="📁 Seçili Profil ($ProfileName · $ProfileCount tweak)"/>
-            <Button x:Name="btnExChecked" Style="{StaticResource ShareBtn}" Height="42" Background="#007ACC" Content="☑️ Tweaks sekmesinde işaretli olanlar"/>
+            <Button x:Name="btnExChecked" Style="{StaticResource ShareBtn}" Height="42" Background="#007ACC" Content="@@ex_checked@@"/>
         </StackPanel>
-        <Button Grid.Row="3" x:Name="btnExCancel" Style="{StaticResource ShareBtn}" Height="32" Width="100" HorizontalAlignment="Right" Background="#3A3A3A" Content="İptal"/>
+        <Button Grid.Row="3" x:Name="btnExCancel" Style="{StaticResource ShareBtn}" Height="32" Width="100" HorizontalAlignment="Right" Background="#3A3A3A" Content="@@m_cancel@@"/>
     </Grid>
 </Window>
 "@
     try {
-        $r = New-Object System.Xml.XmlNodeReader ([xml]$xamlEx)
+        $r = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlEx))
         $w = [Windows.Markup.XamlReader]::Load($r)
         try { $w.Owner = $Win } catch {}
         $w.FindName('btnExSelProfile').Add_Click({ $script:_exportChoice = 'profile'; $w.Close() })
@@ -11200,7 +11611,7 @@ function Show-ImportConfirmDialog {
     $xamlIm = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="📥 İçe Aktar - Onay" Height="600" Width="560"
+        Title="@@im_title@@" Height="600" Width="560"
         Background="#181818" WindowStartupLocation="CenterOwner" WindowStyle="ToolWindow" ResizeMode="CanResize" MinHeight="420" MinWidth="440">
     <Window.Resources>
 $global:PMShareBtnStyle
@@ -11215,7 +11626,7 @@ $global:PMShareBtnStyle
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0" Margin="0,0,0,8">
-            <TextBlock Text="📥 Profil İçe Aktarılıyor" Foreground="#FFFFFF" FontSize="17" FontWeight="Bold"/>
+            <TextBlock Text="@@im_importing@@" Foreground="#FFFFFF" FontSize="17" FontWeight="Bold"/>
             <TextBlock Text="Profil: $ProfileName" Foreground="#CCC" FontSize="13" Margin="0,4,0,0"/>
             <TextBlock Text="$verLine" Foreground="#888" FontSize="11" Margin="0,2,0,0"/>
         </StackPanel>
@@ -11243,7 +11654,7 @@ $global:PMShareBtnStyle
         </Border>
 
         <TextBlock Grid.Row="3" Foreground="#777" FontSize="11" TextWrapping="Wrap" Margin="0,10,0,0"
-                   Text="🔒 Güvenlik: Profil yalnızca tweak İSİMLERİNİ içerir; başka makineden kod ÇALIŞMAZ — bu programdaki aynı isimli tweak uygulanır."/>
+                   Text="@@im_security@@"/>
 
         <Grid Grid.Row="4" Margin="0,12,0,0">
             <Grid.ColumnDefinitions>
@@ -11254,15 +11665,15 @@ $global:PMShareBtnStyle
                 <ColumnDefinition Width="8"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Button x:Name="btnImApply" Grid.Column="1" Style="{StaticResource ShareBtn}" Height="36" Width="170" Background="#2E5E2E" Content="✓ İçe Aktar + Uygula"/>
-            <Button x:Name="btnImMark" Grid.Column="3" Style="{StaticResource ShareBtn}" Height="36" Width="120" Background="#007ACC" Content="Sadece İşaretle"/>
-            <Button x:Name="btnImCancel" Grid.Column="5" Style="{StaticResource ShareBtn}" Height="36" Width="90" Background="#3A3A3A" Content="İptal"/>
+            <Button x:Name="btnImApply" Grid.Column="1" Style="{StaticResource ShareBtn}" Height="36" Width="170" Background="#2E5E2E" Content="@@im_apply@@"/>
+            <Button x:Name="btnImMark" Grid.Column="3" Style="{StaticResource ShareBtn}" Height="36" Width="120" Background="#007ACC" Content="@@im_mark@@"/>
+            <Button x:Name="btnImCancel" Grid.Column="5" Style="{StaticResource ShareBtn}" Height="36" Width="90" Background="#3A3A3A" Content="@@m_cancel@@"/>
         </Grid>
     </Grid>
 </Window>
 "@
     try {
-        $r = New-Object System.Xml.XmlNodeReader ([xml]$xamlIm)
+        $r = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlIm))
         $w = [Windows.Markup.XamlReader]::Load($r)
         try { $w.Owner = $Win } catch {}
         $w.FindName('icList').ItemsSource = $items
@@ -11306,7 +11717,7 @@ function Show-ProfileManager {
     $xaml = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Profil Yöneticisi" Height="540" Width="560"
+        Title="@@pm_title@@" Height="540" Width="560"
         Background="#181818" WindowStartupLocation="CenterOwner"
         WindowStyle="ToolWindow" ResizeMode="NoResize">
     <Window.Resources>
@@ -11354,9 +11765,9 @@ function Show-ProfileManager {
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0" Text="Profil Yöneticisi" Foreground="#FFFFFF"
+        <TextBlock Grid.Row="0" Text="@@pm_title@@" Foreground="#FFFFFF"
                    FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
-        <TextBlock Grid.Row="1" Text="Profiller en yeniden eskiye sıralanır (son 50). AppData\MrClean\Profiles klasörüne kaydedilir. Sil butonu seçili profili kalıcı kaldırır."
+        <TextBlock Grid.Row="1" Text="@@pm_desc@@"
                    Foreground="#555" FontSize="11" Margin="0,0,0,12" TextWrapping="Wrap"/>
 
         <!-- PROFİL LİSTESİ -->
@@ -11461,7 +11872,7 @@ function Show-ProfileManager {
                     Background="#007ACC" IsEnabled="False"/>
             <Button x:Name="btnPMClose" Grid.Column="6"
                     Style="{StaticResource PMButton}"
-                    Content="Kapat" Height="34" Width="80"
+                    Content="@@m_close@@" Height="34" Width="80"
                     Background="#3A3A3A"/>
         </Grid>
     </Grid>
@@ -11469,7 +11880,7 @@ function Show-ProfileManager {
 "@
 
     try {
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xaml)
+        $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xaml))
         $winPM  = [Windows.Markup.XamlReader]::Load($reader)
         $winPM.Owner = $Win
 
@@ -11782,7 +12193,7 @@ function Start-ShutdownCountdown {
         $btnNightMode.Content = "🌙 Shutdown"
         $btnNightMode.Foreground = [System.Windows.Media.Brushes]::Cyan
         
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlCountdown)
+        $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlCountdown))
         $winCount = [Windows.Markup.XamlReader]::Load($reader)
         
         $txtSec = $winCount.FindName('txtSeconds')
@@ -11819,7 +12230,7 @@ function Show-Winapp2Editor {
     $xamlEdit = @"
     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-            Title="Winapp2 Editörü (Override)" Height="600" Width="700" 
+            Title="@@we_title@@" Height="600" Width="700" 
             Background="#181818" WindowStartupLocation="CenterScreen" WindowStyle="ToolWindow">
         <Grid Margin="15">
             <Grid.RowDefinitions>
@@ -11832,13 +12243,13 @@ function Show-Winapp2Editor {
             
             <!-- ARAMA -->
             <StackPanel Grid.Row="0">
-                <TextBlock Text="Uygulama Ara (Winapp2.ini):" Foreground="#4CC2FF" FontWeight="Bold" Margin="0,0,0,5"/>
+                <TextBlock Text="@@we_search@@" Foreground="#4CC2FF" FontWeight="Bold" Margin="0,0,0,5"/>
                 <Grid>
                     <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="80"/></Grid.ColumnDefinitions>
                     <TextBox x:Name="txtSearch" Padding="5" Background="#222" Foreground="White" Text=""/>
-                    <Button x:Name="btnSearch" Grid.Column="1" Content="BUL" Background="#007ACC" Foreground="White" Margin="5,0,0,0"/>
+                    <Button x:Name="btnSearch" Grid.Column="1" Content="@@we_find@@" Background="#007ACC" Foreground="White" Margin="5,0,0,0"/>
                 </Grid>
-                <TextBlock Text="Sonuçlar:" Foreground="#AAA" Margin="0,10,0,5"/>
+                <TextBlock Text="@@we_results@@" Foreground="#AAA" Margin="0,10,0,5"/>
             </StackPanel>
 
             <!-- SONUÇ LİSTESİ -->
@@ -11849,20 +12260,20 @@ function Show-Winapp2Editor {
             <!-- EDİTÖR -->
             <Grid Grid.Row="3">
                 <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-                <TextBlock Text="Düzenle (Kendi kurallarınızı yazın):" Foreground="#E68A00" FontWeight="Bold" Margin="0,5,0,5"/>
+                <TextBlock Text="@@we_editlabel@@" Foreground="#E68A00" FontWeight="Bold" Margin="0,5,0,5"/>
                 <TextBox x:Name="txtContent" Grid.Row="1" AcceptsReturn="True" Background="#252526" Foreground="#0F0" FontFamily="Consolas" Padding="5" VerticalScrollBarVisibility="Auto"/>
             </Grid>
 
             <!-- BUTONLAR -->
             <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
-                <Button x:Name="btnDeleteOverride" Content="Özel Ayarı Sil (Sıfırla)" Background="#A00" Foreground="White" Width="150" Margin="0,0,10,0" Visibility="Collapsed"/>
-                <Button x:Name="btnSave" Content="KAYDET ve ÇIK" Background="#006600" Foreground="White" FontWeight="Bold" Width="120" Height="30"/>
+                <Button x:Name="btnDeleteOverride" Content="@@we_deleteoverride@@" Background="#A00" Foreground="White" Width="150" Margin="0,0,10,0" Visibility="Collapsed"/>
+                <Button x:Name="btnSave" Content="@@we_saveexit@@" Background="#006600" Foreground="White" FontWeight="Bold" Width="120" Height="30"/>
             </StackPanel>
         </Grid>
     </Window>
 "@
     
-    $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlEdit)
+    $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlEdit))
     $winEd = [Windows.Markup.XamlReader]::Load($reader)
     
     $txtS = $winEd.FindName('txtSearch'); $btnS = $winEd.FindName('btnSearch')
@@ -12034,7 +12445,7 @@ function Send-Feedback {
 # Show-FeedbackWindow: modal form'u acar
 function Show-FeedbackWindow {
     try {
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlFeedback)
+        $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlFeedback))
         $winFb = [Windows.Markup.XamlReader]::Load($reader)
 
         $cb       = $winFb.FindName('cbFeedbackType')
@@ -12194,7 +12605,7 @@ function Show-AppUpdateWindow {
     $xamlAU = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Program Guncellemesi" Height="520" Width="600"
+        Title="@@au_title@@" Height="520" Width="600"
         Background="#181818" WindowStartupLocation="CenterOwner"
         WindowStyle="ToolWindow" ResizeMode="NoResize">
     <Window.Resources>
@@ -12238,7 +12649,7 @@ function Show-AppUpdateWindow {
 
         <!-- BASLIK -->
         <StackPanel Grid.Row="0">
-            <TextBlock Text="🚀 Yeni Surum Mevcut" Foreground="#4CC2FF" FontSize="20" FontWeight="Bold"/>
+            <TextBlock Text="@@au_available@@" Foreground="#4CC2FF" FontSize="20" FontWeight="Bold"/>
             <TextBlock x:Name="txtAUSubtitle" Text="" Foreground="#888" FontSize="12" Margin="0,4,0,16"/>
         </StackPanel>
 
@@ -12251,14 +12662,14 @@ function Show-AppUpdateWindow {
             </Grid.ColumnDefinitions>
             <Border Grid.Column="0" Background="#202020" CornerRadius="6" BorderBrush="#2E2E2E" BorderThickness="1" Padding="12,10">
                 <StackPanel>
-                    <TextBlock Text="Mevcut Surum" Foreground="#888" FontSize="11" HorizontalAlignment="Center"/>
+                    <TextBlock Text="@@au_current@@" Foreground="#888" FontSize="11" HorizontalAlignment="Center"/>
                     <TextBlock x:Name="txtAUCurrent" Text="" Foreground="White" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                 </StackPanel>
             </Border>
             <TextBlock Grid.Column="1" Text="➔" Foreground="#4CC2FF" FontSize="22" VerticalAlignment="Center" Margin="12,0"/>
             <Border Grid.Column="2" Background="#1A2A1A" CornerRadius="6" BorderBrush="#2E5E2E" BorderThickness="1" Padding="12,10">
                 <StackPanel>
-                    <TextBlock Text="Yeni Surum" Foreground="#888" FontSize="11" HorizontalAlignment="Center"/>
+                    <TextBlock Text="@@au_new@@" Foreground="#888" FontSize="11" HorizontalAlignment="Center"/>
                     <TextBlock x:Name="txtAUNew" Text="" Foreground="#4CAF50" FontWeight="Bold" FontSize="16" HorizontalAlignment="Center" Margin="0,4,0,0"/>
                 </StackPanel>
             </Border>
@@ -12271,7 +12682,7 @@ function Show-AppUpdateWindow {
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-                <TextBlock Grid.Row="0" Text="✨ Degisiklikler" Foreground="#E68A00" FontWeight="Bold" FontSize="12" Margin="0,0,0,6"/>
+                <TextBlock Grid.Row="0" Text="@@pm_changes@@" Foreground="#E68A00" FontWeight="Bold" FontSize="12" Margin="0,0,0,6"/>
                 <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                     <TextBlock x:Name="txtAUNotes" Foreground="#CCC" FontSize="12" TextWrapping="Wrap" FontFamily="Consolas"/>
                 </ScrollViewer>
@@ -12299,17 +12710,17 @@ function Show-AppUpdateWindow {
                 <ColumnDefinition Width="8"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
-            <Button Grid.Column="0" x:Name="btnAUSkip" Style="{StaticResource AUButton}" Content="🔇  Bu sürümü atla" Background="#3A2A2A" Height="36" Width="180" HorizontalAlignment="Left"/>
-            <Button Grid.Column="2" x:Name="btnAULater" Style="{StaticResource AUButton}" Content="💤  Daha sonra" Background="#3A3A3A" Height="36" Width="140"/>
-            <Button Grid.Column="4" x:Name="btnAUUpdate" Style="{StaticResource AUButton}" Content="📦  Güncelle" Background="#2E5E2E" Height="36" Width="170"/>
-            <Button Grid.Column="6" x:Name="btnAURelease" Style="{StaticResource AUButton}" Content="🌐" Background="#3A3A3A" Height="36" Width="44" ToolTip="Release sayfasını tarayıcıda aç"/>
+            <Button Grid.Column="0" x:Name="btnAUSkip" Style="{StaticResource AUButton}" Content="@@au_skip@@" Background="#3A2A2A" Height="36" Width="180" HorizontalAlignment="Left"/>
+            <Button Grid.Column="2" x:Name="btnAULater" Style="{StaticResource AUButton}" Content="@@au_later@@" Background="#3A3A3A" Height="36" Width="140"/>
+            <Button Grid.Column="4" x:Name="btnAUUpdate" Style="{StaticResource AUButton}" Content="@@au_update@@" Background="#2E5E2E" Height="36" Width="170"/>
+            <Button Grid.Column="6" x:Name="btnAURelease" Style="{StaticResource AUButton}" Content="🌐" Background="#3A3A3A" Height="36" Width="44" ToolTip="@@au_releasetip@@"/>
         </Grid>
     </Grid>
 </Window>
 "@
 
     try {
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlAU)
+        $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlAU))
         $winAU  = [Windows.Markup.XamlReader]::Load($reader)
         $winAU.Owner = $Win
 
@@ -12437,7 +12848,7 @@ function New-Winapp2DiffReport {
     $d = Get-Winapp2Diff -OldPath $OldPath -NewPath $NewPath
     $ts = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
     $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
-    $reportPath = Join-Path $AppDataPath "winapp2_diff_$stamp.txt"
+    $reportPath = Join-Path $DatabaseDir "winapp2_diff_$stamp.txt"
     $sb = New-Object System.Text.StringBuilder
     [void]$sb.AppendLine("Winapp2.ini Guncelleme Fark Raporu")
     [void]$sb.AppendLine("Tarih: $ts")
@@ -12463,7 +12874,7 @@ function Show-UpdateWindow {
     $xamlUpdate = @"
     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-            Title="Veritabanı Güncelleme" Height="250" Width="500" 
+            Title="@@uw_title@@" Height="250" Width="500" 
             Background="#181818" WindowStartupLocation="CenterScreen" WindowStyle="ToolWindow" ResizeMode="NoResize">
         <Grid Margin="20">
             <Grid.RowDefinitions>
@@ -12472,7 +12883,7 @@ function Show-UpdateWindow {
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <TextBlock Text="Winapp2.ini Veritabanı ve Liste" Foreground="#4CC2FF" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
+            <TextBlock Text="@@uw_header@@" Foreground="#4CC2FF" FontSize="16" FontWeight="Bold" HorizontalAlignment="Center"/>
 
             <!-- SÜRÜM BİLGİLERİ -->
             <Grid Grid.Row="1" VerticalAlignment="Center">
@@ -12483,21 +12894,21 @@ function Show-UpdateWindow {
                 </Grid.ColumnDefinitions>
                 
                 <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                    <TextBlock Text="Mevcut Sürüm" Foreground="#888" FontSize="11" HorizontalAlignment="Center"/>
+                    <TextBlock Text="@@set_curver@@" Foreground="#888" FontSize="11" HorizontalAlignment="Center"/>
                     <TextBlock x:Name="txtLocalVer" Text="..." Foreground="White" FontWeight="Bold" FontSize="13" HorizontalAlignment="Center" Margin="0,5,0,0"/>
                 </StackPanel>
 
                 <TextBlock Grid.Column="1" Text="➔" Foreground="#555" FontSize="20" VerticalAlignment="Center" Margin="10,0"/>
 
                 <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                    <TextBlock Text="Sunucu Sürümü" Foreground="#888" FontSize="11" HorizontalAlignment="Center"/>
-                    <TextBlock x:Name="txtOnlineVer" Text="Kontrol Ediliyor..." Foreground="#E68A00" FontWeight="Bold" FontSize="13" HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                    <TextBlock Text="@@uw_server@@" Foreground="#888" FontSize="11" HorizontalAlignment="Center"/>
+                    <TextBlock x:Name="txtOnlineVer" Text="@@uw_checking@@" Foreground="#E68A00" FontWeight="Bold" FontSize="13" HorizontalAlignment="Center" Margin="0,5,0,0"/>
                 </StackPanel>
             </Grid>
 
             <!-- DURUM VE BUTONLAR -->
             <StackPanel Grid.Row="2">
-                <TextBlock x:Name="txtStatus" Text="Lütfen bekleyin..." Foreground="#AAA" HorizontalAlignment="Center" Margin="0,0,0,15"/>
+                <TextBlock x:Name="txtStatus" Text="@@uw_wait@@" Foreground="#AAA" HorizontalAlignment="Center" Margin="0,0,0,15"/>
                 
                 <!-- 3 SÜTUNLU BUTON YAPISI -->
                 <Grid>
@@ -12509,9 +12920,9 @@ function Show-UpdateWindow {
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     
-                    <Button x:Name="btnOpenFolder" Grid.Column="0" Content="📂 Klasörü Aç" Height="35" Background="#333" Foreground="White" ToolTip="Dosya konumunu açar."/>
-                    <Button x:Name="btnRescan" Grid.Column="2" Content="♻ Listeyi Yenile" Height="35" Background="#E68A00" Foreground="White" FontWeight="SemiBold" ToolTip="Önbelleği siler ve yüklü uygulamaları tekrar tarar."/>
-                    <Button x:Name="btnDoUpdate" Grid.Column="4" Content="GÜNCELLE" Height="35" Background="#006600" Foreground="White" FontWeight="Bold" IsEnabled="False" ToolTip="İnternetten yeni sürümü indirir."/>
+                    <Button x:Name="btnOpenFolder" Grid.Column="0" Content="@@uw_openfolder@@" Height="35" Background="#333" Foreground="White" ToolTip="@@uw_foldertip@@"/>
+                    <Button x:Name="btnRescan" Grid.Column="2" Content="@@uw_rescan@@" Height="35" Background="#E68A00" Foreground="White" FontWeight="SemiBold" ToolTip="@@uw_rescantip@@"/>
+                    <Button x:Name="btnDoUpdate" Grid.Column="4" Content="@@uw_do@@" Height="35" Background="#006600" Foreground="White" FontWeight="Bold" IsEnabled="False" ToolTip="@@uw_dotip@@"/>
                 </Grid>
             </StackPanel>
         </Grid>
@@ -12519,7 +12930,7 @@ function Show-UpdateWindow {
 "@
 
     # --- PENCEREYİ YÜKLE ---
-    $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlUpdate)
+    $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlUpdate))
     $winUpd = [Windows.Markup.XamlReader]::Load($reader)
 
     # Kontroller
@@ -12681,7 +13092,7 @@ function Show-UpdateWindow {
                         $rep = New-Winapp2DiffReport -OldPath $backupFile -NewPath $localFile -OnlineVer $txtOnline.Text
                         $txtStat.Text = "✔ Güncellendi!  +$($rep.Added) yeni · ~$($rep.Changed) değişen · -$($rep.Removed) çıkan"
                         $script:LastWinapp2DiffPath = $rep.Path
-                        $prev = Join-Path $AppDataPath "Winapp2.prev.ini"
+                        $prev = Join-Path $DatabaseDir "Winapp2.prev.ini"
                         Copy-Item $backupFile $prev -Force -ErrorAction SilentlyContinue
                         if ($rep.Path -and (Test-Path $rep.Path)) { Invoke-Item $rep.Path }
                     } catch { WpfLog "[UYARI] Winapp2 fark raporu uretilemedi: $($_.Exception.Message)" }
@@ -12727,7 +13138,7 @@ function Show-RestartDialog {
     $xamlRestart = @"
     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-            Title="Sistem Yeniden Başlatma" Height="220" Width="480" 
+            Title="@@rs_title@@" Height="220" Width="480" 
             Background="#181818" WindowStartupLocation="CenterScreen" WindowStyle="ToolWindow" ResizeMode="NoResize">
         <Grid Margin="20">
             <Grid.RowDefinitions>
@@ -12739,11 +13150,11 @@ function Show-RestartDialog {
             <!-- BAŞLIK VE İKON -->
             <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,15">
                 <TextBlock Text="⚠️" FontSize="20" Margin="0,0,10,0"/>
-                <TextBlock Text="Yeniden Başlatma Gerekiyor" Foreground="#FF5555" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                <TextBlock Text="@@rs_needed@@" Foreground="#FF5555" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
             </StackPanel>
 
             <!-- AÇIKLAMA -->
-            <TextBlock Grid.Row="1" Text="Low Latency (Espor), Ping ve İşlemci ayarlarının Windows çekirdeğinde (Kernel) devreye girebilmesi için bilgisayarın yeniden başlatılması şarttır." 
+            <TextBlock Grid.Row="1" Text="@@rs_desc@@" 
                        Foreground="#DDD" TextWrapping="Wrap" TextAlignment="Center" FontSize="13"/>
 
             <!-- BUTONLAR -->
@@ -12754,11 +13165,11 @@ function Show-RestartDialog {
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 
-                <Button x:Name="btnLater" Grid.Column="0" Content="Daha Sonra" Height="40" Background="#333" Foreground="White"/>
+                <Button x:Name="btnLater" Grid.Column="0" Content="@@rs_later@@" Height="40" Background="#333" Foreground="White"/>
                 
                 <Button x:Name="btnRestartNow" Grid.Column="2" Height="40" Background="#A00" Foreground="White" FontWeight="Bold">
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="🔥 ŞİMDİ YENİDEN BAŞLAT" VerticalAlignment="Center"/>
+                        <TextBlock Text="@@rs_now@@" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
             </Grid>
@@ -12766,7 +13177,7 @@ function Show-RestartDialog {
     </Window>
 "@
     
-    $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlRestart)
+    $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlRestart))
     $winRes = [Windows.Markup.XamlReader]::Load($reader)
     
     $btnLater = $winRes.FindName('btnLater')
@@ -12791,7 +13202,7 @@ function Show-HardwareDetail {
     $xamlHW = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Detayli Donanim Bilgisi" Height="640" Width="700"
+        Title="@@hw_title@@" Height="640" Width="700"
         Background="#181818" WindowStartupLocation="CenterOwner"
         WindowStyle="ToolWindow" ResizeMode="CanResize">
     <Window.Resources>
@@ -12843,23 +13254,23 @@ function Show-HardwareDetail {
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0" Margin="0,0,0,14">
-            <TextBlock Text="Detayli Donanim Bilgisi" Foreground="#FFFFFF" FontSize="18" FontWeight="Bold"/>
-            <TextBlock Text="Tum degerler secilip kopyalanabilir (Ctrl+C)" Foreground="#555555" FontSize="11" Margin="0,3,0,0"/>
+            <TextBlock Text="@@hw_title@@" Foreground="#FFFFFF" FontSize="18" FontWeight="Bold"/>
+            <TextBlock Text="@@hw_copyhint@@" Foreground="#555555" FontSize="11" Margin="0,3,0,0"/>
         </StackPanel>
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 <!-- ANAKART ve BIOS -->
                 <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock Style="{StaticResource SectionTitle}" Text="Anakart ve BIOS"/>
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="@@hw_moboBios@@"/>
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="120"/><ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions><RowDefinition/><RowDefinition/></Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource LblStyle}" Text="Anakart"/>
+                            <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource LblStyle}" Text="@@hw_mobo@@"/>
                             <TextBox   Grid.Row="0" Grid.Column="1" Style="{StaticResource ValStyle}" x:Name="txtMB"/>
-                            <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource LblStyle}" Text="BIOS Surumu"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource LblStyle}" Text="@@hw_biosver@@"/>
                             <TextBox   Grid.Row="1" Grid.Column="1" Style="{StaticResource ValStyle}" x:Name="txtBIOS"/>
                         </Grid>
                     </StackPanel>
@@ -12867,7 +13278,7 @@ function Show-HardwareDetail {
                 <!-- RAM -->
                 <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock Style="{StaticResource SectionTitle}" Text="RAM Modulleri"/>
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="@@hw_rammodules@@"/>
                         <ItemsControl x:Name="icRAM">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -12879,13 +13290,13 @@ function Show-HardwareDetail {
                                             <Grid.RowDefinitions>
                                                 <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
                                             </Grid.RowDefinitions>
-                                            <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource LblStyle}" Text="Slot"/>
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource LblStyle}" Text="@@hw_slot@@"/>
                                             <TextBox   Grid.Row="0" Grid.Column="1" Style="{StaticResource ValStyle}" Text="{Binding Slot}"/>
-                                            <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource LblStyle}" Text="Marka / Model"/>
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource LblStyle}" Text="@@hw_brandmodel@@"/>
                                             <TextBox   Grid.Row="1" Grid.Column="1" Style="{StaticResource ValStyle}" Text="{Binding MfrPart}"/>
-                                            <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource LblStyle}" Text="Kapasite"/>
+                                            <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource LblStyle}" Text="@@hw_capacity@@"/>
                                             <TextBox   Grid.Row="2" Grid.Column="1" Style="{StaticResource ValStyle}" Text="{Binding CapStr}"/>
-                                            <TextBlock Grid.Row="3" Grid.Column="0" Style="{StaticResource LblStyle}" Text="Hiz"/>
+                                            <TextBlock Grid.Row="3" Grid.Column="0" Style="{StaticResource LblStyle}" Text="@@hw_speed@@"/>
                                             <TextBox   Grid.Row="3" Grid.Column="1" Style="{StaticResource ValStyle}" Text="{Binding SpeedStr}"/>
                                         </Grid>
                                     </Border>
@@ -12897,7 +13308,7 @@ function Show-HardwareDetail {
                 <!-- GPU -->
                 <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock Style="{StaticResource SectionTitle}" Text="Grafik Karti (GPU)"/>
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="@@hw_gpu@@"/>
                         <ItemsControl x:Name="icGPU">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -12909,13 +13320,13 @@ function Show-HardwareDetail {
                                             <Grid.RowDefinitions>
                                                 <RowDefinition/><RowDefinition/><RowDefinition/><RowDefinition/>
                                             </Grid.RowDefinitions>
-                                            <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource LblStyle}" Text="Uretici (AIB)"/>
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource LblStyle}" Text="@@hw_aib@@"/>
                                             <TextBox   Grid.Row="0" Grid.Column="1" Style="{StaticResource ValStyle}" Text="{Binding Vendor}"/>
-                                            <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource LblStyle}" Text="Model"/>
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource LblStyle}" Text="@@hw_model@@"/>
                                             <TextBox   Grid.Row="1" Grid.Column="1" Style="{StaticResource ValStyle}" Text="{Binding Name}"/>
-                                            <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource LblStyle}" Text="VRAM"/>
+                                            <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource LblStyle}" Text="@@hw_vram@@"/>
                                             <TextBox   Grid.Row="2" Grid.Column="1" Style="{StaticResource ValStyle}" Text="{Binding VramStr}"/>
-                                            <TextBlock Grid.Row="3" Grid.Column="0" Style="{StaticResource LblStyle}" Text="Surucu"/>
+                                            <TextBlock Grid.Row="3" Grid.Column="0" Style="{StaticResource LblStyle}" Text="@@hw_driver@@"/>
                                             <TextBox   Grid.Row="3" Grid.Column="1" Style="{StaticResource ValStyle}" Text="{Binding Driver}"/>
                                         </Grid>
                                     </Border>
@@ -12927,7 +13338,7 @@ function Show-HardwareDetail {
                 <!-- DISK -->
                 <Border Style="{StaticResource Card}">
                     <StackPanel>
-                        <TextBlock Style="{StaticResource SectionTitle}" Text="Fiziksel Diskler"/>
+                        <TextBlock Style="{StaticResource SectionTitle}" Text="@@hw_disks@@"/>
                         <ItemsControl x:Name="icDisk">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -12939,11 +13350,11 @@ function Show-HardwareDetail {
                                             <Grid.RowDefinitions>
                                                 <RowDefinition/><RowDefinition/><RowDefinition/>
                                             </Grid.RowDefinitions>
-                                            <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource LblStyle}" Text="Model"/>
+                                            <TextBlock Grid.Row="0" Grid.Column="0" Style="{StaticResource LblStyle}" Text="@@hw_model@@"/>
                                             <TextBox   Grid.Row="0" Grid.Column="1" Style="{StaticResource ValStyle}" Text="{Binding Model}"/>
-                                            <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource LblStyle}" Text="Kapasite"/>
+                                            <TextBlock Grid.Row="1" Grid.Column="0" Style="{StaticResource LblStyle}" Text="@@hw_capacity@@"/>
                                             <TextBox   Grid.Row="1" Grid.Column="1" Style="{StaticResource ValStyle}" Text="{Binding SizeStr}"/>
-                                            <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource LblStyle}" Text="Seri No"/>
+                                            <TextBlock Grid.Row="2" Grid.Column="0" Style="{StaticResource LblStyle}" Text="@@hw_serial@@"/>
                                             <TextBox   Grid.Row="2" Grid.Column="1" Style="{StaticResource ValStyle}" Text="{Binding Serial}"/>
                                         </Grid>
                                     </Border>
@@ -12954,7 +13365,7 @@ function Show-HardwareDetail {
                 </Border>
             </StackPanel>
         </ScrollViewer>
-        <Button x:Name="btnCloseHW" Grid.Row="2" Content="Kapat" Height="34" Width="100"
+        <Button x:Name="btnCloseHW" Grid.Row="2" Content="@@m_close@@" Height="34" Width="100"
                 HorizontalAlignment="Right" Margin="0,10,0,0"
                 Background="#2E2E2E" Foreground="#CCCCCC"/>
     </Grid>
@@ -12962,7 +13373,7 @@ function Show-HardwareDetail {
 "@
 
     try {
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlHW)
+        $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlHW))
         $winHW  = [Windows.Markup.XamlReader]::Load($reader)
         $winHW.Owner = $Win
 
@@ -13690,13 +14101,13 @@ function Show-BenchDiffModal {
 
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
             <Button x:Name="btnDChart" Content="📊 Grafik Olarak Göster" Width="200" Height="30" Background="#2E5E2E" Foreground="White" BorderThickness="0" Margin="0,0,8,0" Cursor="Hand"/>
-            <Button x:Name="btnDClose" Content="Kapat" Width="100" Height="30" Background="#3A3A3A" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+            <Button x:Name="btnDClose" Content="@@m_close@@" Width="100" Height="30" Background="#3A3A3A" Foreground="White" BorderThickness="0" Cursor="Hand"/>
         </StackPanel>
     </Grid>
 </Window>
 "@
     try {
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlD)
+        $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlD))
         $w = [Windows.Markup.XamlReader]::Load($reader)
         $w.Owner = $Win
 
@@ -13853,13 +14264,13 @@ function Show-BenchDiffChart {
         <TextBlock Grid.Row="4" x:Name="lblCFoot" Foreground="#888" FontSize="11" Margin="0,8,0,0" TextWrapping="Wrap"/>
 
         <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,6,0,0">
-            <Button x:Name="btnCClose" Content="Kapat" Width="100" Height="30" Background="#3A3A3A" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+            <Button x:Name="btnCClose" Content="@@m_close@@" Width="100" Height="30" Background="#3A3A3A" Foreground="White" BorderThickness="0" Cursor="Hand"/>
         </StackPanel>
     </Grid>
 </Window>
 "@
     try {
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlC)
+        $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlC))
         $winC = [Windows.Markup.XamlReader]::Load($reader)
         if ($Owner) { $winC.Owner = $Owner } else { $winC.Owner = $Win }
 
@@ -14132,13 +14543,13 @@ function Show-BenchMetricGuide {
         </Border>
 
         <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-            <Button x:Name="btnGClose" Content="Kapat" Width="100" Height="32" Background="#3A3A3A" Foreground="White" BorderThickness="0" Cursor="Hand"/>
+            <Button x:Name="btnGClose" Content="@@m_close@@" Width="100" Height="32" Background="#3A3A3A" Foreground="White" BorderThickness="0" Cursor="Hand"/>
         </StackPanel>
     </Grid>
 </Window>
 "@
     try {
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlG)
+        $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlG))
         $winG = [Windows.Markup.XamlReader]::Load($reader)
         $winG.Owner = $Win
 
@@ -14354,14 +14765,14 @@ function Show-BenchmarkPanel {
             <Button x:Name="btnDelBench" Grid.Column="4" Style="{StaticResource BBtn}" Content="🗑️ Sil" Background="#A00000" Width="80" Height="32" IsEnabled="False"/>
             <Button x:Name="btnGuide" Grid.Column="6" Style="{StaticResource BBtn}" Content="📋 Metrik Rehberi" Background="#2E5E2E" Width="160" Height="32" ToolTip="Hangi tweak hangi metriği etkilemesi beklenir — referans tablo"/>
             <Button x:Name="btnDnsBenchOpen" Grid.Column="8" Style="{StaticResource BBtn}" Content="🔎 DNS Benchmark" Background="#0066AA" Width="160" Height="32" ToolTip="7 popüler DNS server hız karşılaştırması — en hızlısını Apply et"/>
-            <Button x:Name="btnBRefresh" Grid.Column="10" Style="{StaticResource BBtn}" Content="♻ Yenile" Background="#3A3A3A" Width="100" Height="32"/>
-            <Button x:Name="btnBClose" Grid.Column="12" Style="{StaticResource BBtn}" Content="Kapat" Background="#3A3A3A" Width="100" Height="32"/>
+            <Button x:Name="btnBRefresh" Grid.Column="10" Style="{StaticResource BBtn}" Content="@@btn_refresh@@" Background="#3A3A3A" Width="100" Height="32"/>
+            <Button x:Name="btnBClose" Grid.Column="12" Style="{StaticResource BBtn}" Content="@@m_close@@" Background="#3A3A3A" Width="100" Height="32"/>
         </Grid>
     </Grid>
 </Window>
 "@
     try {
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlB)
+        $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlB))
         $winB   = [Windows.Markup.XamlReader]::Load($reader)
         $winB.Owner = $Win
 
@@ -14543,7 +14954,7 @@ function Find-TweakByName {
 # Find-TweakByName ile Risk + Command/UndoCommand bilgisini iliskilendirir.
 function Get-ActivityLogEntries {
     param([int]$Limit = 100)
-    $logPath = Join-Path $AppDataPath "tweak_history.log"
+    $logPath = Join-Path $LogsDir "tweak_history.log"
     if (-not (Test-Path $logPath)) { return @() }
 
     $entries  = New-Object System.Collections.Generic.List[object]
@@ -14665,7 +15076,7 @@ function Show-SystemSecurityDetail {
         $xamlSS = @"
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="🛡️ Sistem ve Güvenlik Detayı" Height="640" Width="720"
+        Title="@@ss_title@@" Height="640" Width="720"
         Background="#181818" WindowStartupLocation="CenterOwner"
         WindowStyle="ToolWindow" ResizeMode="CanResize" MinWidth="560" MinHeight="460">
     <Grid Margin="14">
@@ -14674,21 +15085,21 @@ function Show-SystemSecurityDetail {
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
-        <TextBlock Grid.Row="0" Text="🛡️ Sistem ve Güvenlik Detayı" Foreground="#5CD6A0" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
+        <TextBlock Grid.Row="0" Text="@@ss_title@@" Foreground="#5CD6A0" FontSize="18" FontWeight="Bold" Margin="0,0,0,10"/>
         <Border Grid.Row="1" Background="#1F1F1F" CornerRadius="5" BorderBrush="#2E2E2E" BorderThickness="1">
             <TextBox x:Name="txtSSBody" Background="Transparent" Foreground="#E8E8E8" BorderThickness="0"
                      FontFamily="Consolas" FontSize="13" Padding="12" IsReadOnly="True"
                      TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"
-                     VerticalContentAlignment="Top" Text="Veriler toplanıyor, lütfen bekleyin..."/>
+                     VerticalContentAlignment="Top" Text="@@hw_collecting@@"/>
         </Border>
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-            <Button x:Name="btnSSCopy" Content="📋 Tümünü Kopyala" Width="160" Height="32" Margin="0,0,8,0" Background="#0066AA" Foreground="White" BorderThickness="0" FontWeight="Bold"/>
-            <Button x:Name="btnSSClose" Content="Kapat" Width="100" Height="32" Background="#3A3A3A" Foreground="White" BorderThickness="0"/>
+            <Button x:Name="btnSSCopy" Content="@@copy_all@@" Width="160" Height="32" Margin="0,0,8,0" Background="#0066AA" Foreground="White" BorderThickness="0" FontWeight="Bold"/>
+            <Button x:Name="btnSSClose" Content="@@m_close@@" Width="100" Height="32" Background="#3A3A3A" Foreground="White" BorderThickness="0"/>
         </StackPanel>
     </Grid>
 </Window>
 "@
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlSS)
+        $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlSS))
         $winSS = [Windows.Markup.XamlReader]::Load($reader)
         try { $winSS.Owner = $Win } catch {}
         $txtSSBody  = $winSS.FindName('txtSSBody')
@@ -15113,13 +15524,13 @@ function Show-DnsBenchmark {
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <Button x:Name="btnApply" Grid.Column="0" Style="{StaticResource DBtn}" Content="Secili DNS'i Uygula" Background="#2E5E2E" Width="180" Height="32" IsEnabled="False"/>
-            <Button x:Name="btnClose" Grid.Column="2" Style="{StaticResource DBtn}" Content="Kapat" Background="#3A3A3A" Width="100" Height="32"/>
+            <Button x:Name="btnClose" Grid.Column="2" Style="{StaticResource DBtn}" Content="@@m_close@@" Background="#3A3A3A" Width="100" Height="32"/>
         </Grid>
     </Grid>
 </Window>
 "@
 
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlDns)
+        $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlDns))
         $winDns = [Windows.Markup.XamlReader]::Load($reader)
         try { $winDns.Owner = $Win } catch {}
 
@@ -15624,14 +16035,14 @@ function Show-DefenderExclusionManager {
             <Button x:Name="btnDERemove"  Grid.Column="4" Style="{StaticResource DEBtn}" Content="❌ Exclusion Kaldır"      Background="#A00000" Width="160" Height="32" IsEnabled="False"/>
             <Button x:Name="btnDEManual"  Grid.Column="6" Style="{StaticResource DEBtn}" Content="📁 Manuel Klasör Ekle"   Background="#3A3A3A" Width="180" Height="32"/>
             <Button x:Name="btnDEList"    Grid.Column="8" Style="{StaticResource DEBtn}" Content="📋 Mevcut Exclusions"     Background="#3A3A3A" Width="170" Height="32"/>
-            <Button x:Name="btnDEClose"   Grid.Column="10" Style="{StaticResource DEBtn}" Content="Kapat"                   Background="#3A3A3A" Width="100" Height="32"/>
+            <Button x:Name="btnDEClose"   Grid.Column="10" Style="{StaticResource DEBtn}" Content="@@m_close@@"                   Background="#3A3A3A" Width="100" Height="32"/>
         </Grid>
     </Grid>
 </Window>
 "@
 
     try {
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlDE)
+        $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlDE))
         $winDE = [Windows.Markup.XamlReader]::Load($reader)
         $winDE.Owner = $Win
 
@@ -15906,7 +16317,7 @@ function Show-ActivityLog {
         <TextBlock Grid.Row="0" Text="📜 Aktivite Log" Foreground="#FFFFFF" FontSize="18" FontWeight="Bold" Margin="0,0,0,4"/>
         <TextBlock Grid.Row="1" Foreground="#888" FontSize="11" Margin="0,0,0,10" TextWrapping="Wrap">
             <Run Text="Apply / Undo gecmisi (son 100 islem). Bir satira tikla → 'Sec' isaretli olur. Tek satir icin sag taraftaki 'Geri Al', coklu icin alttaki 'Secilenleri Geri Al'."/><LineBreak/>
-            <Run Text="Kaynak: %APPDATA%\MrClean\tweak_history.log"  Foreground="#666" FontStyle="Italic"/>
+            <Run Text="Kaynak: %APPDATA%\MrClean\logs\tweak_history.log"  Foreground="#666" FontStyle="Italic"/>
         </TextBlock>
 
         <!-- FILTRE SATIRI -->
@@ -15969,7 +16380,7 @@ function Show-ActivityLog {
                         <GridViewColumn Header="" Width="120">
                             <GridViewColumn.CellTemplate>
                                 <DataTemplate>
-                                    <Button Content="↶ Geri Al" Style="{StaticResource ALRowBtn}" Tag="{Binding}" Width="100"/>
+                                    <Button Content="@@btn_quickundo@@" Style="{StaticResource ALRowBtn}" Tag="{Binding}" Width="100"/>
                                 </DataTemplate>
                             </GridViewColumn.CellTemplate>
                         </GridViewColumn>
@@ -16006,15 +16417,15 @@ function Show-ActivityLog {
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <Button x:Name="btnALReverse" Grid.Column="0" Style="{StaticResource ALBtn}" Content="🔄 Secilenleri Geri Al" Background="#0066AA" Width="200" Height="32" IsEnabled="False"/>
-            <Button x:Name="btnALRefresh" Grid.Column="2" Style="{StaticResource ALBtn}" Content="♻ Yenile" Background="#3A3A3A" Width="100" Height="32"/>
-            <Button x:Name="btnALClose"   Grid.Column="4" Style="{StaticResource ALBtn}" Content="Kapat"   Background="#3A3A3A" Width="100" Height="32"/>
+            <Button x:Name="btnALRefresh" Grid.Column="2" Style="{StaticResource ALBtn}" Content="@@btn_refresh@@" Background="#3A3A3A" Width="100" Height="32"/>
+            <Button x:Name="btnALClose"   Grid.Column="4" Style="{StaticResource ALBtn}" Content="@@m_close@@"   Background="#3A3A3A" Width="100" Height="32"/>
         </Grid>
     </Grid>
 </Window>
 "@
 
     try {
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlAL)
+        $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlAL))
         $winAL  = [Windows.Markup.XamlReader]::Load($reader)
         $winAL.Owner = $Win
 
@@ -16307,7 +16718,7 @@ function Show-TimerResolutionSettings {
     </Grid>
 </Window>
 "@
-    $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlTRS)
+    $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlTRS))
     $win = [Windows.Markup.XamlReader]::Load($reader)
     $txtStart          = $win.FindName('txtStart')
     $txtEnd            = $win.FindName('txtEnd')
@@ -16531,12 +16942,12 @@ function Show-TimerResolutionTest {
             <Button x:Name="btnStressBench" Style="{StaticResource ReadableBtn}" Content="🔥 Stress Bench" Background="#cc4400" Foreground="White" Width="140" Height="32" Margin="0,0,6,0" ToolTip="CPU yuk altinda gercek-dunya benchmark (sure ⚙️ Ayarlar'dan)"/>
             <Button x:Name="btnApplyOptimal" Style="{StaticResource ReadableBtn}" Content="🔧 Optimal ile Başlat" Background="#222" Foreground="White" Width="170" Height="32" Margin="0,0,6,0" IsEnabled="False"/>
             <Button x:Name="btnSettings" Style="{StaticResource ReadableBtn}" Content="⚙️" Background="#444" Foreground="White" Width="40" Height="32" Margin="0,0,6,0" ToolTip="Ayarlar — Auto-Tune ve Stress Bench parametreleri"/>
-            <Button x:Name="btnCloseTRT" Style="{StaticResource ReadableBtn}" Content="Kapat" Background="#444" Foreground="White" Width="80" Height="32"/>
+            <Button x:Name="btnCloseTRT" Style="{StaticResource ReadableBtn}" Content="@@m_close@@" Background="#444" Foreground="White" Width="80" Height="32"/>
         </StackPanel>
     </Grid>
 </Window>
 "@
-    $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlTRT)
+    $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlTRT))
     $win = [Windows.Markup.XamlReader]::Load($reader)
     $lblCurrent      = $win.FindName('lblCurrent')
     $lstLog          = $win.FindName('lstLog')
@@ -17096,7 +17507,7 @@ function Show-BloatwareManager {
         $xamlBloat = @"
         <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                Title="Akıllı Bloatware Yöneticisi" Height="600" Width="500" 
+                Title="@@bloat_title@@" Height="600" Width="500" 
                 Background="#181818" WindowStartupLocation="CenterScreen" WindowStyle="ToolWindow">
             <Grid Margin="15">
                 <Grid.RowDefinitions>
@@ -17105,17 +17516,17 @@ function Show-BloatwareManager {
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
                 <StackPanel>
-                    <TextBlock Text="Windows Uygulamaları Temizleyici" Foreground="#FF5555" FontSize="18" FontWeight="Bold"/>
-                    <TextBlock Text="Kaldırmak istediğiniz uygulamaları seçin." Foreground="#AAA" FontSize="12" Margin="0,5,0,10"/>
-                    <CheckBox x:Name="chkSelectAll" Content="Tümünü Seç / Kaldır" Foreground="White" Margin="0,0,0,10"/>
+                    <TextBlock Text="@@bloat_header@@" Foreground="#FF5555" FontSize="18" FontWeight="Bold"/>
+                    <TextBlock Text="@@bloat_desc@@" Foreground="#AAA" FontSize="12" Margin="0,5,0,10"/>
+                    <CheckBox x:Name="chkSelectAll" Content="@@bloat_selectall@@" Foreground="White" Margin="0,0,0,10"/>
                 </StackPanel>
                 <TreeView x:Name="tvBloat" Grid.Row="1" Background="#222" BorderThickness="0" Padding="5"/>
-                <Button x:Name="btnClean" Grid.Row="2" Content="SEÇİLENLERİ KALDIR" Background="#A00" Foreground="White" Height="40" Margin="0,15,0,0" FontWeight="Bold"/>
+                <Button x:Name="btnClean" Grid.Row="2" Content="@@bloat_removesel@@" Background="#A00" Foreground="White" Height="40" Margin="0,15,0,0" FontWeight="Bold"/>
             </Grid>
         </Window>
 "@
         # 2. Pencereyi ve Kontrolleri Yükle
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlBloat)
+        $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlBloat))
         $winBloat = [Windows.Markup.XamlReader]::Load($reader)
         
         $tvBloat = $winBloat.FindName('tvBloat')
@@ -17174,7 +17585,7 @@ function Show-BloatwareManager {
 
             if ($toRemove.Count -eq 0) { return }
 
-            if ([System.Windows.MessageBox]::Show("$($toRemove.Count) uygulama sistemden silinecek. Onaylıyor musunuz?", "Onay", [System.Windows.MessageBoxButton]::YesNo) -eq 'Yes') {
+            if ([System.Windows.MessageBox]::Show(((T 'mbx_bloat_confirm') -f $toRemove.Count), (T 'mb_confirm'), [System.Windows.MessageBoxButton]::YesNo) -eq 'Yes') {
                 $winBloat.Close()
                 WpfLog "--- BLOATWARE TEMİZLİĞİ BAŞLIYOR ---"
                 
@@ -17583,7 +17994,7 @@ if ($ctxEditPaths) {
         if ($treeItem -and $treeItem.Tag -match '^WINAPP2:(.*)') {
             $appName = $Matches[1]
             try {
-                $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlPathEdit); $winEdit = [Windows.Markup.XamlReader]::Load($reader)
+                $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlPathEdit)); $winEdit = [Windows.Markup.XamlReader]::Load($reader)
                 $txtRules = $winEdit.FindName('txtRules'); $lblApp = $winEdit.FindName('lblAppName'); $btnSave = $winEdit.FindName('btnSaveRules'); $btnReset = $winEdit.FindName('btnResetRules'); $btnClose = $winEdit.FindName('btnCloseEdit')
                 $lblApp.Text = "Düzenleniyor: $appName"; $curr = @(); if ($global:PathOverrides.ContainsKey($appName)) { $curr = $global:PathOverrides[$appName] } elseif ($global:Winapp2Rules.ContainsKey($appName)) { $curr = $global:Winapp2Rules[$appName] }; $txtRules.Text = ($curr -join "`r`n")
                 $btnSave.Add_Click({ $newRules = $txtRules.Text -split "`r`n" | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }; $global:PathOverrides[$appName] = $newRules; Mark-ConfigDirty; WpfLog "[AYAR] $appName yolları güncellendi."; $winEdit.Close() })
@@ -17783,7 +18194,7 @@ $script:EditDescriptionBlock = {
     $xamlDesc = @"
     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-            Title="Açıklama Düzenle" Height="250" Width="400" 
+            Title="@@desc_title@@" Height="250" Width="400" 
             Background="#181818" WindowStartupLocation="CenterScreen" WindowStyle="ToolWindow" ResizeMode="NoResize">
         <Grid Margin="15">
             <Grid.RowDefinitions>
@@ -17794,13 +18205,13 @@ $script:EditDescriptionBlock = {
             <TextBlock Text="Seçilen: $cleanName" Foreground="#E68A00" FontWeight="Bold" Margin="0,0,0,10" TextTrimming="CharacterEllipsis"/>
             <TextBox x:Name="txtDesc" Grid.Row="1" Background="#222" Foreground="#4CC2FF" FontSize="13" TextWrapping="Wrap" AcceptsReturn="True" Padding="5" BorderBrush="#444"/>
             <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,10,0,0">
-                <Button x:Name="btnDelete" Content="Sil" Background="#A00" Foreground="White" Width="60" Height="30" Margin="0,0,10,0" ToolTip="Açıklamayı tamamen kaldırır."/>
-                <Button x:Name="btnSave" Content="Kaydet" Background="#006600" Foreground="White" Width="80" Height="30"/>
+                <Button x:Name="btnDelete" Content="@@m_delete@@" Background="#A00" Foreground="White" Width="60" Height="30" Margin="0,0,10,0" ToolTip="@@desc_deltip@@"/>
+                <Button x:Name="btnSave" Content="@@m_save@@" Background="#006600" Foreground="White" Width="80" Height="30"/>
             </StackPanel>
         </Grid>
     </Window>
 "@
-    $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlDesc)
+    $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlDesc))
     $winDesc = [Windows.Markup.XamlReader]::Load($reader)
     
     $txtD = $winDesc.FindName('txtDesc')
@@ -17854,8 +18265,8 @@ foreach ($mName in $menuNames) {
 }
 
 # --- ARAMA KUTUSU ---
-$txtSearch.Add_GotFocus({ if ($txtSearch.Text -eq "Uygulama Ara...") { $txtSearch.Text = ""; $txtSearch.Foreground = [System.Windows.Media.Brushes]::White } })
-$txtSearch.Add_LostFocus({ if ($txtSearch.Text -eq "") { $txtSearch.Text = "Uygulama Ara..."; $txtSearch.Foreground = [System.Windows.Media.Brushes]::Gray } })
+$txtSearch.Add_GotFocus({ if ($txtSearch.Text -eq (T 'search_placeholder')) { $txtSearch.Text = ""; $txtSearch.Foreground = [System.Windows.Media.Brushes]::White } })
+$txtSearch.Add_LostFocus({ if ($txtSearch.Text -eq "") { $txtSearch.Text = (T 'search_placeholder'); $txtSearch.Foreground = [System.Windows.Media.Brushes]::Gray } })
 # --- GELİŞMİŞ ARAMA MOTORU (RECURSIVE) ---
 # --- SEARCH DEBOUNCE TIMER (Sprint 4.1) ---
 # Her tus basiminda taramak yerine 250ms bekleme — UI rahat
@@ -17922,7 +18333,7 @@ $script:SearchDebounceTimer.Add_Tick({
     }
 
     $targets = @($tvBrowser, $tvApps, $tvTweaks, $tvSystem, $tvRepair, $tvShellBags, $tvWinget)
-    if (-not [string]::IsNullOrWhiteSpace($filter) -and $filter -ne "Uygulama Ara...") {
+    if (-not [string]::IsNullOrWhiteSpace($filter) -and $filter -ne (T 'search_placeholder')) {
         foreach ($tree in $targets) {
             if ($tree -and $tree.Items.Count -gt 0) { Filter-Nodes $tree.Items $filter | Out-Null }
         }
@@ -18537,7 +18948,7 @@ $btnFixUpdate.Add_Click({
 })
 
 $btnResetNet.Add_Click({
-    if ([System.Windows.MessageBox]::Show("Tüm ağ ayarları (DNS, IP, WinSock) sıfırlanacak.`nBilgisayarı yeniden başlatmanız gerekecek.`nOnaylıyor musunuz?", "Ağ Sıfırlama", [System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Warning) -eq 'Yes') {
+    if ([System.Windows.MessageBox]::Show((T 'mbx_net_reset'), (T 'mb_confirm'), [System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Warning) -eq 'Yes') {
         
         $txtLog.Text = ""
         WpfLog "--- AĞ SIFIRLAMA (RAM) ---"
@@ -19018,8 +19429,8 @@ $btnInstallWinget.Add_Click({
     Find $tvWinget.Items
     
     # Kontroller
-    if ($list.Count -eq 0) {[System.Windows.MessageBox]::Show("Kurulacak uygulama seçilmedi.") | Out-Null; return }
-    if ([System.Windows.MessageBox]::Show("$($list.Count) uygulama kurulacak. Onaylıyor musunuz?", "Onay",[System.Windows.MessageBoxButton]::YesNo) -ne 'Yes') { return }
+    if ($list.Count -eq 0) {[System.Windows.MessageBox]::Show((T 'mbx_winget_noselect')) | Out-Null; return }
+    if ([System.Windows.MessageBox]::Show(((T 'mbx_winget_install') -f $list.Count), (T 'mb_confirm'),[System.Windows.MessageBoxButton]::YesNo) -ne 'Yes') { return }
     
     # 2. UI Hazırlık
     $txtLog.Text = ""
@@ -19087,8 +19498,8 @@ $btnUninstallWinget.Add_Click({
     Find $tvWinget.Items
     
     # Kontroller
-    if ($list.Count -eq 0) {[System.Windows.MessageBox]::Show("Seçim yok.")|Out-Null; return }
-    if ([System.Windows.MessageBox]::Show("Seçili öğeler silinecek. Emin misiniz?", "Uyarı",[System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning) -ne 'Yes') { return }
+    if ($list.Count -eq 0) {[System.Windows.MessageBox]::Show((T 'mbx_noselect'))|Out-Null; return }
+    if ([System.Windows.MessageBox]::Show((T 'mbx_del_selected'), (T 'mb_warn'),[System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning) -ne 'Yes') { return }
     
     $txtLog.Text = ""
     # Base64 Kodlama (Veri Transferi İçin)
@@ -19335,7 +19746,7 @@ $btnTools.Add_Click({
 
 $btnManageWinget.Add_Click({
     try {
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlWingetMgr); $winW = [Windows.Markup.XamlReader]::Load($reader)
+        $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlWingetMgr)); $winW = [Windows.Markup.XamlReader]::Load($reader)
         # Kontroller
         $tn = $winW.FindName('txtName'); $ti = $winW.FindName('txtID'); $lst = $winW.FindName('lstWinget'); $lblID = $winW.FindName('lblID')
         $bA = $winW.FindName('btnAddW'); $bD = $winW.FindName('btnDelW'); $bC = $winW.FindName('btnCloseW'); $bE = $winW.FindName('btnEditW')
@@ -19349,10 +19760,10 @@ $btnManageWinget.Add_Click({
             $lst.Items.Clear(); $tn.Text=""; $ti.Text=""; $script:editIndex=-1; $bA.Content="EKLE"; $bA.Background="#006600"
             
             if ($rbW.IsChecked) {
-                $lblID.Text = "Winget ID (Örn: Valve.Steam)"
+                $lblID.Text = (T 'wm_id_winget')
                 $currentList = $global:WingetApps
             } else {
-                $lblID.Text = "Paket Adı (Örn: *xbox* veya tam isim)"
+                $lblID.Text = (T 'wm_id_appx')
                 $currentList = $global:CustomAppx
             }
             
@@ -19448,25 +19859,58 @@ $btnWingetUpdateAll.Add_Click({
         }
     }
 
+    # v1.2.30: Paket ID tespiti (winget upgrade tablosundan). ID her zaman Id/Version/Available/Source
+    # dizisinde; kolon-ayrimi 2+ bosluk, ID nokta+harf iceren token (saf surum haric).
+    $isId = { param($c) $c -match '^[A-Za-z0-9][\w.+-]*\.[\w.+-]+$' -and $c -match '[A-Za-z]' -and $c -notmatch '^\d+(\.\d+)+$' -and $c -notmatch '^(winget|msstore)$' }
     try {
         WS 'Kaynaklar guncelleniyor...'
         Log 'BILGI: Kaynaklar guncelleniyor...'
-        
         & $w source update --disable-interactivity 2>&1 | ForEach-Object { Process-Output $_ }
-        
-        WS 'Guncellemeler yapiliyor...'
-        Log 'BILGI: Toplu guncelleme baslatildi. Bu islem biraz surebilir...'
+
+        WS 'Yukseltilebilir paketler tespit ediliyor...'
+        Log 'BILGI: Yukseltilebilir paketler tespit ediliyor...'
+        $listOut = & $w upgrade --include-unknown --accept-source-agreements --disable-interactivity 2>&1
+
+        $ids = New-Object System.Collections.Generic.List[string]
+        foreach ($ln in $listOut) {
+            $l = $ln.ToString()
+            if ($l -match 'upgrades available' -or $l -match '^\s*Name\s' -or $l -match '^[-\s]+$' -or $l -match 'install location' -or $l -match '^\s*-\s') { continue }
+            $cols = $l -split '\s{2,}'
+            if ($cols.Count -lt 3) { continue }
+            $cand = $null
+            for ($i=1; $i -lt $cols.Count; $i++) {
+                $full=$cols[$i].Trim(); $first=($full -split '\s+')[0]
+                if (& $isId $full) { $cand=$full; break }
+                if (& $isId $first) { $cand=$first; break }
+            }
+            if ($cand) { [void]$ids.Add($cand) }
+        }
+        $ids = @($ids | Select-Object -Unique)
         Log '----------------------------------------'
-        
-        # Güncelleme komutu
-        & $w upgrade --all --force --include-unknown --accept-source-agreements --accept-package-agreements --disable-interactivity 2>&1 | ForEach-Object { Process-Output $_ }
-        
+
+        if ($ids.Count -eq 0) {
+            Log 'BILGI: Yukseltilebilir paket bulunamadi (hepsi guncel).'
+        } else {
+            Log ("BILGI: $($ids.Count) paket TEK TEK guncellenecek (biri hata verse digerleri devam eder). Bu islem birkac dakika surebilir...")
+            $ok=0; $fail=0
+            foreach ($id in $ids) {
+                WS "Guncelleniyor: $id"
+                Log ">> [$id] guncelleniyor..."
+                & $w upgrade --id $id --exact --silent --include-unknown --accept-source-agreements --accept-package-agreements --disable-interactivity 2>&1 | ForEach-Object { Process-Output $_ }
+                if ($LASTEXITCODE -eq 0) { $ok++; Log ">> [$id] OK" } else { $fail++; Log ">> [$id] atlandi/hata (winget cikis kodu: $LASTEXITCODE - genelde kurulum konumu isteyen paket, orn. Battle.net)" }
+            }
+            Log '----------------------------------------'
+            Log "BILGI: Basarili: $ok  |  Atlanan/Hatali: $fail"
+            # Parse'in kacirabilecegi paketler icin tamamlayici surup (Unknown surumluler haric -> Battle.net kilitlemez)
+            Log 'BILGI: Kalan paketler icin son kontrol...'
+            & $w upgrade --all --silent --accept-source-agreements --accept-package-agreements --disable-interactivity 2>&1 | ForEach-Object { Process-Output $_ }
+        }
         Log '----------------------------------------'
         $emojiCheck =[char]::ConvertFromUtf32(0x2705)
-        Log "$emojiCheck TUM GUNCELLEME ISLEMLERI TAMAMLANDI."
+        Log "$emojiCheck GUNCELLEME ISLEMI BITTI."
 
-    } catch { 
-        Log "!! KRITIK HATA: $_" 
+    } catch {
+        Log "!! KRITIK HATA: $_"
     }
 '@
     
@@ -19476,7 +19920,7 @@ $btnWingetUpdateAll.Add_Click({
 
 $btnSettings.Add_Click({
     try {
-        $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlSettings)
+        $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlSettings))
         $winSet = [Windows.Markup.XamlReader]::Load($reader)
         
         # Kontroller
@@ -19485,6 +19929,49 @@ $btnSettings.Add_Click({
         $bDel = $winSet.FindName('btnDeleteFiles')
         $bImp = $winSet.FindName('btnImportUI'); $bExp = $winSet.FindName('btnExportUI')
         $rbL = $winSet.FindName('rbLayoutLeft'); $rbT = $winSet.FindName('rbLayoutTop')
+
+        # === DIL SECIMI (i18n Faz 1) ===
+        $cmbLang = $winSet.FindName('cmbLanguage')
+        if ($cmbLang) {
+            $langMap = @(
+                @{ Code = 'tr'; Name = 'Türkçe' },
+                @{ Code = 'en'; Name = 'English' },
+                @{ Code = 'fr'; Name = 'Français' }
+            )
+            foreach ($lm in $langMap) {
+                $it = New-Object System.Windows.Controls.ComboBoxItem
+                $it.Content = $lm.Name
+                $it.Tag = $lm.Code
+                [void]$cmbLang.Items.Add($it)
+                if ($lm.Code -eq $global:CurrentLang) { $cmbLang.SelectedItem = $it }
+            }
+            # Handler'i secim ATANDIKTAN SONRA bagla (init tetiklemesin)
+            $cmbLang.Add_SelectionChanged({
+                $sel = $cmbLang.SelectedItem
+                if (-not $sel) { return }
+                $newLang = [string]$sel.Tag
+                if ($newLang -eq $global:CurrentLang) { return }
+                $resp = [System.Windows.MessageBox]::Show($winSet, (T 'lang_restart_msg'), (T 'lang_restart_title'), [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+                if ($resp -eq 'Yes') {
+                    $global:CurrentLang = $newLang
+                    $global:ConfigDirty = $true
+                    Save-User-Config
+                    try {
+                        $exeDir = Get-AppExeDirectory
+                        $exe = if ($exeDir) { Join-Path $exeDir 'TemizlikAsistani.exe' } else { $null }
+                        if ($exe -and (Test-Path $exe)) { Start-Process $exe }
+                        else {
+                            $cur = [System.Diagnostics.Process]::GetCurrentProcess().MainModule.FileName
+                            if ($cur) { Start-Process $cur }
+                        }
+                    } catch {}
+                    [System.Environment]::Exit(0)
+                } else {
+                    # Iptal: secimi eski dile geri al
+                    foreach ($i in $cmbLang.Items) { if ([string]$i.Tag -eq $global:CurrentLang) { $cmbLang.SelectedItem = $i; break } }
+                }
+            })
+        }
         
         # Yeni Butonlar
         $bOpenBlk = $winSet.FindName('btnOpenBlacklist')
@@ -19636,7 +20123,7 @@ $btnSettings.Add_Click({
         # --- YENİ EKLENEN: BLACKLIST YÖNETİCİSİ AÇMA ---
         $bOpenBlk.Add_Click({
             try {
-                $rBlk = New-Object System.Xml.XmlNodeReader ([xml]$xamlBlacklist)
+                $rBlk = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlBlacklist))
                 $wBlk = [Windows.Markup.XamlReader]::Load($rBlk)
                 $lBlk = $wBlk.FindName('lstBlacklist'); $bR = $wBlk.FindName('btnRestore'); $bC = $wBlk.FindName('btnClose')
                 
@@ -19657,7 +20144,7 @@ $btnSettings.Add_Click({
         # --- YENİ EKLENEN: CUSTOM RULES YÖNETİCİSİ AÇMA ---
         $bOpenCus.Add_Click({
             try {
-                $rCus = New-Object System.Xml.XmlNodeReader ([xml]$xamlCustomMgr)
+                $rCus = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlCustomMgr))
                 $wCus = [Windows.Markup.XamlReader]::Load($rCus)
                 $lCus = $wCus.FindName('lstCustomRules'); $bA = $wCus.FindName('btnAddCustom')
                 $bD = $wCus.FindName('btnDeleteCustom'); $bC = $wCus.FindName('btnCloseCustom'); $bE = $wCus.FindName('btnEditCustom')
@@ -19668,7 +20155,7 @@ $btnSettings.Add_Click({
                 $ShowAddEdit = {
                     param($EditMode = $false)
                     try {
-                        $rAdd = New-Object System.Xml.XmlNodeReader ([xml]$xamlAddCustom); $wAdd = [Windows.Markup.XamlReader]::Load($rAdd)
+                        $rAdd = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlAddCustom)); $wAdd = [Windows.Markup.XamlReader]::Load($rAdd)
                         $tP = $wAdd.FindName('txtCustomPath'); $bB = $wAdd.FindName('btnBrowse'); $tF = $wAdd.FindName('txtFilter')
                         $cR = $wAdd.FindName('chkRecurse'); $cDel = $wAdd.FindName('chkDeleteFolder'); $bOk = $wAdd.FindName('btnAdd'); $bCan = $wAdd.FindName('btnCancel')
                         
@@ -19728,7 +20215,7 @@ $btnSettings.Add_Click({
         
         $bDel.Add_Click({
             if ($lstF.SelectedItems.Count -eq 0) { return }
-            if ([System.Windows.MessageBox]::Show("Seçili dosyalar silinecek. Onaylıyor musunuz?", "Sil", [System.Windows.MessageBoxButton]::YesNo) -eq 'Yes') {
+            if ([System.Windows.MessageBox]::Show((T 'mbx_del_files'), (T 'm_delete'), [System.Windows.MessageBoxButton]::YesNo) -eq 'Yes') {
                 foreach ($item in $lstF.SelectedItems) {
                     $fname = $item.ToString().Split(' ')[0]; $fullPath = "$AppDataPath\$fname"
                     Remove-Item $fullPath -Force -ErrorAction SilentlyContinue
@@ -19763,7 +20250,7 @@ $btnSettings.Add_Click({
         # Dışa Aktar
         $bExp.Add_Click({
             try {
-                $rExp = New-Object System.Xml.XmlNodeReader ([xml]$xamlExport); $winExp = [Windows.Markup.XamlReader]::Load($rExp)
+                $rExp = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlExport)); $winExp = [Windows.Markup.XamlReader]::Load($rExp)
                 $cBl = $winExp.FindName('chkBlacklist'); $cPo = $winExp.FindName('chkPathOverrides')
                 $cCr = $winExp.FindName('chkCustomRules'); $cWi = $winExp.FindName('chkWinget')
                 $cTw = $winExp.FindName('chkTweaks'); $cTo = $winExp.FindName('chkTools')
@@ -19783,7 +20270,7 @@ $btnSettings.Add_Click({
                         $exportData["ToolDownloadPath"] = $global:ToolDownloadPath
                         
                         $exportData | ConvertTo-Json -Depth 10 | Set-Content $sfd.FileName -Encoding UTF8
-                        [System.Windows.MessageBox]::Show("Kaydedildi.", "Başarılı") | Out-Null
+                        [System.Windows.MessageBox]::Show((T 'mbx_saved'), (T 'mb_success')) | Out-Null
                         $winExp.Close()
                     }
                 })
@@ -19844,7 +20331,7 @@ $btnCleanRAM.Add_Click({
 
 $btnAnalyze.Add_Click({
     # --- DURDURMA ---
-    if ($btnAnalyze.Content -eq "DURDUR") {
+    if ($btnAnalyze.Content -eq (T 'btn_stop')) {
         $global:StopOperation = $true
         $btnAnalyze.IsEnabled = $false
         return
@@ -19856,7 +20343,7 @@ $btnAnalyze.Add_Click({
 
     # --- HAZIRLIK ---
     $global:StopOperation = $false
-    $btnAnalyze.Content = "DURDUR"
+    $btnAnalyze.Content = (T 'btn_stop')
     $btnAnalyze.Background = [System.Windows.Media.Brushes]::Firebrick
     $btnRun.IsEnabled = $false
     $pbMain.IsIndeterminate = $true
@@ -19898,7 +20385,7 @@ $btnAnalyze.Add_Click({
     }
 
     # --- UI Resetle ---
-    $btnAnalyze.Content = "ANALİZ ET"
+    $btnAnalyze.Content = (T 'btn_analyze')
     $btnAnalyze.Background = [System.Windows.Media.Brushes]::DimGray
     $btnAnalyze.IsEnabled = $true
     $btnRun.IsEnabled = $true
@@ -19906,7 +20393,7 @@ $btnAnalyze.Add_Click({
 
 $btnRun.Add_Click({
     # --- DURDURMA ---
-    if ($btnRun.Content -eq "DURDUR") {
+    if ($btnRun.Content -eq (T 'btn_stop')) {
         $global:StopOperation = $true
         $btnRun.IsEnabled = $false
         return
@@ -19923,7 +20410,7 @@ $btnRun.Add_Click({
 
     # --- HAZIRLIK ---
     $global:StopOperation = $false
-    $btnRun.Content = "DURDUR"
+    $btnRun.Content = (T 'btn_stop')
     $btnRun.Background = [System.Windows.Media.Brushes]::Firebrick
     $btnAnalyze.IsEnabled = $false
     Save-App-State
@@ -19996,7 +20483,7 @@ $btnRun.Add_Click({
         $lblDetail.Text = "İşlem Başarılı."
     }
 
-    $btnRun.Content = "BAŞLAT"
+    $btnRun.Content = (T 'btn_start')
     $btnRun.Background = [System.Windows.Media.Brushes]::SteelBlue
     $btnRun.IsEnabled = $true
     $btnAnalyze.IsEnabled = $true
@@ -20114,8 +20601,8 @@ $tabControl.Add_SelectionChanged({
         $header = $tabControl.SelectedItem.Header
 
         # 1. Arama Kutusunu Sıfırla
-        if ($txtSearch.Text -ne "Uygulama Ara..." -and $txtSearch.Text -ne "") {
-            $txtSearch.Text = "Uygulama Ara..."
+        if ($txtSearch.Text -ne (T 'search_placeholder') -and $txtSearch.Text -ne "") {
+            $txtSearch.Text = (T 'search_placeholder')
             $txtSearch.Foreground =[System.Windows.Media.Brushes]::Gray
         }
 
@@ -20156,7 +20643,7 @@ $script:timeLeft = 60 # Geri sayım sayacının donmaması için eklendi
 
 # --- GECE MODU YÖNETİCİSİ (PENCERE) ---
 $btnNightMode.Add_Click({
-    $reader = New-Object System.Xml.XmlNodeReader ([xml]$xamlNightMode)
+    $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlNightMode))
     $winNM =[Windows.Markup.XamlReader]::Load($reader)
     $winNM.Owner = $Win
 
