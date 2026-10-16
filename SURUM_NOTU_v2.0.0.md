@@ -41,6 +41,6 @@ v1.2.30'dan bu yana en büyük güncelleme: arayüz baştan tasarlandı, Tweaks 
 - Araçlar menüsündeki MSI Utility, NVIDIA Profile Inspector girişi ve web araçları (Sürücü Yedeği artık Araçlar sayfasında kart).
 
 ## Kurulum / güncelleme
-- v1.2.30 EXE kullanıcıları: program açılınca durum çubuğunda güncelleme bildirimi gelir; Tools menüsü > Programı Güncelle ile kurulur.
+- v1.2.30 EXE kullanıcıları: program açılınca alttaki durum çubuğunda "Yeni sürüm: v2.0.0" bildirimi çıkar. Bildirime tıklayın ya da Ayarlar > "Şimdi Kontrol Et" ile güncelleyin. (Eski sürümün bildirim metnindeki "Tools menüsü" ifadesi yanlıştır; bu sürümde düzeltildi.)
 - Yeni kurulum: `TemizlikAsistani.exe`'yi indirin, `SHA256SUMS.txt` ile doğrulayın, çalıştırın (yönetici izni ister).
 - EXE imzasız olduğu için SmartScreen uyarısı çıkabilir: Ek bilgi > Yine de çalıştır.
