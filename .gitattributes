@@ -1,2 +1,11 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Windows betikleri her checkout'ta CRLF (cmd etiketleri LF ile bozulur)
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# Ikili dosyalar
+*.ico binary
+*.exe binary

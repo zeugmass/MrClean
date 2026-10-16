@@ -1,52 +1,74 @@
-# 📘 MRCLEAN SISTEM BAKIM ARACI - KULLANIM KILAVUZU
+MRCLEAN SİSTEM BAKIM ARACI - KULLANIM KILAVUZU (v2.0.0)
+=========================================================
 
-### 🟢 1. GİRİŞ: Program Nedir?
-MrClean Sistem Bakım Aracı; Windows işletim sisteminizi **temizlemek**, **hızlandırmak**, **özelleştirmek** ve **güncel tutmak** için tasarlanmış gelişmiş bir PowerShell aracıdır.
-Program **Yönetici Yetkisi** ile çalışır ve sisteminizdeki gereksiz dosyaları silmekten, gizlilik ayarlarını (kamera, mikrofon vb.) yönetmeye, uygulama güncellemelerinden sistem onarımına kadar her şeyi tek bir pencereden yapmanızı sağlar.
+1. PROGRAM NEDİR?
+-----------------
+MrClean; Windows 10 / 11'i temizlemek, onarmak, güncel tutmak ve ince ayarlarını
+(tweak) yönetmek için hazırlanmış bir araçtır. Yönetici izniyle çalışır.
+Arayüz dili Ayarlar'dan değiştirilebilir (Türkçe / English / Français).
 
----
+Başlatma: TemizlikAsistani.exe'yi ya da Baslat.cmd'yi çift tıklayın.
+İlk açılışta "Windows bilgisayarınızı korudu" uyarısı çıkarsa:
+Ek bilgi > Yine de çalıştır (EXE imzasız olduğu için).
 
-### 🟡 2. GELİŞME: Nasıl Kullanılır?
 
-Program sekmeler halinde kategorize edilmiştir. İşte adım adım kullanım rehberi:
+2. SAYFALAR
+-----------
+Soldaki menüden sayfalar arasında geçilir.
 
-**A. TEMİZLİK (Tarayıcılar, Uygulamalar, Sistem, ShellBags)**
-*   Bu sekmelerde bilgisayarınızdaki gereksiz dosyalar (çerezler, önbellekler, geçmiş dosyaları) listelenir.
-*   **Analiz Et:** Silmeden önce ne kadar yer açılacağını ve hangi dosyaların silineceğini gösterir.
-*   **Başlat:** Seçilen öğeleri temizler.
-*   **Silme Yöntemi:** Sağ alttan "Hızlı Silme" veya verilerin kurtarılamaması için "Güvenli Silme (Zeroes/Random)" seçebilirsiniz.
-*   **ShellBags:** Windows'un klasör pencerelerini (boyut, konum) hatırladığı geçmişi temizler.
+GENEL BAKIŞ
+  - Sistem durumu, disk / bellek / ağ özeti, son işlemler ve öneriler.
 
-**B. WINGET (Uygulama Yönetimi)**
-*   Bilgisayarınızdaki uygulamaları güncellemek, kaldırmak veya yenilerini kurmak için kullanılır.
-*   **♻ Denetle:** Yüklü uygulamaları tarar.
-*   **Winget Update:** Tüm uygulamaları tek tıkla günceller.
-*   **Windows Uygulamaları:** Windows ile gömülü gelen (Kamera, Xbox, Haritalar vb.) uygulamaları da buradan kaldırabilirsiniz.
-*   **Liste Yöneticisi:** Kendi favori uygulamalarınızı listeye ekleyip çıkarabilirsiniz.
+TEMİZLİK
+  - Tarayıcı, uygulama ve sistem artıkları listelenir (Winapp2 kuralları), ShellBags dahil.
+  - Önce analiz edin: ne kadar yer açılacağını ve neyin silineceğini görürsünüz.
+  - Sonra seçtiklerinizi temizleyin. İsterseniz güvenli silme (kurtarılamaz) seçilebilir.
 
-**C. TWEAKS (Optimizasyon ve Gizlilik)**
-*   Windows'un ince ayarlarının yapıldığı merkezdir.
-*   **♻ Denetle:** Mevcut sistem ayarlarınızı tarar ve aktif olanları (zaten yapılmış olanları) **yeşil** ile işaretler.
-*   **Seçilenleri Uygula:** İşaretlediğiniz ayarları sisteme uygular (Örn: Karanlık mod, Performans ayarları, Gizlilik kısıtlamaları).
-*   **Geri Alma:** Bir ayarın tikini kaldırıp "Uygula" derseniz, o ayar Windows varsayılanına döner.
-*   **★ Önerilen:** Sizin için kaydedilmiş favori ayar profilinizi yükler.
-*   **Not:** Gizlilik ayarları (Kamera/Mikrofon kapatma) hem Windows ayarlarını hem de Grup İlkelerini (Policy) yönetir.
+ONARIM
+  - SFC, DISM, ağ / DNS sıfırlama gibi hazır onarım komutları tek tıkla çalışır.
 
-**D. ONARIM (Sistem Tamiri)**
-*   İnternet bağlantısı sorunları veya sistem dosyası hataları için hazır komutlar içerir.
-*   Örneğin: "DNS Temizle" veya "SFC /Scannow" gibi komutları tek tıkla çalıştırır.
+ARAÇLAR
+  - Mağazada olmayan yardımcı araçları resmi kaynaklarından indirip kurar.
+  - Sürücü yedeği alır.
 
-**E. ARAÇLAR VE AYARLAR**
-*   **🛠 Araçlar:** Samsung Magician, GPU-Z gibi mağazada olmayan özel araçları resmi sitelerinden bulup indirir ve kurar.
-*   **⚙ Ayarlar:** Programın kendi ayarlarını (Yoksayılanlar listesi, özel klasörler vb.) yedeklemenizi (Dışa Aktar) veya geri yüklemenizi (İçe Aktar) sağlar.
+WINGET
+  - Kurulu uygulamaları günceller veya kaldırır; kendi kurulum listenizi tutabilirsiniz.
 
----
+TWEAKS
+  - 200'ü aşkın Windows ayarı kategorilere ayrılmıştır: gizlilik, telemetri, görev
+    çubuğu, Windows Update, ağ, ses, düşük gecikme / oyun ayarları ve diğerleri.
+  - "Denetle" her ayarın bu bilgisayardaki şu anki durumunu okur; açık olanlar işaretlenir.
+  - Her ayarın üzerine gelince açıklaması ve risk düzeyi görünür.
+  - İşaretleyip "Uygula" deyin. İşareti kaldırıp uygularsanız ayar geri alınır.
+  - Bu Windows sürümünde ya da donanımda çalışmayan ayarlar ayrıca belirtilir.
+  - Bazı ayarlar yeniden başlatma ister; program bunu ayrıca söyler.
 
-### 🔴 3. SONUÇ: Çalışma Mantığı ve Güvenlik
+BAŞLANGIÇ
+  - Windows ile birlikte açılan programları ve görevleri gösterir, kapatmanızı sağlar.
 
-*   **Sistem Geri Yükleme:** Program, kritik işlemlerden (Tweaks, Temizlik) önce otomatik olarak bir **Sistem Geri Yükleme Noktası** oluşturur. Bir sorun olursa Windows'u o tarihe geri alabilirsiniz.
-*   **Akıllı Algılama:** Program, manuel olarak (Windows Ayarlarından) yaptığınız değişiklikleri de algılar. Örneğin kamerayı elle kapattıysanız, programda da "Kapalı" olarak görünür.
-*   **Winapp2 Desteği:** Temizlik kuralları, dünya çapında güncellenen `Winapp2.ini` veritabanından otomatik çekilir.
-*   **Loglama:** Yapılan her işlem sağ taraftaki "İşlem Kayıtları" ekranında detaylıca yazar. Hata alırsanız sebebini orada görebilirsiniz.
+DOSYA BOYUTU
+  - Diskteki en büyük dosya ve klasörleri hızlıca bulur.
 
-*Güvenli, Hızlı ve Tam Kontrol.*
+ÇÖKME ANALİZİ
+  - Uygulama ve sistem çökmelerini Windows olay günlüğünden toplar, olası nedeni gösterir.
+
+ALT MENÜ
+  - Güncelle: listeleri yeniler.
+  - Shutdown: zamanlanmış kapatma ve indirme bitince kapatma.
+  - Ayarlar: dil, geri yükleme noktası tercihi, profil / ayar dışa ve içe aktarma,
+    program güncellemesi ("Şimdi Kontrol Et").
+
+
+3. GÜVENLİK VE ÇALIŞMA MANTIĞI
+------------------------------
+- Sistem geri yükleme noktası: Tweak uygulamadan önce (Ayarlar'daki tercihe göre)
+  geri yükleme noktası oluşturulabilir. Ayarlar'dan elle de oluşturulabilir.
+- Algılama: Windows Ayarları'ndan elle yaptığınız değişiklikler de "Denetle" ile görünür.
+- Kayıt: Yapılan her işlem alttaki "İşlem Kayıtları" panelinde yazar; hata olursa nedeni orada.
+- Güncelleme: Program açılışta yeni sürümü denetler. Yeni sürüm varsa alttaki durum
+  çubuğunda bildirim çıkar; tıklayınca güncelleme penceresi açılır. İndirilen dosya
+  SHA256 ile doğrulanır.
+- Program verileri: %APPDATA%\MrClean klasöründe tutulur. Virüs programı yanlış alarm
+  verirse bu klasörü istisnalara ekleyin.
+
+Proje sayfası: https://github.com/zeugmass/MrClean

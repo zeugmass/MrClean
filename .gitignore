@@ -76,3 +76,19 @@ PROMPT_YENI_PENCERE.txt
 Yayinla.ps1
 Yayinla.cmd
 Build-Calistir.cmd
+
+# Gelistirme notlari ve raporlari (yerel calisma belgeleri, repo'ya gitmez)
+DEGISIKLIKLER_*.md
+DEVIR_NOTU.md
+RAPOR_*.md
+ARASTIRILACAKLAR.md
+BIRLESTIRME_RAPORU_*.md
+
+# Tasarim onizlemeleri ve olcum araclari (yerel; kisisel olcum sonuclari ve baska repo kopyalari icerir)
+tasarim/
+olcum_araclari/
+
+# Arsivler ve gecici denemeler
+*.zip
+yeni *.txt
+_check_*.ps1

@@ -1,150 +1,114 @@
 # MrClean Sistem Bakım Aracı
 
-Windows için kapsamlı sistem temizliği, optimizasyon ve tweak aracı. PowerShell + WPF ile yazılmış, tek dosya EXE olarak dağıtılır.
+Windows 10 / 11 için sistem temizliği, bakım, onarım ve ince ayar (tweak) aracı. PowerShell 5.1 + WPF ile yazılmıştır; tek dosya EXE olarak dağıtılır. Arayüz Türkçe, İngilizce ve Fransızca.
 
-## 🚀 Kullanıcılar İçin
+## Özellikler
+
+| Sayfa | Ne yapar |
+|---|---|
+| **Genel Bakış** | Sistem durumu, disk / bellek / ağ özeti, son işlemler ve öneriler |
+| **Temizlik** | Tarayıcı, uygulama ve sistem artıkları (Winapp2 kuralları), ShellBags; önce analiz, sonra temizlik; isteğe bağlı güvenli silme |
+| **Onarım** | SFC, DISM, ağ / DNS sıfırlama gibi hazır onarım komutları |
+| **Araçlar** | Mağazada olmayan yardımcı araçları resmi kaynaklarından indirme, sürücü yedeği |
+| **Winget** | Kurulu uygulamaları güncelleme, kaldırma, toplu kurulum listesi |
+| **Tweaks** | 200'ü aşkın Windows ayarı: gizlilik, telemetri, görev çubuğu, Windows Update, ağ, ses, düşük gecikme / oyun ayarları. Her ayarın şu anki durumu canlı denetlenir; risk etiketi ve açıklaması vardır; geri alınabilir |
+| **Başlangıç** | Windows ile açılan programlar ve görevler |
+| **Dosya Boyutu** | Diskteki büyük dosya ve klasörleri hızlıca bulur |
+| **Çökme Analizi** | Uygulama ve sistem çökmelerini olay günlüğünden toplar, olası nedeni gösterir |
+
+Ayrıca: zamanlanmış kapatma / indirme takibi, profil dışa / içe aktarma, Tweak işlemlerinden önce isteğe bağlı sistem geri yükleme noktası, otomatik güncelleme.
+
+## Kullanıcılar için
 
 ### Kurulum
-1. [GitHub Releases](https://github.com/zeugmass/MrClean/releases) sayfasından **en son sürüm**ün asset'lerini indir:
-   - `TemizlikAsistani.exe` — tek dosya executable (önerilen)
-   - `TemizlikAsistani.ps1` — kaynak kodu (geliştirici/ileri kullanıcı için)
-   - `SHA256SUMS.txt` — dosya bütünlüğü doğrulama
-   - `Baslat.cmd` — UAC elevation launcher (opsiyonel)
-
-2. **Hash doğrulama (önerilen)**:
+1. [Releases](https://github.com/zeugmass/MrClean/releases) sayfasından en son sürümün dosyalarını indirin:
+   - `TemizlikAsistani.exe`: tek dosya program (önerilen)
+   - `TemizlikAsistani.ps1`: kaynak kod (EXE yerine doğrudan çalıştırmak için)
+   - `Baslat.cmd`: yönetici izniyle başlatıcı (isteğe bağlı)
+   - `SHA256SUMS.txt`: dosya bütünlüğü doğrulama
+   - `BeniOku.txt`: kısa kullanım kılavuzu
+2. Hash doğrulama (önerilen):
    ```powershell
    Get-FileHash TemizlikAsistani.exe -Algorithm SHA256
-   # SHA256SUMS.txt içindeki değerle karşılaştır
+   # SHA256SUMS.txt içindeki değerle karşılaştırın
    ```
+3. EXE'yi çalıştırın. Program yönetici izni ister (UAC).
 
-3. EXE'yi çalıştır. UAC onayı gerekir (yönetici hakları zorunlu).
+### Otomatik güncelleme
+Program açılışta arka planda GitHub'daki son sürümü denetler:
+- Yeni sürüm varsa alttaki durum çubuğunda `🔔 Yeni sürüm: vX.Y.Z` yazar; tıklayınca güncelleme penceresi açılır.
+- Elle denetim: **Ayarlar > Şimdi Kontrol Et**.
+- "Güncelle" dosyayı indirir, SHA256 ile doğrular ve programı yeniden başlatır.
+- İstemediğiniz bir sürümü "Bu sürümü atla" ile susturabilirsiniz.
 
-### Otomatik Güncelleme
-Program açıldığında **arkaplanda** GitHub'dan yeni sürüm kontrol eder:
-- Yeni sürüm varsa: status bar'da `🔔 Yeni sürüm: vX.Y.Z` bildirimi
-- **Tools menüsü → 🔔 Programı Güncelle** ile modal açılır
-- "Güncelle" butonuyla otomatik indir + SHA256 doğrula + yeniden başlat
-- Beğenmediğin sürümü "Bu sürümü atla" ile sürekli sessizliğe alabilirsin
+### SmartScreen / Akıllı Uygulama Denetimi
+EXE imzasız olduğu için ilk açılışta "Windows bilgisayarınızı korudu" uyarısı çıkabilir: **Ek bilgi > Yine de çalıştır**.
+Virüs programı yanlış alarm verirse `%APPDATA%\MrClean` klasörünü istisnalara ekleyin.
 
-### SmartScreen Uyarısı
-EXE imzasız olduğu için ilk açılışta `Windows korudu` uyarısı çıkabilir:
-- "Daha fazla bilgi" → "Yine de çalıştır"
+## Geliştiriciler için
 
-Antivirüs yanlış pozitif veriyorsa: `%APPDATA%\MrClean` klasörünü AV istisnasına ekle.
-
-## 🛠️ Geliştiriciler İçin
-
-### Repo Setup (ilk kurulum)
-
-1. **GitHub'da yeni public repo oluştur**: `zeugmass/MrClean` (veya kendi adın)
-
-2. **Bu repo'yu lokale klonla**:
-   ```bash
-   git clone https://github.com/zeugmass/MrClean.git
-   cd MrClean
-   ```
-
-3. **Mevcut dosyaları kopyala** (TemizlikAsistani.ps1, Baslat.cmd, vs).
-
-4. **`TemizlikAsistani.ps1` içinde repo adını değiştir** (region 3 globals):
-   ```powershell
-   $global:AppRepo = "kendi_kullanici_adin/repo_adin"
-   ```
-
-5. **İlk commit + push**:
-   ```bash
-   git add .
-   git commit -m "Initial release"
-   git push origin main
-   ```
-
-### Yeni Sürüm Yayınlama (her release için)
-
+### Yeni sürüm yayınlama
 ```bash
-# 1. PS1'de versiyonu güncelle:
-#    $global:AppVersion = "1.2.0"
-git add TemizlikAsistani.ps1
-git commit -m "v1.2.0: yeni özellikler / fix'ler"
+# 1. TemizlikAsistani.ps1 içinde: $global:AppVersion = "2.0.1"
+git add -A
+git commit -m "v2.0.1: ..."
 git push
 
-# 2. Tag at — bu workflow'u tetikler
-git tag v1.2.0
-git push --tags
+# 2. Etiket: GitHub Actions'ı tetikler
+git tag v2.0.1
+git push origin v2.0.1
 ```
+Birkaç dakika sonra Releases'ta yeni sürüm oluşur: `TemizlikAsistani.exe` (PS2EXE), `TemizlikAsistani.ps1`, `SHA256SUMS.txt`, `Baslat.cmd`, `BeniOku.txt`.
 
-3 dakika sonra GitHub Releases'ta yeni release otomatik oluşur:
-- `TemizlikAsistani.exe` (PS2EXE ile derlenmiş)
-- `TemizlikAsistani.ps1` (kaynak)
-- `SHA256SUMS.txt` (otomatik hash)
-- `Baslat.cmd`, `BeniOku.txt`
+`$global:AppVersion` ile etiket (`v2.0.1`) **aynı olmalı**; değilse iş akışı durur. Tweak tanımlarındaki `Since="X.Y.Z"` değeri, ana ve ara sürümü `AppVersion` ile aynıysa programda "YENİ" rozeti gösterir.
 
-Kullanıcılarda program açılışında otomatik "🔔 Yeni sürüm" bildirimi görünür.
+### Sürüm kuralı ([SemVer](https://semver.org/lang/tr/))
+- **Major** (`2.0.0`): büyük / geriye uyumsuz değişiklik
+- **Minor** (`2.1.0`): yeni özellik
+- **Patch** (`2.0.1`): hata düzeltmesi
 
-### Versiyonlama Kuralı
+### Yerel derleme
+`Build-Local.ps1`: PS2EXE ile yerelde EXE üretir (yayından önce deneme için).
 
-[SemVer](https://semver.org/lang/tr/) kullanılır:
-- **Major** (`2.0.0`): geriye uyumsuz büyük değişiklik
-- **Minor** (`1.3.0`): yeni özellik, geriye uyumlu
-- **Patch** (`1.2.3`): bug fix
+### Geliştirme kuralları
+- `TemizlikAsistani.ps1` **UTF-8 BOM + CRLF** olmalı (`.gitattributes` CRLF'i zorlar).
+- Sözdizimi denetimi:
+  ```powershell
+  $e = $null; [void][System.Management.Automation.Language.Parser]::ParseFile("TemizlikAsistani.ps1", [ref]$null, [ref]$e); $e.Count
+  ```
+- Kod içi gezinme: `KOD_HARITASI.md`.
 
-PS1 içindeki `$global:AppVersion` değeri ile git tag'i (örn. `v1.2.3`) **eşleşmeli**.
+### CI (GitHub Actions)
+`.github/workflows/build-release.yml`, `v*` etiketiyle çalışır: sözdizimi denetimi → sürüm / etiket eşleşmesi → PS2EXE derleme → SHA256 → Release.
 
-### Geliştirme Workflow'u
-
-```
-PS1'i edit et
-    ↓
-PowerShell ile direkt çalıştır (test)
-    ↓
-Sentaks check: powershell -Command "[void][System.Management.Automation.Language.Parser]::ParseFile(...)"
-    ↓
-Versiyonu artır + commit + push
-    ↓
-git tag vX.Y.Z + git push --tags
-    ↓
-[GitHub Actions otomatik 3 dk]
-    ↓
-Release hazır → kullanıcılarda bildirim
-```
-
-### CI/CD (GitHub Actions)
-
-`.github/workflows/build-release.yml` dosyası `v*` tag push'unda tetiklenir:
-1. PowerShell sentaks check
-2. PS2EXE ile `TemizlikAsistani.ps1` → `.exe` derleme
-3. SHA256 hash hesaplama → `SHA256SUMS.txt`
-4. GitHub Release oluşturma + asset upload + auto-generated changelog
-
-Workflow ücretsiz GitHub Actions runner (windows-latest) kullanır. Ayda 2000 dakika ücretsiz kontenjan; her release ~3 dk → ayda ~600 release'e kadar bedava.
-
-## 🔒 Güvenlik
+## Güvenlik
 
 | Katman | Açıklama |
 |---|---|
-| **HTTPS** | GitHub API + asset download tamamen TLS |
-| **TLS 1.2+ zorla** | Eski PowerShell default'larına karşı |
-| **SHA256 doğrulama** | İndirilen EXE'nin hash'i `SHA256SUMS.txt`'tekiyle karşılaştırılır, eşleşmezse abort |
-| **Boyut sanity check** | Asset 50 KB-100 MB aralığında olmalı |
-| **MoTW unblock** | İndirilen dosyaların İnternet Damgası temizlenir |
-| **Atomik replace** | Eski dosya `.old`'a rename, yeni dosya yerleştirilir, ana program restart |
-| **Kullanıcı atlama** | "Bu sürümü atla" → tekrar bildirim gösterilmez |
+| **HTTPS / TLS 1.2+** | GitHub API ve indirmeler TLS üzerinden |
+| **SHA256 doğrulama** | İndirilen dosyanın hash'i `SHA256SUMS.txt` ile eşleşmezse güncelleme iptal |
+| **Boyut denetimi** | Beklenmeyen boyuttaki dosya reddedilir |
+| **Atomik değişim** | Eski dosya yedeğe alınır, yenisi yerleştirilir, program yeniden başlar |
 
-⚠️ **EXE imzasız** — code signing certificate alınırsa SmartScreen uyarısı kaybolur. Şahsi proje için imzasız mantıklı, kurumsal dağıtım için EV cert ($250-500/yıl) gerekli.
+EXE imzasızdır; kod imzalama sertifikası olmadan SmartScreen uyarısı tamamen kalkmaz.
 
-## 📁 Repo Yapısı
+## Depo yapısı
 
 ```
 MrClean/
-├── TemizlikAsistani.ps1      # Ana script (~13K satır)
-├── Baslat.cmd                # UAC elevation launcher
-├── Launcher.ps1              # EXE/PS1 köprü launcher
-├── BeniOku.txt               # TR kullanıcı rehberi
-├── README.md                 # Bu dosya
-├── PROJE_REHBERI.md          # Geliştirici referans (region/satır haritası)
+├── TemizlikAsistani.ps1      # Ana program (tek dosya)
+├── Baslat.cmd                # Yönetici izniyle başlatıcı
+├── Launcher.ps1              # EXE / PS1 başlatma köprüsü
+├── Build-Local.ps1           # Yerel EXE derleme
+├── mrclean.ico               # Program simgesi
+├── BeniOku.txt               # Türkçe kullanım kılavuzu
+├── KOD_HARITASI.md           # Geliştirici: kod haritası
+├── licenses/Inter-OFL.txt    # Gömülü Inter yazı tipinin lisansı
 └── .github/workflows/
-    └── build-release.yml     # CI/CD: tag → EXE + Release
+    └── build-release.yml     # Etiket → EXE + Release
 ```
 
-## 📜 Lisans
+## Üçüncü taraf
 
-(Lisansını buraya ekleyebilirsin — MIT, GPL, vs.)
+- Arayüz yazı tipi **Inter** programa gömülüdür: SIL Open Font License 1.1 (`licenses/Inter-OFL.txt`).
+- Temizlik kuralları: [Winapp2.ini](https://github.com/MoscaDotTo/Winapp2) topluluk veritabanı (çalışırken indirilir).
