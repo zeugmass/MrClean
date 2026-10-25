@@ -906,7 +906,7 @@ $global:Strings = @{
         dash_detail='Donanım detayı'; dash_test='Ağ testi'
         dash_rec_card='ÖNERİ'; dash_pingcard='GECİKME'; dash_sysinfo='Sistem bilgisi'; dash_rec_title='Önerilen işlemler'; dash_rec_wait='Öneriler hazırlanıyor…'; dash_rec_n='Bekleyen öneri: {0}'; dash_rec_none='Bekleyen öneri yok'; dash_src_hw='Donanım özeti (WMI) · {0}'; dash_src_wg='winget upgrade · {0}'; dash_src_su='Kayıt defteri ve Başlangıç klasörü · az önce'; dash_src_tw='Tweaks bekleyen listesi · az önce'; dash_wg_n='{0} paket güncellemesi var'; dash_wg_fail='Güncelleme kontrol edilemedi'; dash_wg_ok0='winget: güncelleme yok'; dash_wg_wait='Güncellemeler kontrol ediliyor…'; dash_su_n='Açılışta {0} uygulama başlıyor'; dash_tw_n='{0} tweak uygulanmayı bekliyor'; dash_disk_full='C: diski yüzde {0} dolu'; dash_age_now='az önce'; dash_age_min='{0} dk önce'; dash_age_hour='{0} sa önce'; dash_card_mem='BELLEK'; dash_card_disk='DİSK C:'; dash_ram_free='Boşalt'; dash_ping_gw='ağ geçidi'; dash_ping_tip='Ağ testi: Cloudflare, Google ve ağ geçidi ortalaması (ms). Büyük sayı ağ geçidinin canlı pingidir.'; dash_more='Ayrıntılar'; dash_row_os='İşletim sistemi'; dash_row_cpu='İşlemci'; dash_row_gpu='Ekran kartı'; dash_row_mem='Bellek'; dash_row_disk='Disk C:'; dash_row_sec='Önyükleme'; dash_row_up='Çalışma süresi'; dash_row_upd='Son güncelleme'; dash_row_dns='DNS'; dash_row_net='Bağlantı'; dash_hist_title='Son işlemler'; dash_hist_clean='Temizlik  ·  {0} silindi'; dash_hist_tw_apply='Tweaks  ·  {0} ayar uygulandı'; dash_hist_tw_undo='Tweaks  ·  {0} ayar geri alındı'; dash_yesterday='Dün'
         btn_check='♻ Denetle'; btn_manage='⚙ Yönet'; btn_saveprofile='💾 Profil'; btn_quickundo='↶ Geri Al'
-        tw_search_ph='Ayar ara...'; tw_cats_title='KATEGORİLER'; tw_badge_reboot='YENİDEN BAŞLATMA'; tw_badge_risk_high='YÜKSEK RİSK'; tw_badge_risk_med='RİSKLİ'; tw_badge_pending='BEKLİYOR'; tw_badge_pending_tip='Uygula''ya basınca bu ayar değişecek'; log_toggle_show='İşlem kayıtları  ˄'; log_toggle_hide='İşlem kayıtları  ˅'; tw_filter_tip='Yazdıkça tweak listesini daraltır — isim, açıklama ve kategori içinde arar (Türkçe karakter gerekmez: sifre → Şifresiz). Esc ile temizlenir.'; tw_filter_clear='Aramayı temizle'; tw_filter_count='{0} / {1} tweak'; tw_active_count='✅ {0} / {1} aktif'; tw_incompat_count='⛔ {0} bu PC''de uygulanamaz'; tw_chip_all='Tümü'; tw_chip_active='✅ Aktif'; tw_chip_passive='○ Pasif'; tw_chip_new='✦ Yeni'; tw_chip_risky='⚠ Riskli'; tw_chip_reboot='↻ Yeniden başlatma'; tw_progress_tip='Aktif tweak oranı (son denetime göre)'; tw_badge_reboot_tip='Uygulandıktan sonra yeniden başlatma gerekir'; tw_hw_wifi='Wi-Fi kartı yok'; tw_hw_eth='Ethernet kartı yok'; tw_hw_laptop='Sadece dizüstü'; tw_hw_hdd='Mekanik disk (HDD) yok'; tw_hw_ssd='SSD yok'; tw_hw_cores='En az 4 çekirdek gerekir'; tw_hw_dnstool='{0} çalışıyor — DNS ayarını o yönetiyor'; tw_hw_wifiband='Wi-Fi kartı 5 GHz bant tercihini desteklemiyor (2.4 GHz kart veya sürücüde ayar yok)'; tw_hw_wifiadv='Wi-Fi sürücüsünde bu ayarlar yok'; tw_hw_vendortel='Bu PC''de Intel / AMD / HP / Dell / Lenovo telemetri bileşeni kurulu değil'; tw_hw_cabc='Bu ekranda içerik uyarlamalı parlaklık (CABC) yok'; tw_hw_gpu='{0} ekran kartı yok'; tw_hw_tip='⛔ Bu bilgisayarda uygulanamaz: {0}'; tw_badge_new='YENİ'; tw_incompat_tip='⛔ Bu ayar Windows {0} gerektirir. Sisteminiz: {1}'
+        tw_search_ph='Ayar ara...'; tw_cats_title='KATEGORİLER'; tw_badge_reboot='YENİDEN BAŞLATMA'; tw_badge_risk_high='YÜKSEK RİSK'; tw_badge_risk_med='RİSKLİ'; tw_badge_pending='BEKLİYOR'; tw_badge_pending_tip='Uygula''ya basınca bu ayar değişecek'; log_toggle_show='İşlem kayıtları  ˄'; log_toggle_hide='İşlem kayıtları  ˅'; tw_filter_tip='Yazdıkça tweak listesini daraltır — isim, açıklama ve kategori içinde arar (Türkçe karakter gerekmez: sifre → Şifresiz). Esc ile temizlenir.'; tw_filter_clear='Aramayı temizle'; tw_filter_count='{0} / {1} tweak'; tw_active_count='✅ {0} / {1} aktif'; tw_incompat_count='⛔ {0} bu PC''de uygulanamaz'; tw_chip_all='Tümü'; tw_chip_active='✅ Aktif'; tw_chip_passive='○ Pasif'; tw_chip_new='✦ Yeni'; tw_chip_risky='⚠ Riskli'; tw_chip_reboot='↻ Yeniden başlatma'; tw_progress_tip='Aktif tweak oranı (son denetime göre)'; tw_badge_reboot_tip='Uygulandıktan sonra yeniden başlatma gerekir'; tw_hw_wifi='Wi-Fi kartı yok'; tw_hw_eth='Ethernet kartı yok'; tw_hw_laptop='Sadece dizüstü'; tw_hw_hdd='Mekanik disk (HDD) yok'; tw_hw_ssd='SSD yok'; tw_hw_cores='En az 4 çekirdek gerekir'; tw_hw_dnstool='{0} çalışıyor — DNS ayarını o yönetiyor'; tw_hw_wifiband='Wi-Fi kartı 5 GHz bant tercihini desteklemiyor (2.4 GHz kart veya sürücüde ayar yok)'; tw_hw_wifiadv='Wi-Fi sürücüsünde bu ayarlar yok'; tw_hw_vendortel='Bu PC''de Intel / AMD / HP / Dell / Lenovo telemetri bileşeni kurulu değil'; tw_hw_adrenalin='AMD Software (Adrenalin) kurulu değil';  tw_hw_uefi='Bu sistem UEFI değil (eski BIOS)'; tw_hw_cabc='Bu ekranda içerik uyarlamalı parlaklık (CABC) yok'; tw_hw_gpu='{0} ekran kartı yok'; tw_hw_tip='⛔ Bu bilgisayarda uygulanamaz: {0}'; tw_badge_new='YENİ'; tw_incompat_tip='⛔ Bu ayar Windows {0} gerektirir. Sisteminiz: {1}'
         btn_refresh='♻ Yenile'
         lf_userfolders='Kullanıcı Klasörleri'; lf_cdisk='C: Diski (Sistem)'; lf_customfolder='Özel Klasör Seç...';
         ctx_openloc='Dosya Konumunu Aç (Seç)'; ctx_copypath='Yolu Kopyala'; ctx_deleteperm='Kalıcı Olarak SİL'
@@ -926,6 +926,8 @@ $global:Strings = @{
         ac_title='Klasör Ekle/Düzenle'; ac_path='Yol:'; ac_filter='Filtre (*.*):'; ac_recurse='Alt Klasörleri Dahil Et'; ac_deletefolder='Klasörü de Sil'
         pe_title='Yolları Düzenle'; pe_onerule='Her satıra bir kural girin.'
         rs_title='Sistem Yeniden Başlatma'; rs_needed='Yeniden Başlatma Gerekiyor'; rs_desc='Low Latency (Espor), Ping ve İşlemci ayarlarının Windows çekirdeğinde (Kernel) devreye girebilmesi için bilgisayarın yeniden başlatılması şarttır.'; rs_later='Daha Sonra'; rs_now='🔥 ŞİMDİ YENİDEN BAŞLAT'
+        apov_title='Ayarlar uygulanıyor'; apov_done='Tamamlandı'; apov_done_err='Tamamlandı (sorunlu ayar var)'; apov_verify='Doğrulanıyor…'; apov_keep='Pencereyi kapatmayın; bitince özet burada görünecek.'; apov_apply='Uygulanıyor'; apov_undo='Geri alınıyor'; apov_nic=' · ağ kartı yeniden başlatılıyor, internet bağlantısı birkaç saniye kopabilir'; apov_c_applied='{0} uygulandı'; apov_c_undone='{0} geri alındı'; apov_c_info='{0} bilgi'; apov_c_err='{0} hata'; apov_reboot_note='⟳ Bazı ayarlar yeniden başlatmadan sonra etkin olur.'; apov_explorer_note='⟳ Bazı ayarlar için Windows Gezgini yeniden başlatılmalı (açık Gezgin pencereleri kapanır).'; apov_err_note='❌ Sorunlu ayarların ayrıntısı işlem kayıtlarında.'; apov_logs='Kayıtları Göster'; apov_later='Daha Sonra'; apov_restart='Şimdi Yeniden Başlat'; apov_explorer='Gezgini Yeniden Başlat'; apov_close='Kapat'
+        apc_title='Değişiklikleri onaylayın'; apc_count='{0} ayar'; apc_sub='Anahtarlardaki seçimleriniz sisteminizle eşitlenecek.'; apc_sec_apply='UYGULANACAK · {0}'; apc_sec_undo='GERİ ALINACAK (Windows varsayılanına döner) · {0}'; apc_b_reboot='YENİDEN BAŞLATMA'; apc_b_risk='YÜKSEK RİSK'; apc_b_gpu='GPU: {0}'; apc_w_risk='⚠ Yüksek risk: {0} — sistem davranışını ciddi şekilde değiştirebilir veya geri alma gerektirebilir.'; apc_w_gpu='⚠ GPU uyumsuzluğu: ''{0}'' {1} ekran kartı içindir; bu PC''de algılanan: {2}. Hibrit sistemlerde (ör. dizüstü Intel + NVIDIA) devam edebilirsiniz.'; apc_gpu_none='algılanmadı'; apc_ack='Riskleri okudum, yine de uygulansın'; apc_rp='Önce sistem geri yükleme noktası oluştur'; apc_rp_hint='  (~20-40 sn · Ayarlar''da ''her seferinde sor'' seçili)'; apc_rp_auto='ℹ Önce sistem geri yükleme noktası oluşturulacak (~20-40 sn).'; apc_rb_note='⟳ {0} ayar yeniden başlatmadan sonra tam etkin olur; bitince kartta seçeneği çıkar.'; apc_cancel='Vazgeç'; apc_go='Uygula · {0}'; apc_go_risk='Yine de Uygula · {0}'; apc_prep='Hazırlanıyor…'; apc_rp_run='Geri yükleme noktası oluşturuluyor…'; apc_undo_title='Son işlemi geri alın'; apc_undo_sub='Son Uygula işlemi tersine çevrilecek: uygulananlar geri alınır, geri alınanlar yeniden uygulanır.'; msg_ok='Tamam'; msg_yes='Evet'; msg_no='Hayır'; msg_cancel='İptal'
         fb_header='Geri Bildirim Gönder'; fb_desc='Hata bildir, öneri yap, ya da soru sor. 3 gönderim seçeneği: Panoya kopyala (manuel paylaş), GitHub Issue (browser açar), Discord (anonim webhook — Türkiye dahil bazı ülkelerde erişim engelli olabilir).'; fb_bug='🐛 Hata'; fb_suggestion='💡 Öneri'; fb_question='❓ Soru'; fb_msglabel='Mesaj (ne oldu, ne bekliyordun, adımlar):'; fb_email='E-posta (opsiyonel):'; fb_includesys='Sistem bilgilerini ekle (Windows sürümü + MrClean sürümü + son 30 log satırı)'; fb_clipboard='📋 Panoya Kopyala'; fb_github='🐙 GitHub Issue'; fb_discord='💬 Discord'
         we_title='Winapp2 Editörü (Override)'; we_search='Uygulama Ara (Winapp2.ini):'; we_find='BUL'; we_results='Sonuçlar:'; we_editlabel='Düzenle (Kendi kurallarınızı yazın):'; we_deleteoverride='Özel Ayarı Sil (Sıfırla)'; we_saveexit='KAYDET ve ÇIK'
         bloat_title='Akıllı Bloatware Yöneticisi'; bloat_header='Windows Uygulamaları Temizleyici'; bloat_desc='Kaldırmak istediğiniz uygulamaları seçin.'; bloat_selectall='Tümünü Seç / Kaldır'; bloat_removesel='SEÇİLENLERİ KALDIR'
@@ -1021,7 +1023,7 @@ $global:Strings = @{
         dash_detail='Hardware details'; dash_test='Network test'
         dash_rec_card='TO DO'; dash_pingcard='LATENCY'; dash_sysinfo='System info'; dash_rec_title='Suggested actions'; dash_rec_wait='Preparing suggestions…'; dash_rec_n='Pending suggestions: {0}'; dash_rec_none='No pending suggestions'; dash_src_hw='Hardware summary (WMI) · {0}'; dash_src_wg='winget upgrade · {0}'; dash_src_su='Registry and Startup folder · just now'; dash_src_tw='Tweaks pending list · just now'; dash_wg_n='{0} package updates available'; dash_wg_fail='Could not check for updates'; dash_wg_ok0='winget: no updates'; dash_wg_wait='Checking for updates…'; dash_su_n='{0} apps start with Windows'; dash_tw_n='{0} tweaks waiting to apply'; dash_disk_full='Drive C: is {0} percent full'; dash_age_now='just now'; dash_age_min='{0} min ago'; dash_age_hour='{0} h ago'; dash_card_mem='MEMORY'; dash_card_disk='DISK C:'; dash_ram_free='Free up'; dash_ping_gw='gateway'; dash_ping_tip='Network test: Cloudflare, Google and gateway average (ms). The large number is the live gateway ping.'; dash_more='Details'; dash_row_os='Operating system'; dash_row_cpu='Processor'; dash_row_gpu='Graphics'; dash_row_mem='Memory'; dash_row_disk='Disk C:'; dash_row_sec='Boot'; dash_row_up='Uptime'; dash_row_upd='Last update'; dash_row_dns='DNS'; dash_row_net='Connection'; dash_hist_title='Recent activity'; dash_hist_clean='Cleanup  ·  {0} removed'; dash_hist_tw_apply='Tweaks  ·  {0} applied'; dash_hist_tw_undo='Tweaks  ·  {0} undone'; dash_yesterday='Yesterday'
         btn_check='♻ Check'; btn_manage='⚙ Manage'; btn_saveprofile='💾 Profile'; btn_quickundo='↶ Undo'
-        tw_search_ph='Search tweaks...'; tw_cats_title='CATEGORIES'; tw_badge_reboot='RESTART'; tw_badge_risk_high='HIGH RISK'; tw_badge_risk_med='RISKY'; tw_badge_pending='PENDING'; tw_badge_pending_tip='This setting will change when you press Apply'; log_toggle_show='Activity log  ˄'; log_toggle_hide='Activity log  ˅'; tw_filter_tip='Narrows the tweak list as you type — searches name, description and category. Press Esc to clear.'; tw_filter_clear='Clear search'; tw_filter_count='{0} / {1} tweaks'; tw_active_count='✅ {0} / {1} active'; tw_incompat_count='⛔ {0} unavailable on this PC'; tw_chip_all='All'; tw_chip_active='✅ Active'; tw_chip_passive='○ Inactive'; tw_chip_new='✦ New'; tw_chip_risky='⚠ Risky'; tw_chip_reboot='↻ Needs restart'; tw_progress_tip='Share of active tweaks (last check)'; tw_badge_reboot_tip='Requires a restart after applying'; tw_hw_wifi='No Wi-Fi adapter'; tw_hw_eth='No Ethernet adapter'; tw_hw_laptop='Laptops only'; tw_hw_hdd='No hard disk (HDD)'; tw_hw_ssd='No SSD'; tw_hw_cores='Needs at least 4 cores'; tw_hw_dnstool='{0} is running and manages DNS'; tw_hw_wifiband='Wi-Fi adapter has no 5 GHz band preference (2.4 GHz only or not exposed by driver)'; tw_hw_wifiadv='Wi-Fi driver does not expose these settings'; tw_hw_vendortel='No Intel / AMD / HP / Dell / Lenovo telemetry component installed on this PC'; tw_hw_cabc='Content adaptive brightness (CABC) is not available on this display'; tw_hw_gpu='No {0} graphics card'; tw_hw_tip='⛔ Not applicable on this PC: {0}'; tw_badge_new='NEW'; tw_incompat_tip='⛔ This setting requires Windows {0}. Your system: {1}'
+        tw_search_ph='Search tweaks...'; tw_cats_title='CATEGORIES'; tw_badge_reboot='RESTART'; tw_badge_risk_high='HIGH RISK'; tw_badge_risk_med='RISKY'; tw_badge_pending='PENDING'; tw_badge_pending_tip='This setting will change when you press Apply'; log_toggle_show='Activity log  ˄'; log_toggle_hide='Activity log  ˅'; tw_filter_tip='Narrows the tweak list as you type — searches name, description and category. Press Esc to clear.'; tw_filter_clear='Clear search'; tw_filter_count='{0} / {1} tweaks'; tw_active_count='✅ {0} / {1} active'; tw_incompat_count='⛔ {0} unavailable on this PC'; tw_chip_all='All'; tw_chip_active='✅ Active'; tw_chip_passive='○ Inactive'; tw_chip_new='✦ New'; tw_chip_risky='⚠ Risky'; tw_chip_reboot='↻ Needs restart'; tw_progress_tip='Share of active tweaks (last check)'; tw_badge_reboot_tip='Requires a restart after applying'; tw_hw_wifi='No Wi-Fi adapter'; tw_hw_eth='No Ethernet adapter'; tw_hw_laptop='Laptops only'; tw_hw_hdd='No hard disk (HDD)'; tw_hw_ssd='No SSD'; tw_hw_cores='Needs at least 4 cores'; tw_hw_dnstool='{0} is running and manages DNS'; tw_hw_wifiband='Wi-Fi adapter has no 5 GHz band preference (2.4 GHz only or not exposed by driver)'; tw_hw_wifiadv='Wi-Fi driver does not expose these settings'; tw_hw_vendortel='No Intel / AMD / HP / Dell / Lenovo telemetry component installed on this PC'; tw_hw_adrenalin='AMD Software (Adrenalin) is not installed'; tw_hw_uefi='This system is not UEFI (legacy BIOS)'; tw_hw_cabc='Content adaptive brightness (CABC) is not available on this display'; tw_hw_gpu='No {0} graphics card'; tw_hw_tip='⛔ Not applicable on this PC: {0}'; tw_badge_new='NEW'; tw_incompat_tip='⛔ This setting requires Windows {0}. Your system: {1}'
         btn_refresh='♻ Refresh'
         lf_userfolders='User Folders'; lf_cdisk='Disk C: (System)'; lf_customfolder='Select Custom Folder...';
         ctx_openloc='Open File Location (Select)'; ctx_copypath='Copy Path'; ctx_deleteperm='Delete Permanently'
@@ -1041,6 +1043,8 @@ $global:Strings = @{
         ac_title='Add/Edit Folder'; ac_path='Path:'; ac_filter='Filter (*.*):'; ac_recurse='Include Subfolders'; ac_deletefolder='Also Delete Folder'
         pe_title='Edit Paths'; pe_onerule='Enter one rule per line.'
         rs_title='System Restart'; rs_needed='Restart Required'; rs_desc='A restart is required for Low Latency (eSports), Ping and Processor settings to take effect in the Windows kernel.'; rs_later='Later'; rs_now='🔥 RESTART NOW'
+        apov_title='Applying settings'; apov_done='Done'; apov_done_err='Done (some settings had problems)'; apov_verify='Verifying…'; apov_keep='Do not close the window; the summary will appear here when finished.'; apov_apply='Applying'; apov_undo='Reverting'; apov_nic=' · restarting the network adapter, the internet connection may drop for a few seconds'; apov_c_applied='{0} applied'; apov_c_undone='{0} reverted'; apov_c_info='{0} info'; apov_c_err='{0} errors'; apov_reboot_note='⟳ Some settings take effect after a restart.'; apov_explorer_note='⟳ Some settings need Windows Explorer to restart (open Explorer windows will close).'; apov_err_note='❌ Details of the failed settings are in the activity log.'; apov_logs='Show Log'; apov_later='Later'; apov_restart='Restart Now'; apov_explorer='Restart Explorer'; apov_close='Close'
+        apc_title='Confirm changes'; apc_count='{0} settings'; apc_sub='Your switch selections will be synchronized with your system.'; apc_sec_apply='TO APPLY · {0}'; apc_sec_undo='TO REVERT (back to Windows default) · {0}'; apc_b_reboot='RESTART'; apc_b_risk='HIGH RISK'; apc_b_gpu='GPU: {0}'; apc_w_risk='⚠ High risk: {0} — may seriously change system behavior or require reverting.'; apc_w_gpu='⚠ GPU mismatch: ''{0}'' is for {1} graphics cards; detected on this PC: {2}. You can continue on hybrid systems (e.g. laptop Intel + NVIDIA).'; apc_gpu_none='not detected'; apc_ack='I have read the risks, apply anyway'; apc_rp='Create a system restore point first'; apc_rp_hint='  (~20-40 s · Settings: ''ask every time'')'; apc_rp_auto='ℹ A system restore point will be created first (~20-40 s).'; apc_rb_note='⟳ {0} settings take full effect after a restart; the option appears on the card when finished.'; apc_cancel='Cancel'; apc_go='Apply · {0}'; apc_go_risk='Apply anyway · {0}'; apc_prep='Preparing…'; apc_rp_run='Creating restore point…'; apc_undo_title='Undo last operation'; apc_undo_sub='The last Apply will be reversed: applied settings are reverted, reverted settings are applied again.'; msg_ok='OK'; msg_yes='Yes'; msg_no='No'; msg_cancel='Cancel'
         fb_header='Send Feedback'; fb_desc='Report a bug, suggest, or ask. 3 send options: Copy to clipboard (share manually), GitHub Issue (opens browser), Discord (anonymous webhook — may be blocked in some countries incl. Turkey).'; fb_bug='🐛 Bug'; fb_suggestion='💡 Suggestion'; fb_question='❓ Question'; fb_msglabel='Message (what happened, what you expected, steps):'; fb_email='Email (optional):'; fb_includesys='Include system info (Windows version + MrClean version + last 30 log lines)'; fb_clipboard='📋 Copy to Clipboard'; fb_github='🐙 GitHub Issue'; fb_discord='💬 Discord'
         we_title='Winapp2 Editor (Override)'; we_search='Search App (Winapp2.ini):'; we_find='FIND'; we_results='Results:'; we_editlabel='Edit (write your own rules):'; we_deleteoverride='Delete Override (Reset)'; we_saveexit='SAVE and EXIT'
         bloat_title='Smart Bloatware Manager'; bloat_header='Windows Apps Cleaner'; bloat_desc='Select the apps you want to remove.'; bloat_selectall='Select All / Remove'; bloat_removesel='REMOVE SELECTED'
@@ -1136,7 +1140,7 @@ $global:Strings = @{
         dash_detail='Détail matériel'; dash_test='Test réseau'
         dash_rec_card='À FAIRE'; dash_pingcard='LATENCE'; dash_sysinfo='Infos système'; dash_rec_title='Actions suggérées'; dash_rec_wait='Préparation des suggestions…'; dash_rec_n='Suggestions en attente : {0}'; dash_rec_none='Aucune suggestion'; dash_src_hw='Résumé matériel (WMI) · {0}'; dash_src_wg='winget upgrade · {0}'; dash_src_su='Registre et dossier Démarrage · à l''instant'; dash_src_tw='Liste des tweaks en attente · à l''instant'; dash_wg_n='{0} mises à jour de paquets'; dash_wg_fail='Contrôle des mises à jour impossible'; dash_wg_ok0='winget : aucune mise à jour'; dash_wg_wait='Vérification des mises à jour…'; dash_su_n='{0} applications au démarrage'; dash_tw_n='{0} tweaks en attente d''application'; dash_disk_full='Le disque C: est plein à {0} %'; dash_age_now='à l''instant'; dash_age_min='il y a {0} min'; dash_age_hour='il y a {0} h'; dash_card_mem='MÉMOIRE'; dash_card_disk='DISQUE C:'; dash_ram_free='Libérer'; dash_ping_gw='passerelle'; dash_ping_tip='Test réseau : moyenne Cloudflare, Google et passerelle (ms). Le grand nombre est le ping en direct de la passerelle.'; dash_more='Détails'; dash_row_os='Système'; dash_row_cpu='Processeur'; dash_row_gpu='Carte graphique'; dash_row_mem='Mémoire'; dash_row_disk='Disque C:'; dash_row_sec='Démarrage'; dash_row_up='Temps de fonctionnement'; dash_row_upd='Dernière mise à jour'; dash_row_dns='DNS'; dash_row_net='Connexion'; dash_hist_title='Activité récente'; dash_hist_clean='Nettoyage  ·  {0} supprimés'; dash_hist_tw_apply='Tweaks  ·  {0} appliqués'; dash_hist_tw_undo='Tweaks  ·  {0} annulés'; dash_yesterday='Hier'
         btn_check='♻ Vérifier'; btn_manage='⚙ Gérer'; btn_saveprofile='💾 Profil'; btn_quickundo='↶ Annuler'
-        tw_search_ph='Rechercher...'; tw_cats_title='CATÉGORIES'; tw_badge_reboot='REDÉMARRAGE'; tw_badge_risk_high='RISQUE ÉLEVÉ'; tw_badge_risk_med='RISQUÉ'; tw_badge_pending='EN ATTENTE'; tw_badge_pending_tip='Ce réglage changera quand vous cliquerez sur Appliquer'; log_toggle_show='Journal  ˄'; log_toggle_hide='Journal  ˅'; tw_filter_tip='Filtre la liste des tweaks pendant la saisie — recherche dans le nom, la description et la catégorie. Échap pour effacer.'; tw_filter_clear='Effacer la recherche'; tw_filter_count='{0} / {1} tweaks'; tw_active_count='✅ {0} / {1} actifs'; tw_incompat_count='⛔ {0} indisponibles sur ce PC'; tw_chip_all='Tous'; tw_chip_active='✅ Actifs'; tw_chip_passive='○ Inactifs'; tw_chip_new='✦ Nouveaux'; tw_chip_risky='⚠ Risqués'; tw_chip_reboot='↻ Redémarrage'; tw_progress_tip='Part des tweaks actifs (dernière vérification)'; tw_badge_reboot_tip='Redémarrage requis après application'; tw_hw_wifi='Aucune carte Wi-Fi'; tw_hw_eth='Aucune carte Ethernet'; tw_hw_laptop='Portables uniquement'; tw_hw_hdd='Aucun disque dur (HDD)'; tw_hw_ssd='Aucun SSD'; tw_hw_cores='4 cœurs minimum requis'; tw_hw_dnstool='{0} est actif et gère le DNS'; tw_hw_wifiband='La carte Wi-Fi ne propose pas la préférence 5 GHz'; tw_hw_wifiadv='Le pilote Wi-Fi ne propose pas ces réglages'; tw_hw_vendortel='Aucun composant de télémétrie Intel / AMD / HP / Dell / Lenovo installé sur ce PC'; tw_hw_cabc='Luminosité adaptative au contenu (CABC) indisponible sur cet écran'; tw_hw_gpu='Aucune carte graphique {0}'; tw_hw_tip='⛔ Non applicable sur ce PC : {0}'; tw_badge_new='NOUVEAU'; tw_incompat_tip='⛔ Ce réglage nécessite Windows {0}. Votre système : {1}'
+        tw_search_ph='Rechercher...'; tw_cats_title='CATÉGORIES'; tw_badge_reboot='REDÉMARRAGE'; tw_badge_risk_high='RISQUE ÉLEVÉ'; tw_badge_risk_med='RISQUÉ'; tw_badge_pending='EN ATTENTE'; tw_badge_pending_tip='Ce réglage changera quand vous cliquerez sur Appliquer'; log_toggle_show='Journal  ˄'; log_toggle_hide='Journal  ˅'; tw_filter_tip='Filtre la liste des tweaks pendant la saisie — recherche dans le nom, la description et la catégorie. Échap pour effacer.'; tw_filter_clear='Effacer la recherche'; tw_filter_count='{0} / {1} tweaks'; tw_active_count='✅ {0} / {1} actifs'; tw_incompat_count='⛔ {0} indisponibles sur ce PC'; tw_chip_all='Tous'; tw_chip_active='✅ Actifs'; tw_chip_passive='○ Inactifs'; tw_chip_new='✦ Nouveaux'; tw_chip_risky='⚠ Risqués'; tw_chip_reboot='↻ Redémarrage'; tw_progress_tip='Part des tweaks actifs (dernière vérification)'; tw_badge_reboot_tip='Redémarrage requis après application'; tw_hw_wifi='Aucune carte Wi-Fi'; tw_hw_eth='Aucune carte Ethernet'; tw_hw_laptop='Portables uniquement'; tw_hw_hdd='Aucun disque dur (HDD)'; tw_hw_ssd='Aucun SSD'; tw_hw_cores='4 cœurs minimum requis'; tw_hw_dnstool='{0} est actif et gère le DNS'; tw_hw_wifiband='La carte Wi-Fi ne propose pas la préférence 5 GHz'; tw_hw_wifiadv='Le pilote Wi-Fi ne propose pas ces réglages'; tw_hw_vendortel='Aucun composant de télémétrie Intel / AMD / HP / Dell / Lenovo installé sur ce PC'; tw_hw_adrenalin='AMD Software (Adrenalin) n''est pas installé'; tw_hw_uefi='Ce système n''est pas UEFI (BIOS hérité)'; tw_hw_cabc='Luminosité adaptative au contenu (CABC) indisponible sur cet écran'; tw_hw_gpu='Aucune carte graphique {0}'; tw_hw_tip='⛔ Non applicable sur ce PC : {0}'; tw_badge_new='NOUVEAU'; tw_incompat_tip='⛔ Ce réglage nécessite Windows {0}. Votre système : {1}'
         btn_refresh='♻ Actualiser'
         lf_userfolders='Dossiers utilisateur'; lf_cdisk='Disque C: (Système)'; lf_customfolder='Choisir un dossier...';
         ctx_openloc='Ouvrir l''emplacement (Sélectionner)'; ctx_copypath='Copier le chemin'; ctx_deleteperm='Supprimer définitivement'
@@ -1156,6 +1160,8 @@ $global:Strings = @{
         ac_title='Ajouter/Modifier un dossier'; ac_path='Chemin :'; ac_filter='Filtre (*.*) :'; ac_recurse='Inclure les sous-dossiers'; ac_deletefolder='Supprimer aussi le dossier'
         pe_title='Modifier les chemins'; pe_onerule='Entrez une règle par ligne.'
         rs_title='Redémarrage du système'; rs_needed='Redémarrage requis'; rs_desc='Un redémarrage est requis pour que les paramètres Low Latency (eSport), Ping et Processeur prennent effet dans le noyau Windows.'; rs_later='Plus tard'; rs_now='🔥 REDÉMARRER MAINTENANT'
+        apov_title='Application des réglages'; apov_done='Terminé'; apov_done_err='Terminé (certains réglages ont posé problème)'; apov_verify='Vérification…'; apov_keep='Ne fermez pas la fenêtre ; le résumé apparaîtra ici à la fin.'; apov_apply='Application'; apov_undo='Annulation'; apov_nic=' · redémarrage de la carte réseau, la connexion Internet peut couper quelques secondes'; apov_c_applied='{0} appliqué(s)'; apov_c_undone='{0} annulé(s)'; apov_c_info='{0} info'; apov_c_err='{0} erreur(s)'; apov_reboot_note='⟳ Certains réglages prennent effet après un redémarrage.'; apov_explorer_note='⟳ Certains réglages nécessitent de redémarrer l''Explorateur Windows (les fenêtres ouvertes se fermeront).'; apov_err_note='❌ Le détail des réglages en échec est dans le journal.'; apov_logs='Afficher le journal'; apov_later='Plus tard'; apov_restart='Redémarrer maintenant'; apov_explorer='Redémarrer l''Explorateur'; apov_close='Fermer'
+        apc_title='Confirmer les modifications'; apc_count='{0} réglages'; apc_sub='Vos choix seront synchronisés avec le système.'; apc_sec_apply='À APPLIQUER · {0}'; apc_sec_undo='À ANNULER (retour au réglage Windows) · {0}'; apc_b_reboot='REDÉMARRAGE'; apc_b_risk='RISQUE ÉLEVÉ'; apc_b_gpu='GPU : {0}'; apc_w_risk='⚠ Risque élevé : {0} — peut modifier fortement le comportement du système ou nécessiter une annulation.'; apc_w_gpu='⚠ GPU incompatible : « {0} » concerne les cartes {1} ; détecté sur ce PC : {2}. Vous pouvez continuer sur un système hybride (ex. portable Intel + NVIDIA).'; apc_gpu_none='non détecté'; apc_ack='J''ai lu les risques, appliquer quand même'; apc_rp='Créer d''abord un point de restauration'; apc_rp_hint='  (~20-40 s · Paramètres : « demander à chaque fois »)'; apc_rp_auto='ℹ Un point de restauration sera créé d''abord (~20-40 s).'; apc_rb_note='⟳ {0} réglages prennent pleinement effet après un redémarrage ; l''option apparaît sur la carte à la fin.'; apc_cancel='Annuler'; apc_go='Appliquer · {0}'; apc_go_risk='Appliquer quand même · {0}'; apc_prep='Préparation…'; apc_rp_run='Création du point de restauration…'; apc_undo_title='Annuler la dernière opération'; apc_undo_sub='La dernière application sera inversée : les réglages appliqués sont annulés, les réglages annulés sont réappliqués.'; msg_ok='OK'; msg_yes='Oui'; msg_no='Non'; msg_cancel='Annuler'
         fb_header='Envoyer un retour'; fb_desc='Signalez un bug, suggérez ou posez une question. 3 options d''envoi : Copier dans le presse-papiers (partage manuel), GitHub Issue (ouvre le navigateur), Discord (webhook anonyme — peut être bloqué dans certains pays dont la Turquie).'; fb_bug='🐛 Bug'; fb_suggestion='💡 Suggestion'; fb_question='❓ Question'; fb_msglabel='Message (ce qui s''est passé, attendu, étapes) :'; fb_email='E-mail (optionnel) :'; fb_includesys='Inclure les infos système (version Windows + version MrClean + 30 dernières lignes de log)'; fb_clipboard='📋 Copier'; fb_github='🐙 GitHub Issue'; fb_discord='💬 Discord'
         we_title='Éditeur Winapp2 (Override)'; we_search='Rechercher une app (Winapp2.ini) :'; we_find='TROUVER'; we_results='Résultats :'; we_editlabel='Modifier (écrivez vos propres règles) :'; we_deleteoverride='Supprimer l''override (Réinit.)'; we_saveexit='ENREGISTRER et QUITTER'
         bloat_title='Gestionnaire de bloatware intelligent'; bloat_header='Nettoyeur d''applications Windows'; bloat_desc='Sélectionnez les applications à supprimer.'; bloat_selectall='Tout sélectionner / Retirer'; bloat_removesel='SUPPRIMER LA SÉLECTION'
@@ -1675,6 +1681,18 @@ public class SpiFx {
                 Risk="Low"; RestartExplorer=$false;
                 Description="Alt+Tab listesinde Microsoft Edge sekmelerinin ayrı ayrı görünmesini kapatır — sadece pencereler listelenir, oyun ile Discord arasında Alt+Tab daha hızlı ve öngörülebilir olur. (Ayarlar > Sistem > Çoklu Görev ile aynı.)`n📚 Kaynak: Win11Debloat (Hide_Tabs_In_Alt_Tab).";
                 Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; ValueName="MultiTaskingAltTabFilter"; Type="DWord"; Data=3; Undo="DELETE_VALUE"
+            },
+            @{
+                Name="Görev Çubuğu Simgelerinde Bildirim Rozetlerini Gizle"; SubCategory="Görev Çubuğu"; Since="2.0.0";
+                Risk="Low"; RestartExplorer="Soft";
+                Description="Görev çubuğundaki uygulama simgelerinin köşesinde çıkan okunmamış sayısı / bildirim rozetlerini (ör. Discord, Mail, Teams) gizler. Bildirimlerin kendisi kapanmaz. Ayarlar > Kişiselleştirme > Görev çubuğu > Görev çubuğu davranışları > 'Görev çubuğu uygulamalarında rozetleri göster' ile aynıdır.`n📚 Kaynak: Stix Tweaks (General Windows Settings).";
+                Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; ValueName="TaskbarBadges"; Type="DWord"; Data=0; Undo="DELETE_VALUE"
+            },
+            @{
+                Name="Görev Çubuğunda Uygulama Yanıp Sönmesini Kapat"; SubCategory="Görev Çubuğu"; Since="2.0.0";
+                Risk="Low"; RestartExplorer="Soft";
+                Description="Bir uygulama dikkat istediğinde (ör. oyun oynarken Discord mesajı, indirme bitişi) görev çubuğu simgesinin turuncu yanıp sönmesini kapatır. Ayarlar > Kişiselleştirme > Görev çubuğu > Görev çubuğu davranışları > 'Görev çubuğu uygulamalarında yanıp sönmeyi göster' ile aynıdır.`n📚 Kaynak: Stix Tweaks (General Windows Settings).";
+                Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; ValueName="TaskbarFlashing"; Type="DWord"; Data=0; Undo="DELETE_VALUE"
             },
             @{
                 Name="Paylaşım Sürükleme Tepsisini Kapat (25H2)"; SubCategory="Görev Çubuğu"; Since="2.0.0"; MinBuild=26200;
@@ -2943,6 +2961,67 @@ public class SpiFx {
                     Remove-Item -Path "$b\Copy To" -Recurse -Force -ErrorAction SilentlyContinue
                     Remove-Item -Path "$b\Move To" -Recurse -Force -ErrorAction SilentlyContinue
                 '
+            },
+            @{
+                Name="Masaüstü Sağ Tık Menüsüne 'BIOS / UEFI'ye Yeniden Başlat' Ekle"; Since="2.0.0"; Requires=@("UEFI");
+                Risk="Low"; RestartExplorer=$false;
+                Description="Masaüstünün klasik sağ tık menüsüne (Diğer seçenekleri göster / Shift+F10) 'BIOS / UEFI'ye Yeniden Başlat' komutunu ekler. Tıklayınca önce 'Evet / Hayır' onay kutusu çıkar; Evet derseniz yönetici yetkisi istenir (UAC 'Hiçbir zaman bildirme' ise sormadan alınır), bilgisayar hemen yeniden başlar ve doğrudan BIOS / UEFI ayarlarını açar — açılışta F2 / Del tuşunu yakalamaya gerek kalmaz. Yeniden başlatma başarısız olursa nedeni (çıkış kodu) bir hata kutusunda gösterilir.`n`n⚠️ Evet deyince açık programlar kaydedilmeden kapanır.`nℹ️ Yalnız UEFI'li sistemlerde görünür (Windows'un shutdown /r /fw komutu).`n📚 Kaynak: Stix Tweaks (General Windows Settings).";
+                DetectScript='
+                    # v2.0.0 (§112): eski surumun (onay kutusuz) komutu "uygulanmamis" sayilir, yeniden uygulayinca yenilenir
+                    $c = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Classes\DesktopBackground\Shell\MrCleanRestartToBios\command" -ErrorAction SilentlyContinue).''(default)''
+                    return ("$c" -match "MessageBox")
+                ';
+                Command='
+                    $k = "HKLM:\SOFTWARE\Classes\DesktopBackground\Shell\MrCleanRestartToBios"
+                    New-Item -Path "$k\command" -Force | Out-Null
+                    Set-ItemProperty -Path $k -Name "MUIVerb" -Value "BIOS / UEFI''ye Yeniden Başlat" -Type String -Force
+                    Set-ItemProperty -Path $k -Name "Icon" -Value "shell32.dll,-325" -Type String -Force
+                    Set-ItemProperty -Path $k -Name "Position" -Value "Bottom" -Type String -Force
+                    Set-ItemProperty -Path $k -Name "HasLUAShield" -Value "" -Type String -Force
+                    # v2.0.0 (§112): once MrClean onay kutusu (UAC "Hicbir zaman bildirme"de onay penceresi cikmiyor), sonra yonetici
+                    # olarak shutdown /r /fw; basarisizsa cikis koduyla hata kutusu. conhost --headless: konsol penceresi gorunmez.
+                    # Duz -Command metni: Base64 / -EncodedCommand kullanma — Defender (AMSI) tum betigi zararli sayip engelliyor (§112 testi).
+                    $s = "Add-Type -AssemblyName PresentationFramework; if ([System.Windows.MessageBox]::Show(''Bilgisayar şimdi yeniden başlatılıp BIOS / UEFI ayarları açılsın mı? Açık programlar kaydedilmeden kapanır.'', ''MrClean'', ''YesNo'', ''Warning'') -ne ''Yes'') { exit }; try { `$p = Start-Process shutdown.exe -ArgumentList ''/r /fw /t 0'' -Verb RunAs -Wait -PassThru -WindowStyle Hidden } catch { exit }; if (`$p.ExitCode -ne 0) { [void][System.Windows.MessageBox]::Show((''BIOS / UEFI ayarlarına yeniden başlatılamadı. shutdown çıkış kodu: '' + `$p.ExitCode + ''. Açılışta F2 / Del tuşunu kullanın.''), ''MrClean'', ''OK'', ''Error'') }"
+                    Set-Item -Path "$k\command" -Value ("`"" + (Join-Path $env:SystemRoot "System32\conhost.exe") + "`" --headless powershell.exe -NoProfile -WindowStyle Hidden -Command `"" + $s + "`"")
+                ';
+                UndoCommand='
+                    Remove-Item -Path "HKLM:\SOFTWARE\Classes\DesktopBackground\Shell\MrCleanRestartToBios" -Recurse -Force -ErrorAction SilentlyContinue
+                '
+            },
+            @{
+                Name="Güç Menüsünden 'Uyku' Seçeneğini Gizle"; Since="2.0.0";
+                Risk="Low"; RestartExplorer="Soft";
+                Description="Başlat > Güç menüsünden ve Alt+F4 kapatma penceresinden 'Uyku' seçeneğini kaldırır (Kapat / Yeniden başlat kalır). Masaüstünde yanlışlıkla uykuya almayı önler. Denetim Masası > Güç Seçenekleri > 'Güç düğmelerinin yapacaklarını seçin' > Kapatma ayarları > 'Uyku' kutusunu kaldırır; aynı değeri Microsoft'un 'Güç seçenekleri menüsünde uykuyu göster' ilkesiyle de sabitler (kutu orada gri görünür).`n`n⚠️ Dizüstünde kapağı kapatınca uyku yine çalışır; yalnız menüden seçilemez.`n📚 Kaynak: Stix Tweaks (Hide Sleep Option); Microsoft ADMX (WindowsExplorer: ShowSleepOption).";
+                # v2.0.0 (§112): yalniz ilke degeri Baslat menusunde hemen etki etmedi (kullanici testi); Denetim Masasi degeri de yazilir.
+                # Geri alma 1 yazar (Denetim Masasi kutuyu isaretleyince yazdigi deger; silinince Uyku geri gelmedi).
+                # Baslat menusu (StartMenuExperienceHost) degeri acilista okuyup onbellekte tutuyor: yazdiktan sonra o surec kapatilir,
+                # Windows hemen yeniden acar (Gezgin / gorev cubugu kapanmaz).
+                DetectScript='
+                    $f = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings" -Name "ShowSleepOption" -ErrorAction SilentlyContinue).ShowSleepOption
+                    return ("$f" -eq "0")
+                ';
+                Command='
+                    $fk = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings"
+                    $pk = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Explorer"
+                    foreach ($k in @($fk, $pk)) {
+                        if (-not (Test-Path $k)) { New-Item -Path $k -Force | Out-Null }
+                        Set-ItemProperty -Path $k -Name "ShowSleepOption" -Value 0 -Type DWord -Force
+                    }
+                    Get-Process -Name "StartMenuExperienceHost" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+                ';
+                UndoCommand='
+                    $fk = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings"
+                    if (-not (Test-Path $fk)) { New-Item -Path $fk -Force | Out-Null }
+                    Set-ItemProperty -Path $fk -Name "ShowSleepOption" -Value 1 -Type DWord -Force
+                    Remove-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Explorer" -Name "ShowSleepOption" -Force -ErrorAction SilentlyContinue
+                    Get-Process -Name "StartMenuExperienceHost" -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+                '
+            },
+            @{
+                Name="Düşük Disk Alanı Uyarısını Kapat"; Since="2.0.0";
+                Risk="Low"; RestartExplorer=$false;
+                Description="Bir sürücü dolmaya yaklaşınca çıkan 'Düşük disk alanı' bildirimini kapatır (ör. neredeyse dolu tuttuğunuz oyun / yedek diski için sürekli uyarı gelmez). Microsoft'un 'Düşük disk alanı uyarılarını kapat' ilkesiyle aynıdır.`n`n⚠️ C: sürücüsü dolarsa da uyarı gelmez; boş alanı kendiniz izleyin.`n📚 Kaynak: Stix Tweaks (General Windows Settings); Microsoft ADMX (WindowsExplorer: NoLowDiskSpaceChecks).";
+                Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"; ValueName="NoLowDiskSpaceChecks"; Type="DWord"; Data=1; Undo="DELETE_VALUE"
             },
             @{
                 Name="Otomatik Kullan'ı (AutoPlay) Kapat"; Since="2.0.0";
@@ -4280,7 +4359,13 @@ public class SpiMenu {
 				Name        = "[SIFIRLA] Windows Varsayılanları"
 				SubCategory = "Ağ ve Ping"
 				Group       = "NetProfile"
-				Description = "Tüm ağ yığınını, TCP algoritmalarını ve kısıtlamaları Windows'un orijinal kurulum ayarlarına geri döndürür.`n`nℹ️ MrClean bilerek hat HIZINA göre ayar yapmaz (sabit TCP pencere boyutu, kısıtlı/kapalı otomatik pencere ayarı, MinRto vb.): Türkiye'de hat hızı ve gecikme gün içinde çok dalgalanır; bir hıza göre sabitlenen değer başka bir saatte indirmeyi ciddi yavaşlatabilir — riskli. Başka bir 'optimizasyon' aracı bu tür değerler bıraktıysa bu seçenek Windows'un kendi otomatik ayarına döndürür.`n✅ YogaDNS, GoodbyeDPI ve Mullvad / WARP / Proton gibi VPN'lere dokunmaz.";
+				# v2.0.0 (§115): acilinca 'Ag ve Ping' alt kategorisindeki acik tweak'ler aninda kapali + BEKLIYOR olur (Add_Click)
+				ResetsSubCategory = "Ağ ve Ping"
+				# v2.0.0 (§117): sifirlama tek yonludur (geri alma yok). Ag ve Ping'den bir tweak acilinca anahtari kapanir ama
+				# Windows TCP ayarlari varsayilanda kaldigi icin tespit 'Aktif' der — bu hata degil, bilgi olarak yazilir.
+				UndoMayStayActive  = $true
+				UndoStayActiveNote = "sıfırlama tek yönlüdür, geri alınacak bir değişiklik yok; Windows TCP ayarları varsayılanda kaldığı için 'Aktif' görünmeye devam eder."
+				Description = "'Ağ ve Ping' altındaki bütün ayarları Windows varsayılanına döndürür. Açınca o bölümde açık olan her tweak anında kapalı + BEKLİYOR görünür; Uygula'ya basınca önce her biri kendi geri alma komutuyla (yedeğine) döner, sonra Windows'un ağ ayarları varsayılana çekilir:`n• TCP otomatik pencere ayarı 'normal', tıkanıklık denetimi / ECN varsayılan, RSS ve RSC açık, zaman damgası ve SYN tekrar sayısı varsayılan`n• Elle bırakılmış TCP kayıt değerleri silinir (MaxUserPort, TcpTimedWaitDelay, DefaultTTL, InitialRto, MinRto, TcpWindowSize, GlobalMaxTcpWindowSize)`n• Ağ kısıtlaması (NetworkThrottlingIndex) 10, SystemResponsiveness 20`n• Fiziksel kartlarda checksum offload, LSO ve RSC açık`n• Gecikmeli ACK 2 paket / 40 ms, geçici port aralığı 49152 + 16384`n`nℹ️ Onarım sekmesindeki 'Ağ Sıfırla' bundan farklıdır: o, bağlantı yapılandırmasını (Winsock, IP, DHCP, DNS) sıfırlar.`nℹ️ MrClean bilerek hat HIZINA göre ayar yapmaz (sabit TCP pencere boyutu, kısıtlı/kapalı otomatik pencere ayarı, MinRto vb.): Türkiye'de hat hızı ve gecikme gün içinde çok dalgalanır; bir hıza göre sabitlenen değer başka bir saatte indirmeyi ciddi yavaşlatabilir — riskli. Başka bir 'optimizasyon' aracı bu tür değerler bıraktıysa bu seçenek Windows'un kendi otomatik ayarına döndürür.`n✅ YogaDNS, GoodbyeDPI ve Mullvad / WARP / Proton gibi VPN'lere dokunmaz.";
 				Command     = '
 					# ✅ Önce disabled/restricted modunu kır, sonra normal yap
 					netsh int tcp set global autotuninglevel=disabled  | Out-Null
@@ -4435,11 +4520,16 @@ public class SpiMenu {
                     foreach ($a in (Get-MrCleanNicFast | Where-Object { $_.InterfaceType -eq 6 })) {
                         $ps = Get-MrCleanNicParamsFast $a.RegPath
                         if ($null -eq $ps) { $r = Get-NetAdapterRss -Name $a.Name -ErrorAction SilentlyContinue; if (-not $r -or -not $r.Enabled) { continue }; $seen++; if ([int]$r.BaseProcessorNumber -lt 2) { return $false }; continue }
+                        # v2.0.0 (§114): Realtek gibi bazi suruculer *RssBaseProcNumber u Ndi\params listesinde gostermez; Set-NetAdapterRss
+                        # degeri yine de surucu anahtarina yazar. Liste yoksa deger dogrudan surucu anahtarindan okunur.
+                        $cur = Get-ItemProperty -LiteralPath $a.RegPath -ErrorAction SilentlyContinue
                         $en = @($ps | Where-Object { $_.RegistryKeyword -eq "*RSS" })[0]
-                        if (-not $en -or "$($en.RegistryValue)" -ne "1") { continue }
+                        $ev = if ($en) { "$($en.RegistryValue)" } elseif ($cur -and $null -ne $cur."*RSS") { "$($cur."*RSS")" } else { "" }
+                        if ($ev -ne "1") { continue }
                         $seen++
                         $bp = @($ps | Where-Object { $_.RegistryKeyword -eq "*RssBaseProcNumber" })[0]
-                        $bv = 0; if ($bp -and "$($bp.RegistryValue)" -ne "") { $bv = [int]"$($bp.RegistryValue)" }
+                        $bs = if ($bp -and "$($bp.RegistryValue)" -ne "") { "$($bp.RegistryValue)" } elseif ($cur -and $null -ne $cur."*RssBaseProcNumber") { "$($cur."*RssBaseProcNumber")" } else { "0" }
+                        $bv = 0; if ($bs -match "^\d+$") { $bv = [int]$bs }
                         if ($bv -lt 2) { return $false }
                     }
                     return ($seen -gt 0)
@@ -4494,6 +4584,8 @@ public class SpiMenu {
             @{
                 Name="Ethernet Alım Arabelleğini Artır (Receive Buffers ≥ 1024)"; Requires=@("Ethernet");
                 SubCategory="Ağ ve Ping"; Since="2.0.0";
+                # v2.0.0 (§116): kartin kendi degeri zaten >= 1024 ise geri alma onceki degere (yine >= 1024) doner, tweak 'Aktif' kalir
+                UndoMayStayActive=$true; UndoStayActiveNote="kartın kendi değeri zaten 1024 ve üstünde (sürücü varsayılanı); geri alma önceki değere döndü, koşul hâlâ sağlandığı için 'Aktif' görünmeye devam eder.";
                 Risk="Low"; RestartExplorer=$false; SkipRebootDialog=$true;
                 Description="Ethernet kartının alım arabelleği 1024'ün altındaysa (bazı Realtek / Intel kartlarda varsayılan 256-512) sürücünün izin verdiği en fazla 2048'e çıkarır. Yoğun indirme + oyun anında kartın paket düşürmesini önler; gecikmeyi artırmaz (birkaç yüz KB RAM).`n`nℹ️ Zaten 1024 ve üstündeyse hiçbir şey değiştirilmez ('Aktif' görünür).`n⚠️ Değişiklik olursa Ethernet bağlantısı 2-5 sn kopar.`n✅ Önceki değer yedeklenir, geri alma ona döner.`n📚 Kaynak: djdallmann/GamingPCSetup (NETWORK: 'increase to 1024 or higher'), tweaqas Network_Tweaker.";
                 DetectScript='
@@ -4529,7 +4621,7 @@ public class SpiMenu {
                 Name="NetBIOS Ad Yayınlarını Kapat (Eski Ağ Protokolü)";
                 SubCategory="Ağ ve Ping"; Since="2.0.0";
                 Risk="Low"; RestartExplorer=$false; SkipRebootDialog=$true;
-                Description="Fiziksel ağ kartlarında eski 'NetBIOS over TCP/IP' protokolünü kapatır: 137-139 portları kapanır, yerel ağa sürekli ad yayını yapılmaz (güvenlik + ağ gürültüsü). Anında uygulanır.`n`n✅ Spotify Connect, Chromecast, Steam yerel ağ / Remote Play, yazıcı keşfi (mDNS / WSD) ve internet ETKİLENMEZ.`n⚠️ Çok eski NAS / modem paylaşımına veya Windows XP/7 dönemi cihaza ADIYLA (\\\\BILGISAYAR) erişiyorsanız IP adresiyle erişmeniz gerekebilir.`n📚 Kaynak: djdallmann/GamingPCSetup, valleyofdoom/PC-Tuning, Winrift.";
+                Description="Fiziksel ağ kartlarında eski 'NetBIOS over TCP/IP' protokolünü kapatır: 137-139 portları kapanır, yerel ağa sürekli ad yayını yapılmaz (güvenlik + ağ gürültüsü). Anında uygulanır. Ayrıca eski LMHOSTS dosyası aramasını da kapatır (IPv4 > Gelişmiş > WINS > 'LMHOSTS aramasını etkinleştir').`n`n✅ Spotify Connect, Chromecast, Steam yerel ağ / Remote Play, yazıcı keşfi (mDNS / WSD) ve internet ETKİLENMEZ.`n⚠️ Çok eski NAS / modem paylaşımına veya Windows XP/7 dönemi cihaza ADIYLA (\\\\BILGISAYAR) erişiyorsanız IP adresiyle erişmeniz gerekebilir.`n📚 Kaynak: djdallmann/GamingPCSetup, valleyofdoom/PC-Tuning, Winrift.";
                 DetectScript='
                     $seen = 0
                     foreach ($a in (Get-MrCleanNicFast)) {   # v1.3.0 (§90): yalnız takılı kartlar
@@ -4537,6 +4629,9 @@ public class SpiMenu {
                         $seen++
                         if ("$v" -ne "2") { return $false }
                     }
+                    # v2.0.0 (§111): LMHOSTS dosyasi aramasi da kapali olmali
+                    $lm = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\NetBT\Parameters" -Name "EnableLMHOSTS" -ErrorAction SilentlyContinue).EnableLMHOSTS
+                    if ("$lm" -ne "0") { return $false }
                     return ($seen -gt 0)
                 ';
                 Command='
@@ -4548,6 +4643,9 @@ public class SpiMenu {
                     Get-CimInstance Win32_NetworkAdapterConfiguration -Filter "IPEnabled=TRUE" -ErrorAction SilentlyContinue | ForEach-Object {
                         try { Invoke-CimMethod -InputObject $_ -MethodName SetTcpipNetbios -Arguments @{ TcpipNetbiosOptions = [uint32]2 } -ErrorAction SilentlyContinue | Out-Null } catch {}
                     }
+                    # v2.0.0 (§111): LMHOSTS dosyasi aramasini kapat (Ag baglantisi > IPv4 > Gelismis > WINS > "LMHOSTS aramasini etkinlestir")
+                    $nbt = "HKLM:\SYSTEM\CurrentControlSet\Services\NetBT\Parameters"
+                    if (Test-Path $nbt) { Set-ItemProperty -Path $nbt -Name "EnableLMHOSTS" -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue }
                 ';
                 UndoCommand='
                     foreach ($a in (Get-MrCleanPhysicalAdapters)) {
@@ -4557,6 +4655,8 @@ public class SpiMenu {
                     Get-CimInstance Win32_NetworkAdapterConfiguration -Filter "IPEnabled=TRUE" -ErrorAction SilentlyContinue | ForEach-Object {
                         try { Invoke-CimMethod -InputObject $_ -MethodName SetTcpipNetbios -Arguments @{ TcpipNetbiosOptions = [uint32]0 } -ErrorAction SilentlyContinue | Out-Null } catch {}
                     }
+                    $nbt = "HKLM:\SYSTEM\CurrentControlSet\Services\NetBT\Parameters"
+                    if (Test-Path $nbt) { Set-ItemProperty -Path $nbt -Name "EnableLMHOSTS" -Value 1 -Type DWord -Force -ErrorAction SilentlyContinue }   # Windows varsayilani 1
                 '
             },
             @{
@@ -4667,8 +4767,9 @@ public class SpiMenu {
                     if ($adapterNames.Count -eq 0) {
                         try { WpfLog "[NetAdapter] ⚠️ HIC fiziksel NIC bulunamadi! Internete bagli misin? Wi-Fi acik mi?" } catch {}
                     }
+                    $changed = New-Object System.Collections.Generic.List[string]
                     foreach ($a in $adapters) {
-                        $ok = 0; $skip = 0
+                        $ok = 0; $skip = 0; $chg = $false
                         foreach ($o in $settings) {
                             # Sadece surucunun destekledigi ve degeri farkli olan keyword yazilir (gereksiz restart yok)
                             $cur = Get-NetAdapterAdvancedProperty -Name $a.Name -RegistryKeyword $o.Key -ErrorAction SilentlyContinue
@@ -4676,53 +4777,38 @@ public class SpiMenu {
                             if ("$($cur.RegistryValue)" -eq "$($o.Value)") { $ok++; continue }
                             try {
                                 Set-NetAdapterAdvancedProperty -Name $a.Name -RegistryKeyword $o.Key -RegistryValue $o.Value -NoRestart -ErrorAction Stop
-                                $ok++
+                                $ok++; $chg = $true
                             } catch { $skip++ }
+                            try { Do-Events } catch {}
                         }
+                        if ($chg) { $changed.Add([string]$a.Name) }
                         if ($dbg) { try { WpfLog ("[NetAdapter] " + $a.Name + ": " + $ok + " ayar dogru, " + $skip + " desteklenmiyor/atlandi") } catch {} }
                     }
-                    # Tek seferde restart — yeni offload ayarlari ancak NIC yeniden baslayinca aktif olur
-                    if ($adapterNames.Count -gt 0) {
-                        try { $adapterNames | ForEach-Object { Restart-NetAdapter -Name $_ -Confirm:$false -ErrorAction SilentlyContinue } } catch {}
-                    }
-                    $timeoutSec = if ($hasWiFi) { 30 } else { 12 }
-                    $deadline = (Get-Date).AddSeconds($timeoutSec)
-                    while ((Get-Date) -lt $deadline) {
-                        $allReady = $true
-                        foreach ($n in $adapterNames) {
-                            $cur = Get-NetAdapter -Name $n -ErrorAction SilentlyContinue
-                            if (-not $cur -or $cur.Status -notin @("Up","Disconnected")) { $allReady = $false; break }
-                        }
-                        if ($allReady) { break }
-                        Start-Sleep -Milliseconds 500
+                    # v2.0.0 (§116): yalniz degeri degisen kart(lar) yeniden baslatilir; bekleme pencereyi dondurmaz
+                    if ($changed.Count -gt 0) {
+                        $ms = Restart-MrCleanNicsAndWait $changed.ToArray()
+                        try { WpfLog ("   [NetAdapter] Yeniden baslatildi: " + ($changed -join ", ") + " (" + [Math]::Round($ms / 1000.0, 1) + " sn)") } catch {}
                     }
                 ';
                 UndoCommand='
                     # LSO surucu varsayilanina (acik) doner. RSS/Checksum zaten varsayilan (acik) — dokunulmaz.
                     $adapters = Get-MrCleanPhysicalAdapters
-                    $adapterNames = @($adapters | Select-Object -ExpandProperty Name)
-                    $hasWiFi = @($adapters | Where-Object { $_.InterfaceType -eq 71 }).Count -gt 0
+                    $changed = New-Object System.Collections.Generic.List[string]
                     foreach ($a in $adapters) {
+                        $chg = $false
                         foreach ($kw in @("*LsoV2IPv4","*LsoV2IPv6","*LsoV1IPv4")) {
                             $cur = Get-NetAdapterAdvancedProperty -Name $a.Name -RegistryKeyword $kw -ErrorAction SilentlyContinue
                             if ($cur -and "$($cur.RegistryValue)" -ne "1") {
-                                try { Set-NetAdapterAdvancedProperty -Name $a.Name -RegistryKeyword $kw -RegistryValue 1 -NoRestart -ErrorAction Stop } catch {}
+                                try { Set-NetAdapterAdvancedProperty -Name $a.Name -RegistryKeyword $kw -RegistryValue 1 -NoRestart -ErrorAction Stop; $chg = $true } catch {}
                             }
+                            try { Do-Events } catch {}
                         }
+                        if ($chg) { $changed.Add([string]$a.Name) }
                     }
-                    if ($adapterNames.Count -gt 0) {
-                        try { $adapterNames | ForEach-Object { Restart-NetAdapter -Name $_ -Confirm:$false -ErrorAction SilentlyContinue } } catch {}
-                    }
-                    $timeoutSec = if ($hasWiFi) { 30 } else { 12 }
-                    $deadline = (Get-Date).AddSeconds($timeoutSec)
-                    while ((Get-Date) -lt $deadline) {
-                        $allReady = $true
-                        foreach ($n in $adapterNames) {
-                            $cur = Get-NetAdapter -Name $n -ErrorAction SilentlyContinue
-                            if (-not $cur -or $cur.Status -notin @("Up","Disconnected")) { $allReady = $false; break }
-                        }
-                        if ($allReady) { break }
-                        Start-Sleep -Milliseconds 500
+                    # v2.0.0 (§116): yalniz degeri degisen kart(lar) yeniden baslatilir; bekleme pencereyi dondurmaz
+                    if ($changed.Count -gt 0) {
+                        $ms = Restart-MrCleanNicsAndWait $changed.ToArray()
+                        try { WpfLog ("   [NetAdapter] Yeniden baslatildi: " + ($changed -join ", ") + " (" + [Math]::Round($ms / 1000.0, 1) + " sn)") } catch {}
                     }
                 '
             },
@@ -5153,7 +5239,7 @@ public class SpiMenu {
 			@{
 				Name="AMD Adrenalin Optimizasyonu (Reklam/Popup/Bildirim Kapat)";
 				SubCategory="AMD";
-				Vendor="AMD";
+				Vendor="AMD"; Requires=@("AmdAdrenalin");
 				Risk="Low";
 				RestartExplorer=$false;
 				Description="AMD Software: Adrenalin Edition'ın reklamlarını, otomatik güncellemesini, sistem tepsisi menüsünü, oyun içi katmanını, hata bildirim aracını ve bildirimlerini kapatır. Grafik profili 'Özel' yapılır (Standart / Esports / Oyun ön ayarı seçimi kalkar), doku filtreleme kalitesi 'Performans'.`n`n✅ V-Sync, FreeSync ve mozaikleme ayarlarınıza dokunulmaz; sürücü Anti-Lag'ine dokunulmaz.`n🎮 Destekleyen oyunlarda (CS2, Warzone) oyun içi 'AMD Anti-Lag 2'yi açın; rekabetçi oyunlarda Radeon Chill ve Boost'u kapalı tutun.`n⚠️ Ayarların kaydedilmesi için Adrenalin 30 sn açılıp kapatılır. Yalnız AMD ekran kartı + Adrenalin kurulu sistemlerde anlamlıdır.";
@@ -7473,6 +7559,76 @@ $xaml = @"
             <TextBlock x:Name="txtBootStatus" Text="@@boot_loading@@" FontSize="13" Foreground="#A9B0BB" HorizontalAlignment="Center" Margin="0,16,0,0"/>
         </StackPanel>
     </Grid>
+    <!-- v2.0.0 (§118, Onizleme13): Uygula ilerleme katmani. Pencerenin tamamini orter, tiklamalari alir; metinler koddan (T). -->
+    <Grid x:Name="grdApplyOverlay" Grid.ColumnSpan="2" Panel.ZIndex="998" Background="#B30A0C10" Visibility="Collapsed" IsHitTestVisible="True">
+      <Border Width="640" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#15181E" BorderBrush="#2A2F39" BorderThickness="1" CornerRadius="12" Padding="24,20,24,20">
+        <Border.Effect><DropShadowEffect BlurRadius="40" ShadowDepth="6" Opacity="0.7" Color="Black"/></Border.Effect>
+        <StackPanel>
+          <Grid>
+            <StackPanel Orientation="Horizontal">
+              <Border x:Name="apovDot" Width="10" Height="10" CornerRadius="5" Background="#4C8DFF" VerticalAlignment="Center" Margin="0,0,10,0"/>
+              <TextBlock x:Name="apovTitle" FontSize="18" FontWeight="SemiBold" Foreground="#E6E8EB"/>
+            </StackPanel>
+            <TextBlock x:Name="apovCount" HorizontalAlignment="Right" FontSize="18" FontWeight="SemiBold" Foreground="#8A919C"/>
+          </Grid>
+          <!-- v2.0.0 (§119, Onizleme14): ONAY HALI — Uygula'dan once; eski esitleme / yuksek risk / GPU / geri yukleme kutularinin yerine -->
+          <StackPanel x:Name="apcPanel" Visibility="Collapsed">
+            <TextBlock x:Name="apcSub" FontSize="12.5" Foreground="#A9B0BB" Margin="0,6,0,0"/>
+            <Border BorderBrush="#23272F" BorderThickness="0,1,0,0" Margin="0,14,0,0" Padding="0,10,0,0">
+              <ScrollViewer MaxHeight="300" VerticalScrollBarVisibility="Auto">
+                <StackPanel x:Name="apcLists"/>
+              </ScrollViewer>
+            </Border>
+            <Border x:Name="apcWarn" Visibility="Collapsed" Background="#2A2116" BorderBrush="#5C4420" BorderThickness="1" CornerRadius="8" Padding="14,10" Margin="0,14,0,0">
+              <StackPanel>
+                <TextBlock x:Name="apcWarnText" FontSize="12.5" Foreground="#F0C27A" TextWrapping="Wrap"/>
+                <StackPanel x:Name="apcAckRow" Orientation="Horizontal" Margin="0,10,0,0" Cursor="Hand" Background="Transparent">
+                  <Border x:Name="apcAckBox" Width="16" Height="16" CornerRadius="4" BorderBrush="#E0A23B" BorderThickness="1.5" Background="Transparent" VerticalAlignment="Center">
+                    <TextBlock x:Name="apcAckTick" Text="✓" FontSize="11" FontWeight="Bold" Foreground="#15181E" HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed"/>
+                  </Border>
+                  <TextBlock x:Name="apcAckText" FontSize="12.5" Foreground="#E6E8EB" Margin="8,0,0,0" VerticalAlignment="Center"/>
+                </StackPanel>
+              </StackPanel>
+            </Border>
+            <StackPanel x:Name="apcRpRow" Orientation="Horizontal" Margin="0,14,0,0" Cursor="Hand" Background="Transparent" Visibility="Collapsed">
+              <Border x:Name="apcRpBox" Width="16" Height="16" CornerRadius="4" BorderBrush="#4C8DFF" BorderThickness="1.5" Background="#4C8DFF" VerticalAlignment="Center">
+                <TextBlock x:Name="apcRpTick" Text="✓" FontSize="11" FontWeight="Bold" Foreground="#FFFFFF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Border>
+              <TextBlock x:Name="apcRpText" FontSize="12.5" Foreground="#E6E8EB" Margin="8,0,0,0" VerticalAlignment="Center"/>
+              <TextBlock x:Name="apcRpHint" FontSize="12" Foreground="#5D6470" VerticalAlignment="Center"/>
+            </StackPanel>
+            <TextBlock x:Name="apcNote" FontSize="12" Foreground="#8A919C" Margin="0,10,0,0" TextWrapping="Wrap"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,18,0,0">
+              <Button x:Name="apcBtnCancel" Style="{StaticResource BtnSecondary}" Height="34" Padding="16,0" Margin="0,0,8,0"/>
+              <Button x:Name="apcBtnGo" Style="{StaticResource BtnPrimary}" Height="34" Padding="16,0"/>
+            </StackPanel>
+          </StackPanel>
+          <StackPanel x:Name="apovRun" Margin="0,14,0,0">
+            <TextBlock x:Name="apovStep" FontSize="15" FontWeight="SemiBold" Foreground="#E6E8EB" TextTrimming="CharacterEllipsis"/>
+            <TextBlock x:Name="apovDesc" FontSize="12.5" Foreground="#A9B0BB" Margin="0,4,0,0" TextWrapping="Wrap"/>
+            <Grid Margin="0,14,0,0" Height="6">
+              <Border Background="#23272F" CornerRadius="3"/>
+              <Border x:Name="apovBar" Background="#4C8DFF" CornerRadius="3" HorizontalAlignment="Left" Width="0"/>
+            </Grid>
+            <TextBlock x:Name="apovKeep" FontSize="11.5" Foreground="#5D6470" Margin="0,8,0,0"/>
+          </StackPanel>
+          <StackPanel x:Name="apovEnd" Margin="0,14,0,0" Visibility="Collapsed">
+            <WrapPanel x:Name="apovChips"/>
+            <TextBlock x:Name="apovInfo" FontSize="12.5" Foreground="#A9B0BB" TextWrapping="Wrap" Margin="0,10,0,0"/>
+          </StackPanel>
+          <Border x:Name="apovListBorder" BorderBrush="#23272F" BorderThickness="0,1,0,0" Margin="0,16,0,0" Padding="0,10,0,0">
+            <ScrollViewer x:Name="apovScroll" MaxHeight="250" VerticalScrollBarVisibility="Auto">
+              <StackPanel x:Name="apovList"/>
+            </ScrollViewer>
+          </Border>
+          <StackPanel x:Name="apovBtns" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0" Visibility="Collapsed">
+            <Button x:Name="apovBtnLogs" Style="{StaticResource BtnSecondary}" Height="34" Padding="14,0" Margin="0,0,8,0"/>
+            <Button x:Name="apovBtnLater" Style="{StaticResource BtnSecondary}" Height="34" Padding="14,0" Margin="0,0,8,0"/>
+            <Button x:Name="apovBtnMain" Style="{StaticResource BtnPrimary}" Height="34" Padding="14,0"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Grid>
   </Grid>
  
 </Window>
@@ -8941,6 +9097,12 @@ function Initialize-SubWindow($w) {
             $w.Resources['UiFontHead'] = $script:UiFontFamily
         }
     } catch {}
+    # v2.0.0 (§121): acik alt pencereler — Show-MrCleanMessage iletiyi dogru pencerenin ortasinda acmak icin sahibi buradan secer
+    try {
+        if (-not $global:MrCleanSubWindows) { $global:MrCleanSubWindows = New-Object System.Collections.ArrayList }
+        [void]$global:MrCleanSubWindows.Add($w)
+        $w.Add_Closed({ try { [void]$global:MrCleanSubWindows.Remove($this) } catch {} })
+    } catch {}
     try {
         $w.Add_SourceInitialized({
             try {
@@ -8952,6 +9114,161 @@ function Initialize-SubWindow($w) {
             } catch {}
         })
     } catch {}
+}
+
+# =========================================================
+# v2.0.0 (§121, Onizleme15): TEMALI ILETI PENCERESI — [System.Windows.MessageBox]::Show yerine.
+# Donus degerleri MessageBox ile ayni ('OK' / 'Cancel' / 'Yes' / 'No'); cagri yerleri davranis degismeden degistirilir.
+# Kenarliksiz, sahibinin ortasinda; dugmeler programin stilleri (BtnPrimary / BtnDanger / BtnSecondary).
+# Enter = varsayilan, Esc / Alt+F4 = Hayir / Iptal (yalniz Tamam varsa Tamam). -Danger: Evet kirmizi, Enter guvenli secenegi (Hayir) secer.
+# Pencere kurulamazsa eski MessageBox acilir.
+# =========================================================
+function Get-MrCleanMsgOwner {
+    $cand = $null
+    try {
+        foreach ($w in @($global:MrCleanSubWindows)) {
+            if ($w -and $w.IsVisible) { if ($w.IsActive) { return $w }; $cand = $w }
+        }
+    } catch {}
+    if ($cand) { return $cand }
+    # §132: $script:Win — cagiran fonksiyonda yerel $win varsa (Timer pencereleri) duz $Win onu gosteriyordu (adlar buyuk / kucuk harf duyarsiz)
+    try { if ($script:Win -and $script:Win.IsVisible) { return $script:Win } } catch {}
+    return $null
+}
+function Show-MrCleanMessage {
+    param(
+        [string]$Text,
+        [string]$Title = "MrClean",
+        [ValidateSet('OK', 'OKCancel', 'YesNo', 'YesNoCancel')] [string]$Buttons = 'OK',
+        [ValidateSet('Info', 'Question', 'Warning', 'Error')] [string]$Icon = 'Info',
+        [switch]$Danger,
+        $Owner = $null
+    )
+    if (-not $Owner) { $Owner = Get-MrCleanMsgOwner }
+    $cancelRes = switch ($Buttons) { 'OK' { 'OK' } 'YesNo' { 'No' } default { 'Cancel' } }
+    try {
+        $br = { param($h) [System.Windows.Media.BrushConverter]::new().ConvertFromString($h) }
+        $kinds = @{
+            Question = @('?', '#1B2A44', '#8DB4FF'); Info = @('i', '#1B2A44', '#8DB4FF')
+            Warning  = @('!', '#3A2C16', '#F0C27A'); Error = @([string][char]0x2715, '#3A1D20', '#F08A8E')
+        }
+        $k = $kinds[$Icon]
+        $dlg = New-Object System.Windows.Window
+        $dlg.WindowStyle = 'None'; $dlg.AllowsTransparency = $true; $dlg.Background = [System.Windows.Media.Brushes]::Transparent
+        $dlg.SizeToContent = 'WidthAndHeight'; $dlg.ResizeMode = 'NoResize'; $dlg.ShowInTaskbar = $false; $dlg.Title = $Title
+        if ($script:UiFontFamily) { $dlg.FontFamily = $script:UiFontFamily } elseif ($Owner) { $dlg.FontFamily = $Owner.FontFamily }
+        if ($Owner -and $Owner.IsVisible) { $dlg.Owner = $Owner; $dlg.WindowStartupLocation = 'CenterOwner' } else { $dlg.WindowStartupLocation = 'CenterScreen'; $dlg.Topmost = $true }
+        $card = New-Object System.Windows.Controls.Border
+        $card.Width = 460; $card.Background = & $br '#15181E'; $card.BorderBrush = & $br '#2A2F39'; $card.BorderThickness = 1
+        $card.CornerRadius = 12; $card.Padding = New-Object System.Windows.Thickness(22, 20, 22, 18); $card.Margin = New-Object System.Windows.Thickness(24)
+        $sh = New-Object System.Windows.Media.Effects.DropShadowEffect; $sh.BlurRadius = 36; $sh.ShadowDepth = 6; $sh.Opacity = 0.7; $sh.Color = [System.Windows.Media.Colors]::Black; $card.Effect = $sh
+        $sp = New-Object System.Windows.Controls.StackPanel
+        $hd = New-Object System.Windows.Controls.StackPanel; $hd.Orientation = 'Horizontal'
+        $ic = New-Object System.Windows.Controls.Border; $ic.Width = 30; $ic.Height = 30; $ic.CornerRadius = 15; $ic.Background = & $br $k[1]; $ic.Margin = New-Object System.Windows.Thickness(0, 0, 12, 0)
+        $it = New-Object System.Windows.Controls.TextBlock; $it.Text = $k[0]; $it.Foreground = & $br $k[2]; $it.FontSize = 15; $it.FontWeight = 'Bold'; $it.HorizontalAlignment = 'Center'; $it.VerticalAlignment = 'Center'
+        $ic.Child = $it
+        $tt = New-Object System.Windows.Controls.TextBlock; $tt.Text = $Title; $tt.FontSize = 16; $tt.FontWeight = 'SemiBold'; $tt.Foreground = & $br '#E6E8EB'; $tt.VerticalAlignment = 'Center'; $tt.TextTrimming = 'CharacterEllipsis'; $tt.MaxWidth = 370
+        [void]$hd.Children.Add($ic); [void]$hd.Children.Add($tt); [void]$sp.Children.Add($hd)
+        $sv = New-Object System.Windows.Controls.ScrollViewer; $sv.MaxHeight = 440; $sv.VerticalScrollBarVisibility = 'Auto'; $sv.Margin = New-Object System.Windows.Thickness(42, 12, 0, 0)
+        $tx = New-Object System.Windows.Controls.TextBlock; $tx.Text = $Text; $tx.TextWrapping = 'Wrap'; $tx.FontSize = 13.5; $tx.LineHeight = 20; $tx.Foreground = & $br '#C9CED6'
+        $sv.Content = $tx; [void]$sp.Children.Add($sv)
+        $bp = New-Object System.Windows.Controls.StackPanel; $bp.Orientation = 'Horizontal'; $bp.HorizontalAlignment = 'Right'; $bp.Margin = New-Object System.Windows.Thickness(0, 20, 0, 0)
+        $okKey = if ($Buttons -like 'Yes*') { 'Yes' } else { 'OK' }
+        $defs = New-Object System.Collections.Generic.List[object]
+        if ($Buttons -in 'OKCancel', 'YesNoCancel') { $defs.Add(@('Cancel', (T 'msg_cancel'))) }
+        if ($Buttons -like 'YesNo*') { $defs.Add(@('No', (T 'msg_no'))) }
+        $defs.Add(@($okKey, $(if ($okKey -eq 'Yes') { T 'msg_yes' } else { T 'msg_ok' })))
+        $defaultRes = if ($Danger) { $cancelRes } else { $okKey }
+        $st = @{ Res = $cancelRes; Dlg = $dlg }
+        foreach ($d in $defs) {
+            $b = New-Object System.Windows.Controls.Button
+            $b.Content = $d[1]; $b.Tag = $d[0]; $b.MinWidth = 86; $b.Height = 34; $b.Padding = New-Object System.Windows.Thickness(16, 0, 16, 0); $b.Margin = New-Object System.Windows.Thickness(8, 0, 0, 0)
+            $sty = if ($d[0] -eq $okKey) { $(if ($Danger) { 'BtnDanger' } else { 'BtnPrimary' }) } else { 'BtnSecondary' }
+            try { $s2 = $script:Win.TryFindResource($sty); if ($s2) { $b.Style = $s2 } } catch {}   # §132: ana pencerenin stilleri
+            if ($d[0] -eq $defaultRes) { $b.IsDefault = $true }
+            if ($d[0] -eq $cancelRes) { $b.IsCancel = $true }
+            $b.Add_Click({ $st.Res = "$($this.Tag)"; $st.Dlg.Close() }.GetNewClosure())
+            [void]$bp.Children.Add($b)
+        }
+        [void]$sp.Children.Add($bp)
+        $card.Child = $sp
+        $card.Add_MouseLeftButtonDown({ try { $st.Dlg.DragMove() } catch {} }.GetNewClosure())
+        $dlg.Content = $card
+        $dlg.Add_ContentRendered({ try { $this.Activate() | Out-Null; foreach ($c in $bp.Children) { if ($c.IsDefault) { $c.Focus() | Out-Null } } } catch {} }.GetNewClosure())
+        [void]$dlg.ShowDialog()
+        return [string]$st.Res
+    } catch {
+        try { WpfLog "[İLETİ] temalı pencere açılamadı, Windows kutusu: $($_.Exception.Message)" } catch {}
+        $img = switch ($Icon) { 'Question' { 'Question' } 'Warning' { 'Warning' } 'Error' { 'Error' } default { 'Information' } }
+        $r = if ($Owner) { [System.Windows.MessageBox]::Show($Owner, $Text, $Title, [System.Windows.MessageBoxButton]$Buttons, [System.Windows.MessageBoxImage]$img) }
+             else { [System.Windows.MessageBox]::Show($Text, $Title, [System.Windows.MessageBoxButton]$Buttons, [System.Windows.MessageBoxImage]$img) }
+        return [string]$r
+    }
+}
+
+# v2.0.0 (§133, Onizleme18): TEMALI METIN GIRISI — VB InputBox yerine. Show-MrCleanMessage kartiyla ayni gorunum + metin kutusu
+# (acilista secili). Donus: Tamam -> kirpilmis metin, Iptal / Esc / kapatma -> $null. Bos metinde Tamam pasif. Enter = Tamam.
+function Show-MrCleanInput {
+    param(
+        [string]$Prompt,
+        [string]$Title = "MrClean",
+        [string]$Value = "",
+        [int]$MaxLength = 80,
+        $Owner = $null
+    )
+    if (-not $Owner) { $Owner = Get-MrCleanMsgOwner }
+    try {
+        $br = { param($h) [System.Windows.Media.BrushConverter]::new().ConvertFromString($h) }
+        $dlg = New-Object System.Windows.Window
+        $dlg.WindowStyle = 'None'; $dlg.AllowsTransparency = $true; $dlg.Background = [System.Windows.Media.Brushes]::Transparent
+        $dlg.SizeToContent = 'WidthAndHeight'; $dlg.ResizeMode = 'NoResize'; $dlg.ShowInTaskbar = $false; $dlg.Title = $Title
+        if ($script:UiFontFamily) { $dlg.FontFamily = $script:UiFontFamily } elseif ($Owner) { $dlg.FontFamily = $Owner.FontFamily }
+        if ($Owner -and $Owner.IsVisible) { $dlg.Owner = $Owner; $dlg.WindowStartupLocation = 'CenterOwner' } else { $dlg.WindowStartupLocation = 'CenterScreen'; $dlg.Topmost = $true }
+        $card = New-Object System.Windows.Controls.Border
+        $card.Width = 460; $card.Background = & $br '#15181E'; $card.BorderBrush = & $br '#2A2F39'; $card.BorderThickness = 1
+        $card.CornerRadius = 12; $card.Padding = New-Object System.Windows.Thickness(22, 20, 22, 18); $card.Margin = New-Object System.Windows.Thickness(24)
+        $sh = New-Object System.Windows.Media.Effects.DropShadowEffect; $sh.BlurRadius = 36; $sh.ShadowDepth = 6; $sh.Opacity = 0.7; $sh.Color = [System.Windows.Media.Colors]::Black; $card.Effect = $sh
+        $sp = New-Object System.Windows.Controls.StackPanel
+        $hd = New-Object System.Windows.Controls.StackPanel; $hd.Orientation = 'Horizontal'
+        $ic = New-Object System.Windows.Controls.Border; $ic.Width = 30; $ic.Height = 30; $ic.CornerRadius = 15; $ic.Background = & $br '#1B2A44'; $ic.Margin = New-Object System.Windows.Thickness(0, 0, 12, 0)
+        $it = New-Object System.Windows.Controls.TextBlock; $it.Text = [string][char]0x270E; $it.Foreground = & $br '#8DB4FF'; $it.FontSize = 15; $it.FontWeight = 'Bold'; $it.HorizontalAlignment = 'Center'; $it.VerticalAlignment = 'Center'
+        $ic.Child = $it
+        $tt = New-Object System.Windows.Controls.TextBlock; $tt.Text = $Title; $tt.FontSize = 16; $tt.FontWeight = 'SemiBold'; $tt.Foreground = & $br '#E6E8EB'; $tt.VerticalAlignment = 'Center'; $tt.TextTrimming = 'CharacterEllipsis'; $tt.MaxWidth = 370
+        [void]$hd.Children.Add($ic); [void]$hd.Children.Add($tt); [void]$sp.Children.Add($hd)
+        $tx = New-Object System.Windows.Controls.TextBlock; $tx.Text = $Prompt; $tx.TextWrapping = 'Wrap'; $tx.FontSize = 13.5; $tx.LineHeight = 20; $tx.Foreground = & $br '#C9CED6'; $tx.Margin = New-Object System.Windows.Thickness(42, 12, 0, 0)
+        [void]$sp.Children.Add($tx)
+        $boxB = New-Object System.Windows.Controls.Border; $boxB.Background = & $br '#0F1115'; $boxB.BorderBrush = & $br '#4C8DFF'; $boxB.BorderThickness = 1; $boxB.CornerRadius = 6; $boxB.Margin = New-Object System.Windows.Thickness(42, 10, 0, 0)
+        $box = New-Object System.Windows.Controls.TextBox; $box.Text = $Value; $box.FontSize = 13.5; $box.Foreground = & $br '#E6E8EB'; $box.Background = [System.Windows.Media.Brushes]::Transparent; $box.BorderThickness = 0
+        $box.Padding = New-Object System.Windows.Thickness(10, 7, 10, 7); $box.CaretBrush = & $br '#E6E8EB'; $box.SelectionBrush = & $br '#4C8DFF'; $box.MaxLength = $MaxLength
+        $boxB.Child = $box; [void]$sp.Children.Add($boxB)
+        $bp = New-Object System.Windows.Controls.StackPanel; $bp.Orientation = 'Horizontal'; $bp.HorizontalAlignment = 'Right'; $bp.Margin = New-Object System.Windows.Thickness(0, 20, 0, 0)
+        $st = @{ Res = $null; Dlg = $dlg; Box = $box }
+        $mk = {
+            param($text, $sty)
+            $b = New-Object System.Windows.Controls.Button
+            $b.Content = $text; $b.MinWidth = 86; $b.Height = 34; $b.Padding = New-Object System.Windows.Thickness(16, 0, 16, 0); $b.Margin = New-Object System.Windows.Thickness(8, 0, 0, 0)
+            try { $s2 = $script:Win.TryFindResource($sty); if ($s2) { $b.Style = $s2 } } catch {}
+            $b
+        }
+        $bCancel = & $mk (T 'msg_cancel') 'BtnSecondary'; $bCancel.IsCancel = $true
+        $bOk = & $mk (T 'msg_ok') 'BtnPrimary'; $bOk.IsDefault = $true; $bOk.IsEnabled = -not [string]::IsNullOrWhiteSpace($Value)
+        $bCancel.Add_Click({ $st.Res = $null; $st.Dlg.Close() }.GetNewClosure())
+        $bOk.Add_Click({ if (-not [string]::IsNullOrWhiteSpace($st.Box.Text)) { $st.Res = $st.Box.Text.Trim(); $st.Dlg.Close() } }.GetNewClosure())
+        $box.Add_TextChanged({ $bOk.IsEnabled = -not [string]::IsNullOrWhiteSpace($st.Box.Text) }.GetNewClosure())
+        [void]$bp.Children.Add($bCancel); [void]$bp.Children.Add($bOk); [void]$sp.Children.Add($bp)
+        $card.Child = $sp
+        $card.Add_MouseLeftButtonDown({ try { $st.Dlg.DragMove() } catch {} }.GetNewClosure())
+        $dlg.Content = $card
+        $dlg.Add_ContentRendered({ try { $this.Activate() | Out-Null; $st.Box.Focus() | Out-Null; $st.Box.SelectAll() } catch {} }.GetNewClosure())
+        [void]$dlg.ShowDialog()
+        return $st.Res
+    } catch {
+        try { WpfLog "[İLETİ] temalı giriş penceresi açılamadı, Windows kutusu: $($_.Exception.Message)" } catch {}
+        Add-Type -AssemblyName Microsoft.VisualBasic
+        $r = [Microsoft.VisualBasic.Interaction]::InputBox($Prompt, $Title, $Value)
+        if ([string]::IsNullOrWhiteSpace($r)) { return $null }
+        return $r.Trim()
+    }
 }
 
 # --- XAML LOAD ---
@@ -10021,7 +10338,7 @@ function Switch-StartupItem($item) {
         $item.IsEnabled = -not $item.IsEnabled
         $item.StatusText = if ($item.IsEnabled) { "Açık" } else { "Kapalı" }
         WpfLog "[BAŞLANGIÇ/GÖREV] Senkronize edildi: $($item.Name)"
-    } catch { [System.Windows.MessageBox]::Show("Erişim reddedildi. Yönetici hakları gerekebilir.`nHata: $($_.Exception.Message)", "Hata") | Out-Null }
+    } catch { [void](Show-MrCleanMessage -Text "Erişim reddedildi. Yönetici hakları gerekebilir.`nHata: $($_.Exception.Message)" -Title "Hata" -Icon Error) }
     Set-StartupItemDisplay $item
     $lvStartup.Items.Refresh()
     Update-StartupSummary
@@ -10436,21 +10753,14 @@ function Show-ConfigRecoveryDialog {
            "  EVET  → Yedekten geri yukle (en yenisi)`n" +
            "  HAYIR → Varsayilan ayarlarla devam et`n" +
            "  IPTAL → Programi kapat"
-    $btn = if ($bakList.Count -gt 0) {
-        [System.Windows.MessageBoxButton]::YesNoCancel
-    } else {
-        [System.Windows.MessageBoxButton]::OKCancel
-    }
+    $btn = if ($bakList.Count -gt 0) { 'YesNoCancel' } else { 'OKCancel' }
     # MessageBox'i ana pencere onunde + topmost garanti et (arkaya dusmesin)
     if ($Win) {
         try { $Win.Activate() | Out-Null } catch {}
         try { $Win.Topmost = $true } catch {}
     }
-    $res = if ($Win) {
-        [System.Windows.MessageBox]::Show($Win, $msg, "Config Kurtarma", $btn, [System.Windows.MessageBoxImage]::Warning)
-    } else {
-        [System.Windows.MessageBox]::Show($msg, "Config Kurtarma", $btn, [System.Windows.MessageBoxImage]::Warning)
-    }
+    # v2.0.0 (§134): temali ileti; ana pencere gorunurse onun ortasinda, degilse ekran ortasinda ve en ustte
+    $res = Show-MrCleanMessage -Text $msg -Title "Config Kurtarma" -Buttons $btn -Icon Warning
     if ($Win) { try { $Win.Topmost = $false } catch {} }
 
     if ($res -eq 'Cancel') {
@@ -11273,11 +11583,28 @@ function Test-MrCleanWifiProperty([string]$NameRx, [string]$TargetRx) {
     return ($seen -gt 0)
 }
 
+# v2.0.0 (§117): Restart-NetAdapter karti kapatip acana kadar (olculen ~4-5 sn) cagirani bekletir; arayuz is parcaciginda
+# pencere o sure cizilemiyordu. Komut ayri bir calisma alaninda (ayni surec, ayni yetki) calistirilir, biterken Do-Events
+# ile pencere canli tutulur. Ust sinir $TimeoutMs (asilirsa arka planda bitmesi beklenmez). Olmazsa eski dogrudan yol.
+function Invoke-MrCleanNicRestartAsync([string[]]$Names, [int]$TimeoutMs = 30000) {
+    $names = @(@($Names) | Where-Object { $_ } | Select-Object -Unique)
+    if ($names.Count -eq 0) { return }
+    $ps = $null; $h = $null
+    try {
+        $ps = [powershell]::Create()
+        [void]$ps.AddScript('param($list) foreach ($n in $list) { try { Restart-NetAdapter -Name $n -Confirm:$false -ErrorAction SilentlyContinue } catch {} }').AddArgument([string[]]$names)
+        $h = $ps.BeginInvoke()
+        $sw = [Diagnostics.Stopwatch]::StartNew()
+        while (-not $h.IsCompleted -and $sw.ElapsedMilliseconds -lt $TimeoutMs) { Start-Sleep -Milliseconds 30; try { Do-Events } catch {} }
+        if ($h.IsCompleted) { try { [void]$ps.EndInvoke($h) } catch {}; $ps.Dispose() }
+    } catch {
+        foreach ($n in $names) { try { Restart-NetAdapter -Name $n -Confirm:$false -ErrorAction SilentlyContinue } catch {} }
+    }
+}
+
 # Wi-Fi adaptorlerini yeniden baslatir (gelismis ozellikler ancak boyle devreye girer; baglanti 5-15 sn kopar).
 function Restart-MrCleanWifi {
-    foreach ($a in (Get-MrCleanPhysicalAdapters | Where-Object { $_.InterfaceType -eq 71 })) {
-        try { Restart-NetAdapter -Name $a.Name -Confirm:$false -ErrorAction SilentlyContinue } catch {}
-    }
+    Invoke-MrCleanNicRestartAsync @(Get-MrCleanPhysicalAdapters | Where-Object { $_.InterfaceType -eq 71 } | ForEach-Object { [string]$_.Name })
 }
 
 # Ethernet gelismis ozelligini (NDIS anahtar kelimesiyle) yedekleyip ayarlar. $ValueFn: mevcut ozellikten hedef degeri
@@ -11302,9 +11629,35 @@ function Set-MrCleanEthProperty([string]$Id, [string]$Keyword, [scriptblock]$Val
 }
 
 function Restart-MrCleanEthernet {
-    foreach ($a in (Get-MrCleanPhysicalAdapters | Where-Object { $_.InterfaceType -eq 6 })) {
-        try { Restart-NetAdapter -Name $a.Name -Confirm:$false -ErrorAction SilentlyContinue } catch {}
+    Invoke-MrCleanNicRestartAsync @(Get-MrCleanPhysicalAdapters | Where-Object { $_.InterfaceType -eq 6 } | ForEach-Object { [string]$_.Name })
+}
+
+# v2.0.0 (§116): yalniz verilen kartlari yeniden baslatir ve hazir olmalarini PENCERE DONMADAN bekler (Do-Events).
+# Hazir = Up / Disconnected ya da yeniden baslatmadan onceki durumuna dondu (takili olmayan "Not Present" kart eskiden
+# hic "Up" olmadigi icin 30 sn zaman asiminin tamamini dolduruyordu). Ust sinir: Wi-Fi varsa 20 sn, yoksa 12 sn. Toplam gecen ms doner (yeniden baslatma dahil).
+function Restart-MrCleanNicsAndWait([string[]]$Names) {
+    $names = @(@($Names) | Where-Object { $_ } | Select-Object -Unique)
+    if ($names.Count -eq 0) { return 0 }
+    $before = @{}; $wifi = $false
+    foreach ($n in $names) {
+        $a = Get-NetAdapter -Name $n -ErrorAction SilentlyContinue
+        if ($a) { $before[$n] = "$($a.Status)"; if ($a.InterfaceType -eq 71) { $wifi = $true } }
     }
+    $swAll = [Diagnostics.Stopwatch]::StartNew()
+    Invoke-MrCleanNicRestartAsync $names   # §117: pencere donmaz
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    $limit = if ($wifi) { 20000 } else { 12000 }
+    while ($sw.ElapsedMilliseconds -lt $limit) {
+        $ready = $true
+        foreach ($n in $names) {
+            $a = Get-NetAdapter -Name $n -ErrorAction SilentlyContinue
+            $st = if ($a) { "$($a.Status)" } else { "" }
+            if (-not $a -or ($st -ne "Up" -and $st -ne "Disconnected" -and $st -ne "$($before[$n])")) { $ready = $false; break }
+        }
+        if ($ready) { break }
+        for ($i = 0; $i -lt 5; $i++) { Start-Sleep -Milliseconds 50; try { Do-Events } catch {} }
+    }
+    return [int]$swAll.ElapsedMilliseconds   # §117: yeniden baslatma + bekleme toplami
 }
 
 # Bir IP'ye ortalama ping (ms). Ulasilamazsa $null.
@@ -11382,14 +11735,14 @@ function Confirm-VirtHeavyTweak([string]$TweakLabel) {
     if ($c.Docker) { $lines.Add("Docker Desktop calisiyor") }
     if ($lines.Count -gt 0) {
         $msg = "'$TweakLabel' uygulanmadi.`n`nBu bilgisayarda gercek kullanim var (ozellik acik olmasi degil):`n`n" + ($lines -join "`n") + "`n`nWSL / sanal makine / Docker kirilabilir. Once bunlari kaldirin veya bu tweaki kullanmayin."
-        [void][System.Windows.MessageBox]::Show($msg, $TweakLabel, [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning)
+        [void](Show-MrCleanMessage -Text $msg -Title $TweakLabel -Icon Warning)
         WpfLog "[KILIT] $TweakLabel — icerik: $($lines -join '; ')"
         return $false
     }
     $feats = @(Get-MrCleanVirtFeatures)
     if ($feats.Count -gt 0) {
         $msg = "Su Windows ozellikleri kurulu ama iclerinde VM / WSL distro / calisan Docker gorunmedi:`n`n" + ($feats -join "`n") + "`n`n'$TweakLabel' yine de uygulansin mi?"
-        $r = [System.Windows.MessageBox]::Show($msg, $TweakLabel, [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
+        $r = Show-MrCleanMessage -Text $msg -Title $TweakLabel -Buttons YesNo -Icon Warning
         if ($r -ne "Yes") { WpfLog "[ATLANDI] $TweakLabel — kullanici iptal etti (sadece ozellik)."; return $false }
     }
     return $true
@@ -11404,7 +11757,7 @@ function Confirm-IdleDisableTweak {
         $msg += "Dizustu/tablet: pil suresi kisalir, cihaz daha sicak calisir. Sadece priz (AC) yazilir.`n`n"
     }
     $msg += "Yine de uygulansin mi? (Onerilen: Hayir. Rekabetci masaustu icin Evet.)"
-    $r = [System.Windows.MessageBox]::Show($msg, "Islemci Bosta Durumlari", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
+    $r = Show-MrCleanMessage -Text $msg -Title "İşlemci Boşta Durumları" -Buttons YesNo -Icon Warning
     if ($r -ne "Yes") { WpfLog "[ATLANDI] IDLEDISABLE — kullanici iptal etti."; return $false }
     return $true
 }
@@ -11417,7 +11770,7 @@ function Confirm-WuLockTweak {
            "Kisa sure (turnuva / bozuk surucu) disinda onerilmez.`n" +
            "Guvenli alternatif: 'Windows Update'i Kisitla' (indirmeden once bildir).`n`n" +
            "Yine de kilitlensin mi?"
-    $r = [System.Windows.MessageBox]::Show($msg, "Windows Update Kilidi", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
+    $r = Show-MrCleanMessage -Text $msg -Title "Windows Update Kilidi" -Buttons YesNo -Icon Warning
     if ($r -ne "Yes") { WpfLog "[ATLANDI] WU kilidi — kullanici iptal etti."; return $false }
     return $true
 }
@@ -11687,7 +12040,7 @@ function Convert-MrCleanLegacyProcMin {
 function Confirm-LaptopPowerTweak([string]$TweakLabel) {
     if (-not (Test-IsLaptop)) { return $true }
     $msg = "Bu bilgisayar bir dizustu/tablet olarak algilandi.`n`n'$TweakLabel' pil suresini kisaltir ve cihazi daha sicak calistirir. Prize takiliyken oyun icin kullanilabilir.`n`nYine de uygulansin mi?"
-    $r = [System.Windows.MessageBox]::Show($msg, "Dizustu Uyarisi", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
+    $r = Show-MrCleanMessage -Text $msg -Title "Dizüstü Uyarısı" -Buttons YesNo -Icon Warning
     if ($r -ne 'Yes') { WpfLog "[ATLANDI] $TweakLabel — dizustu bilgisayarda kullanici iptal etti."; return $false }
     return $true
 }
@@ -11717,7 +12070,7 @@ function Confirm-DualCcdX3DPowerTweak([string]$TweakLabel) {
            "AMD bu islemciler icin Windows 'Dengeli' (Balanced) guc planini ve acik Xbox Game Bar'i onerir. " +
            "'$TweakLabel' uygulanirsa oyun sirasinda V-Cache olmayan CCD park edilemez; oyun yanlis cekirdeklere dagilir ve FPS DUSEBILIR.`n`n" +
            "Yine de uygulansin mi? (Onerilen: Hayir)"
-    $r = [System.Windows.MessageBox]::Show($msg, "X3D Uyarisi", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
+    $r = Show-MrCleanMessage -Text $msg -Title "X3D Uyarısı" -Buttons YesNo -Icon Warning
     if ($r -ne 'Yes') { WpfLog "[ATLANDI] $TweakLabel — cift CCD X3D islemcide onerilmez ($x3d)."; return $false }
     return $true
 }
@@ -12486,7 +12839,8 @@ function Get-LastRestorePointDate {
 function Create-Restore-Point {
     param(
         [string]$Description,
-        [switch]$ForceManual  # Ayarlar panelinden "Simdi Manuel Olustur" icin mod kontrolunu atla
+        [switch]$ForceManual,  # Ayarlar panelinden "Simdi Manuel Olustur" icin mod kontrolunu atla
+        [string]$Decision = "" # v2.0.0 (§119): "Yes" / "No" = Ask modunda soru Uygula onay kartinda soruldu; MessageBox acilmaz
     )
 
     # 1. VSS servis kontrolu
@@ -12516,17 +12870,19 @@ function Create-Restore-Point {
         }
     }
 
-    # 4. Ask modu: kullaniciya sor
-    if (-not $ForceManual -and $mode -eq "Ask") {
+    # 4. Ask modu: kullaniciya sor (§119: karar onay kartinda verildiyse sorulmaz)
+    if (-not $ForceManual -and $mode -eq "Ask" -and $Decision -eq "No") {
+        WpfLog "[ATLA] Kullanici geri yukleme noktasi olusturmadan devam etmeyi secti."
+        return $true
+    }
+    if (-not $ForceManual -and $mode -eq "Ask" -and $Decision -ne "Yes") {
         $msg = "Guvenlik icin bir Sistem Geri Yukleme Noktasi olusturulsun mu?`n`n" +
                "Islem: $Description`n" +
                "Sure: ~20-40 saniye (arayuz donmayacak)`n`n" +
                "Tavsiye: EVET secin — degisiklik yanlis giderse sistemi geri alabilirsiniz.`n" +
                "Bu tercihi: Ayarlar > Sistem Geri Yukleme bolumunden degistirebilirsiniz."
 
-        $res = [System.Windows.MessageBox]::Show($msg, "Geri Yukleme Noktasi",
-            [System.Windows.MessageBoxButton]::YesNoCancel,
-            [System.Windows.MessageBoxImage]::Question)
+        $res = Show-MrCleanMessage -Text $msg -Title "Geri Yükleme Noktası" -Buttons YesNoCancel -Icon Question
 
         if ($res -eq 'Cancel') {
             WpfLog "[IPTAL] Islem kullanici tarafindan iptal edildi."
@@ -12541,6 +12897,16 @@ function Create-Restore-Point {
 
     # 5. Async olustur + modal "lutfen bekleyin" penceresi
     return (Invoke-RestorePointAsync -Description $Description)
+}
+
+# v2.0.0 (§119): Create-Restore-Point bu islemde kullaniciya soru soracak mi (Ask modu, VSS acik, son 24 saatte nokta yok)?
+# Uygula onay karti soruyu kendi icinde gosterir.
+function Test-RestorePointWillAsk {
+    $mode = if ($global:RestorePointMode) { $global:RestorePointMode } else { "Ask" }
+    if ($mode -ne "Ask") { return $false }
+    try { if (-not (Test-VssServiceRunning)) { return $false } } catch { return $false }
+    try { $last = Get-LastRestorePointDate; if ($last -and ((Get-Date) - $last).TotalMinutes -lt 1440) { return $false } } catch {}
+    return $true
 }
 
 # Runspace'te Checkpoint-Computer cagirir, modal bir pencere gosterir.
@@ -13456,6 +13822,18 @@ function Get-MrCleanHwProfile {
             }
         } catch {}
     }
+    # AMD Software (Adrenalin) kurulu mu? (gomulu Radeon tek basina yetmez; Adrenalin tweak'i yalniz bu programi ayarlar)
+    $hw.HasAdrenalin = $false
+    try {
+        $hw.HasAdrenalin = (Test-Path -LiteralPath (Join-Path $env:ProgramFiles "AMD\CNext\CNext\RadeonSoftware.exe")) -or
+                           (Test-Path -LiteralPath "HKCU:\Software\AMD\CN")
+    } catch {}
+    # v2.0.0 (§111): UEFI mi? (shutdown /fw yalniz UEFI'de calisir)
+    $hw.IsUefi = $true
+    try {
+        if ($env:firmware_type) { $hw.IsUefi = ("$env:firmware_type" -eq "UEFI") }
+        else { $hw.IsUefi = (Test-Path -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Control\SecureBoot\State") }
+    } catch {}
     try { $hw.Gpu = @(Get-System-Gpu-Vendors) } catch {}
     try { $hw.GpuNames = @(Get-CimInstance Win32_VideoController -ErrorAction Stop | Where-Object { "$($_.Name)" -notmatch "(?i)Basic Display|Temel G|Remote|Virtual|Parsec|Meta|Mirage|Dummy" } | ForEach-Object { "$($_.Name)".Trim() }) } catch {}
     # v1.3.0 (§83): işlemci adı kayıt defterinden (Win32_Processor ~1 sn); boşsa eski yol
@@ -13494,6 +13872,8 @@ function Get-TweakHardwareReason($tweak) {
             "NoDnsTool" { $g = @(Get-MrCleanDnsGuard); if ($g.Count -gt 0) { return ((T 'tw_hw_dnstool') -f ($g -join ", ")) } }
             "VendorTel" { if (@(Get-MrCleanVendorTelemetry).Count -eq 0) { return (T 'tw_hw_vendortel') } }
             "CABC"     { if (-not $hw.HasCabc) { return (T 'tw_hw_cabc') } }
+            "AmdAdrenalin" { if (-not $hw.HasAdrenalin) { return (T 'tw_hw_adrenalin') } }
+            "UEFI"     { if (-not $hw.IsUefi) { return (T 'tw_hw_uefi') } }
         }
     }
     if ($tweak.Vendor -and @($hw.Gpu).Count -gt 0 -and -not (@($hw.Gpu) -contains "$($tweak.Vendor)")) { return ((T 'tw_hw_gpu') -f $tweak.Vendor) }
@@ -13810,7 +14190,7 @@ function Update-TweakStatusAfterApply($toEnable, $toDisable) {
     foreach ($t in @($toEnable))  { if ($t -and $t.Name) { $enabled[[string]$t.Name] = $true;  $check[[string]$t.Name] = $true; foreach ($d in (Get-MrCleanTweakDependents $t)) { $check[$d] = $true } } }
     foreach ($t in @($toDisable)) { if ($t -and $t.Name) { $disabled[[string]$t.Name] = $true; $check[[string]$t.Name] = $true; foreach ($d in (Get-MrCleanTweakDependents $t)) { $check[$d] = $true } } }
     try { Refresh-PowerCfg-Cache; Refresh-BcdEdit-Cache; Refresh-NetshTcp-Cache } catch {}
-    $notOn = @(); $pendingReboot = @(); $stillOn = @(); $side = @()
+    $notOn = @(); $pendingReboot = @(); $stillOn = @(); $side = @(); $stayInfo = @()
     foreach ($item in (Get-AllTweakItems)) {
         $tw = $item.Tag; $n = [string]$tw.Name
         if (-not $n -or -not $check.ContainsKey($n)) { continue }
@@ -13819,16 +14199,22 @@ function Update-TweakStatusAfterApply($toEnable, $toDisable) {
             # Yeniden baslatma isteyen tweak'in tespiti baslatmadan once tutmayabilir: aktif kabul edilir, sonraki Denetle dogrular
             if ($tw.RequiresReboot -eq $true) { $pendingReboot += $n; $on = $true } else { $notOn += $n }
         }
-        elseif ($disabled.ContainsKey($n) -and $on) { $stillOn += $n }
+        elseif ($disabled.ContainsKey($n) -and $on) {
+            # v2.0.0 (§116): kosul tabanli tweak (or. alim arabellegi) donanimin kendi degeriyle zaten saglaniyorsa hata degil, bilgi
+            if ($tw.UndoMayStayActive -eq $true) { $stayInfo += [pscustomobject]@{ Name = $n; Note = "$($tw.UndoStayActiveNote)" } } else { $stillOn += $n }
+        }
         elseif (-not $enabled.ContainsKey($n) -and -not $disabled.ContainsKey($n) -and $global:TweakStatusCache.ContainsKey($n) -and [bool]$global:TweakStatusCache[$n] -ne $on) {
             $side += [pscustomobject]@{ Name = $n; Now = $on }
         }
         $global:TweakStatusCache[$n] = $on
     }
     Stop-MrCleanMeasure 'Uygulama sonrası doğrulama' ("{0} ayar denetlendi" -f $check.Count)
+    # v2.0.0 (§118): ilerleme katmaninin ozeti icin
+    $script:ApplyVerify = @{ NotOn = @($notOn); StillOn = @($stillOn); Info = @($stayInfo); Pending = @($pendingReboot) }
     try {
         foreach ($n in $notOn)   { WpfLog "[DOĞRULAMA] ❌ Uygulandı ama etkin görünmüyor: $n" }
         foreach ($n in $stillOn) { WpfLog "[DOĞRULAMA] ❌ Geri alındı ama hâlâ etkin görünüyor: $n" }
+        foreach ($s in $stayInfo) { WpfLog ("[DOĞRULAMA] ℹ️ {0}: {1}" -f $s.Name, $s.Note) }
         foreach ($n in $pendingReboot) { WpfLog "[DOĞRULAMA] ⏳ Yeniden başlatmadan sonra etkin olacak: $n" }
         foreach ($c in $side) { WpfLog ("[DOĞRULAMA] {0} {1}" -f $(if ($c.Now) { "↗ Bu işlemle aktif oldu:" } else { "↘ Bu işlemle pasife düştü:" }), $c.Name) }
         if (-not ($notOn.Count + $stillOn.Count)) { WpfLog ("[DOĞRULAMA] ✓ Değişen {0} ayarın hepsi doğrulandı." -f ($enabled.Count + $disabled.Count)) }
@@ -14049,6 +14435,19 @@ function Create-Tweak-Item($tweak, [bool]$nested = $false, [string]$caption = ""
                 if ($sibling -ne $treeItem -and $sibling.Tag.Group -eq $tweakObj.Group) { (Get-CheckFromItem $sibling).IsChecked = $false }
             }
         }
+        # v2.0.0 (§115): sifirlama tweak'i (ResetsSubCategory) acilinca o alt kategorideki acik tweak'ler aninda kapali + BEKLIYOR
+        # olur (Uygula once onlari kendi geri alma komutlariyla dondurur, sonra sifirlamayi calistirir). Tersi: sifirlama beklerken
+        # o alt kategoriden bir tweak acilirsa sifirlama kapanir.
+        if ($me.IsChecked) {
+            $resetSub = "$($tweakObj.ResetsSubCategory)"
+            foreach ($it in (Get-AllTweakItems)) {
+                if ($it -eq $treeItem) { continue }
+                $c = Get-CheckFromItem $it
+                if (-not $c -or -not $c.IsChecked) { continue }
+                if ($resetSub) { if ("$($it.Tag.SubCategory)" -eq $resetSub -and $c.IsEnabled) { $c.IsChecked = $false } }
+                elseif ($tweakObj.SubCategory -and "$($it.Tag.ResetsSubCategory)" -eq "$($tweakObj.SubCategory)") { $c.IsChecked = $false }
+            }
+        }
         $currentParent = $treeItem.Parent
         while ($currentParent -is[System.Windows.Controls.TreeViewItem]) {
             $allChildrenChecked = $true
@@ -14110,7 +14509,302 @@ function Show-Privacy-Warning {
     } catch { WpfLog "❌ [HATA] Gizlilik uyarısı: $($_.Exception.Message)" }
 }
 
+# =========================================================
+# v2.0.0 (§118, Onizleme13): UYGULA ILERLEME KATMANI (grdApplyOverlay)
+# Uygula sirasinda pencerenin tamamini orter (tiklamalari alir), adim adim ilerler; sonunda ozet + yeniden baslatma
+# secenekleri ayni kartin icindedir (eski ayri "Sistem Yeniden Baslatma" penceresi ve Gezgin sorusu yerine).
+# Katman bulunamazsa Apply-System-Tweaks eski pencereleri kullanir.
+# =========================================================
+function Get-ApovBrush([string]$hex) {
+    if (-not $script:ApovBrushes) { $script:ApovBrushes = @{} }
+    if (-not $script:ApovBrushes.ContainsKey($hex)) { $script:ApovBrushes[$hex] = [System.Windows.Media.BrushConverter]::new().ConvertFromString($hex) }
+    return $script:ApovBrushes[$hex]
+}
+# Do-Events 20 ms'de bir pompalar; katman her adimda kesin cizilsin diye dogrudan
+function Invoke-ApplyOverlayRender {
+    try { $Win.Dispatcher.Invoke([System.Action]{}, [System.Windows.Threading.DispatcherPriority]::Background) } catch {}
+    try { $global:DoEventsTimer.Restart() } catch {}
+}
+# Cubugun tam genisligi (kart 640 px; olculemezse 590)
+function Get-ApovBarMax($o) {
+    $w = 0; try { $w = [double]$o.apovBar.Parent.ActualWidth } catch {}
+    if ($w -gt 50) { return $w } else { return 590.0 }
+}
+# Process-TweakItem'in "yeniden baslatma gerekir" kosulunun aynisi (onay kartindaki rozet icin)
+function Test-TweakNeedsRebootFlag($t) {
+    if (-not $t -or $t.SkipRebootDialog) { return $false }
+    return ($t.RequiresReboot -eq $true -or $t.Group -eq "NetProfile" -or "$($t.SubCategory)" -match "Giriş ve İşlemci|Ağ ve Ping|Zamanlayıcı" -or "$($t.Name)" -match "TCP|Win32|HPET")
+}
+
+# v2.0.0 (§119, Onizleme14): UYGULA ONAY KARTI — ayni katmanin onay hali. Eski "Tweak Esitleme Onayi", "Yuksek Risk Onayi",
+# "GPU Uyumsuzluk Uyarisi" kutulari ve geri yukleme noktasi sorusu (Ask modu) tek kartta. Kullanici secene kadar
+# DispatcherFrame ile beklenir (pencere canli). Donus: @{ Ok; Rp = "" | "Yes" | "No" }; katman yoksa $null (eski kutular).
+function Show-ApplyConfirm($Enable, $Disable, [string]$Title = "", [string]$Sub = "", [switch]$NoRestorePoint) {
+    $g = $null; try { $g = $Win.FindName('grdApplyOverlay') } catch {}
+    if (-not $g) { return $null }
+    $f = @{}
+    foreach ($n in 'apcPanel','apcSub','apcLists','apcWarn','apcWarnText','apcAckRow','apcAckBox','apcAckTick','apcAckText','apcRpRow','apcRpBox','apcRpTick','apcRpText','apcRpHint','apcNote','apcBtnCancel','apcBtnGo','apovRun','apovEnd','apovListBorder','apovBtns','apovDot','apovTitle','apovCount') { $f[$n] = $Win.FindName($n) }
+    if (-not $f.apcPanel) { return $null }
+    $en = @(@($Enable) | Where-Object { $_ }); $di = @(@($Disable) | Where-Object { $_ })
+    $total = $en.Count + $di.Count
+    foreach ($n in 'apovRun','apovEnd','apovListBorder','apovBtns') { $f[$n].Visibility = 'Collapsed' }
+    $f.apcPanel.Visibility = 'Visible'
+    $f.apovTitle.Text = $(if ($Title) { $Title } else { T 'apc_title' }); $f.apovCount.Text = ((T 'apc_count') -f $total); $f.apcSub.Text = $(if ($Sub) { $Sub } else { T 'apc_sub' })
+    $f.apcLists.Children.Clear()
+
+    $sysV = @(); try { $sysV = @(Get-System-Gpu-Vendors) } catch {}
+    $hi = @($en | Where-Object { "$($_.Risk)" -eq "High" })
+    $vm = @($en | Where-Object { $_.Vendor -and ($sysV -notcontains $_.Vendor) })
+    $badge = {
+        param($text, $bg, $fg)
+        $bd = New-Object System.Windows.Controls.Border; $bd.Background = Get-ApovBrush $bg; $bd.CornerRadius = 4
+        $bd.Padding = New-Object System.Windows.Thickness(6, 1, 6, 1); $bd.Margin = New-Object System.Windows.Thickness(6, 0, 0, 0); $bd.VerticalAlignment = 'Center'
+        $tb = New-Object System.Windows.Controls.TextBlock; $tb.Text = $text; $tb.Foreground = Get-ApovBrush $fg; $tb.FontSize = 10.5; $tb.FontWeight = 'Bold'
+        $bd.Child = $tb; return $bd
+    }
+    $section = {
+        param($title, $color, $items, $icon, $iconColor)
+        $h = New-Object System.Windows.Controls.TextBlock; $h.Text = $title; $h.Foreground = Get-ApovBrush $color; $h.FontSize = 11.5; $h.FontWeight = 'Bold'
+        $h.Margin = New-Object System.Windows.Thickness(0, 2, 0, 6); [void]$f.apcLists.Children.Add($h)
+        foreach ($t in $items) {
+            $gr = New-Object System.Windows.Controls.Grid; $gr.Margin = New-Object System.Windows.Thickness(0, 3, 0, 3)
+            $c0 = New-Object System.Windows.Controls.ColumnDefinition; $c0.Width = New-Object System.Windows.GridLength(26)
+            $c1 = New-Object System.Windows.Controls.ColumnDefinition
+            $c2 = New-Object System.Windows.Controls.ColumnDefinition; $c2.Width = [System.Windows.GridLength]::Auto
+            $gr.ColumnDefinitions.Add($c0); $gr.ColumnDefinitions.Add($c1); $gr.ColumnDefinitions.Add($c2)
+            $ic = New-Object System.Windows.Controls.TextBlock; $ic.Text = $icon; $ic.Foreground = Get-ApovBrush $iconColor; $ic.FontSize = 13; $ic.FontWeight = 'Bold'
+            $nm = New-Object System.Windows.Controls.TextBlock; $nm.Text = "$($t.Name)"; $nm.Foreground = Get-ApovBrush '#E6E8EB'; $nm.FontSize = 13; $nm.TextTrimming = 'CharacterEllipsis'; $nm.VerticalAlignment = 'Center'
+            $bp = New-Object System.Windows.Controls.StackPanel; $bp.Orientation = 'Horizontal'
+            if ("$($t.Risk)" -eq "High" -and $icon -eq '+') { [void]$bp.Children.Add((& $badge (T 'apc_b_risk') '#3A1D20' '#F08A8E')) }
+            if ($t.Vendor -and $icon -eq '+' -and ($sysV -notcontains $t.Vendor)) { [void]$bp.Children.Add((& $badge ((T 'apc_b_gpu') -f $t.Vendor) '#3A2C16' '#F0C27A')) }
+            if (Test-TweakNeedsRebootFlag $t) { [void]$bp.Children.Add((& $badge (T 'apc_b_reboot') '#23262D' '#A9B0BB')) }
+            [System.Windows.Controls.Grid]::SetColumn($nm, 1); [System.Windows.Controls.Grid]::SetColumn($bp, 2)
+            [void]$gr.Children.Add($ic); [void]$gr.Children.Add($nm); [void]$gr.Children.Add($bp)
+            [void]$f.apcLists.Children.Add($gr)
+        }
+    }
+    if ($en.Count) { & $section ((T 'apc_sec_apply') -f $en.Count) '#7FD3A6' $en '+' '#3FB97A' }
+    if ($en.Count -and $di.Count) { $sp = New-Object System.Windows.Controls.Border; $sp.Height = 10; [void]$f.apcLists.Children.Add($sp) }
+    if ($di.Count) { & $section ((T 'apc_sec_undo') -f $di.Count) '#8DB4FF' $di ([string][char]0x21A9) '#8DB4FF' }
+
+    # Uyari kutusu (yuksek risk / GPU uyumsuz) + "Riskleri okudum"
+    $st = @{ NeedAck = (($hi.Count + $vm.Count) -gt 0); Ack = $false; Rp = $true; Result = ""; Frame = $null; F = $f; Total = $total }
+    if ($st.NeedAck) {
+        $lines = @()
+        foreach ($x in $hi) { $lines += ((T 'apc_w_risk') -f $x.Name) }
+        $sysTxt = if ($sysV.Count) { $sysV -join ", " } else { (T 'apc_gpu_none') }
+        foreach ($x in $vm) { $lines += ((T 'apc_w_gpu') -f $x.Name, $x.Vendor, $sysTxt) }
+        $f.apcWarnText.Text = ($lines -join "`n"); $f.apcAckText.Text = (T 'apc_ack')
+        $f.apcAckTick.Visibility = 'Collapsed'; $f.apcAckBox.Background = [System.Windows.Media.Brushes]::Transparent
+        $f.apcWarn.Visibility = 'Visible'; $f.apovDot.Background = Get-ApovBrush '#E0A23B'
+    } else { $f.apcWarn.Visibility = 'Collapsed'; $f.apovDot.Background = Get-ApovBrush '#4C8DFF' }
+
+    # Geri yukleme noktasi: Ask modunda soru burada (varsayilan isaretli = eski "Evet" tavsiyesi); Auto modunda bilgi satiri
+    $willAsk = $false; if (-not $NoRestorePoint) { try { $willAsk = [bool](Test-RestorePointWillAsk) } catch {} }   # §120: Hizli Geri Al nokta olusturmaz
+    $f.apcRpRow.Visibility = $(if ($willAsk) { 'Visible' } else { 'Collapsed' })
+    $f.apcRpText.Text = (T 'apc_rp'); $f.apcRpHint.Text = (T 'apc_rp_hint')
+    $f.apcRpTick.Visibility = 'Visible'; $f.apcRpBox.Background = Get-ApovBrush '#4C8DFF'
+    $notes = @()
+    $rbN = @(@($en) + @($di) | Where-Object { Test-TweakNeedsRebootFlag $_ }).Count
+    if ($rbN -gt 0) { $notes += ((T 'apc_rb_note') -f $rbN) }
+    if ("$($global:RestorePointMode)" -eq "Auto" -and -not $NoRestorePoint) { $notes += (T 'apc_rp_auto') }
+    $f.apcNote.Text = ($notes -join "`n"); $f.apcNote.Visibility = $(if ($notes.Count) { 'Visible' } else { 'Collapsed' })
+
+    $f.apcBtnCancel.Content = (T 'apc_cancel')
+    $script:ApcState = $st
+    $script:ApcUpdateGo = {
+        $s = $script:ApcState; $b = $s.F.apcBtnGo
+        if ($s.NeedAck) {
+            $b.Content = ((T 'apc_go_risk') -f $s.Total); $b.IsEnabled = [bool]$s.Ack
+            $sty = $Win.TryFindResource($(if ($s.Ack) { 'BtnDanger' } else { 'BtnSecondary' })); if ($sty) { $b.Style = $sty }
+        } else {
+            $b.Content = ((T 'apc_go') -f $s.Total); $b.IsEnabled = $true
+            $sty = $Win.TryFindResource('BtnPrimary'); if ($sty) { $b.Style = $sty }
+        }
+    }
+    & $script:ApcUpdateGo
+    if (-not $script:ApcHandlersSet) {
+        $script:ApcHandlersSet = $true
+        $f.apcAckRow.Add_MouseLeftButtonUp({
+            $s = $script:ApcState; if (-not $s) { return }
+            $s.Ack = -not $s.Ack
+            $s.F.apcAckTick.Visibility = $(if ($s.Ack) { 'Visible' } else { 'Collapsed' })
+            $s.F.apcAckBox.Background = $(if ($s.Ack) { Get-ApovBrush '#E0A23B' } else { [System.Windows.Media.Brushes]::Transparent })
+            & $script:ApcUpdateGo
+        })
+        $f.apcRpRow.Add_MouseLeftButtonUp({
+            $s = $script:ApcState; if (-not $s) { return }
+            $s.Rp = -not $s.Rp
+            $s.F.apcRpTick.Visibility = $(if ($s.Rp) { 'Visible' } else { 'Collapsed' })
+            $s.F.apcRpBox.Background = $(if ($s.Rp) { Get-ApovBrush '#4C8DFF' } else { [System.Windows.Media.Brushes]::Transparent })
+        })
+        $f.apcBtnCancel.Add_Click({ $s = $script:ApcState; if ($s -and $s.Frame) { $s.Result = 'cancel'; $s.Frame.Continue = $false } })
+        $f.apcBtnGo.Add_Click({ $s = $script:ApcState; if ($s -and $s.Frame -and (-not $s.NeedAck -or $s.Ack)) { $s.Result = 'go'; $s.Frame.Continue = $false } })
+        # Esc = Vazgec; ana pencere kapanirsa bekleme biter
+        $Win.Add_PreviewKeyDown({ param($sender, $e) $s = $script:ApcState; if ($s -and $s.Frame -and $e.Key -eq 'Escape') { $s.Result = 'cancel'; $s.Frame.Continue = $false; $e.Handled = $true } })
+        $Win.Add_Closed({ $s = $script:ApcState; if ($s -and $s.Frame) { $s.Result = 'cancel'; $s.Frame.Continue = $false } })
+    }
+    $g.Visibility = 'Visible'
+    Invoke-ApplyOverlayRender
+    try { if ($st.NeedAck) { $f.apcBtnCancel.Focus() | Out-Null } else { $f.apcBtnGo.Focus() | Out-Null } } catch {}
+    $st.Frame = New-Object System.Windows.Threading.DispatcherFrame
+    [System.Windows.Threading.Dispatcher]::PushFrame($st.Frame)
+    $st.Frame = $null
+    $ok = ($st.Result -eq 'go')
+    $rp = if ($willAsk) { $(if ($st.Rp) { "Yes" } else { "No" }) } else { "" }
+    if ($ok) {
+        # Ayni kart: onay -> hazirlik (geri yukleme noktasi kendi bekleme penceresini acar), sonra Show-ApplyOverlay ilerleme hali
+        $f.apcPanel.Visibility = 'Collapsed'; $f.apovRun.Visibility = 'Visible'
+        $f.apovTitle.Text = (T 'apov_title'); $f.apovDot.Background = Get-ApovBrush '#4C8DFF'; $f.apovCount.Text = "0 / $total"
+        try {
+            $Win.FindName('apovStep').Text = $(if (-not $NoRestorePoint -and ($rp -eq "Yes" -or "$($global:RestorePointMode)" -eq "Auto")) { T 'apc_rp_run' } else { T 'apc_prep' })
+            $Win.FindName('apovDesc').Text = ""; $Win.FindName('apovKeep').Text = (T 'apov_keep'); $Win.FindName('apovBar').Width = 0
+        } catch {}
+        Invoke-ApplyOverlayRender
+    }
+    return @{ Ok = $ok; Rp = $rp }
+}
+
+function Test-TweakRestartsNic($t, [bool]$undo) {
+    $txt = ""
+    $subs = if ($t.Batch) { @($t.Batch) } else { @($t) }
+    foreach ($s in $subs) { $txt += " " + $(if ($undo) { "$($s.UndoCommand)" } else { "$($s.Command)" }) }
+    return ($txt -match 'Restart-MrClean(Ethernet|Wifi|NicsAndWait)|Restart-NetAdapter')
+}
+function Show-ApplyOverlay($Steps) {
+    $script:ApplyOv = $null
+    $g = $null; try { $g = $Win.FindName('grdApplyOverlay') } catch {}
+    if (-not $g) { return $false }
+    $o = @{ Root = $g; Rows = (New-Object System.Collections.Generic.List[object]); Total = @($Steps).Count; Done = 0; Err = 0; Sw = [Diagnostics.Stopwatch]::StartNew() }
+    foreach ($n in 'apovDot','apovTitle','apovCount','apovRun','apovStep','apovDesc','apovBar','apovKeep','apovEnd','apovChips','apovInfo','apovScroll','apovList','apovBtns','apovBtnLogs','apovBtnLater','apovBtnMain') { $o[$n] = $Win.FindName($n) }
+    $o.apovList.Children.Clear(); $o.apovChips.Children.Clear(); $o.apovInfo.Text = ""
+    # §119: onay halinden ilerleme haline gecis (ayni kart)
+    try { $Win.FindName('apcPanel').Visibility = 'Collapsed'; $Win.FindName('apovListBorder').Visibility = 'Visible' } catch {}
+    $o.apovDot.Background = Get-ApovBrush '#4C8DFF'
+    $o.apovTitle.Text = (T 'apov_title'); $o.apovKeep.Text = (T 'apov_keep')
+    $o.apovRun.Visibility = 'Visible'; $o.apovEnd.Visibility = 'Collapsed'; $o.apovBtns.Visibility = 'Collapsed'
+    $o.apovBar.Width = 0; $o.apovStep.Text = ""; $o.apovDesc.Text = ""; $o.apovCount.Text = "0 / $($o.Total)"
+    foreach ($s in @($Steps)) {
+        $gr = New-Object System.Windows.Controls.Grid; $gr.Margin = New-Object System.Windows.Thickness(0, 3, 0, 3)
+        $c0 = New-Object System.Windows.Controls.ColumnDefinition; $c0.Width = New-Object System.Windows.GridLength(26)
+        $c1 = New-Object System.Windows.Controls.ColumnDefinition
+        $c2 = New-Object System.Windows.Controls.ColumnDefinition; $c2.Width = [System.Windows.GridLength]::Auto
+        $gr.ColumnDefinitions.Add($c0); $gr.ColumnDefinitions.Add($c1); $gr.ColumnDefinitions.Add($c2)
+        $ic = New-Object System.Windows.Controls.TextBlock; $ic.Text = [string][char]0x25CB; $ic.Foreground = Get-ApovBrush '#5D6470'; $ic.FontSize = 13
+        $nm = New-Object System.Windows.Controls.TextBlock; $nm.Text = "$($s.Name)"; $nm.Foreground = Get-ApovBrush '#5D6470'; $nm.FontSize = 12.5; $nm.TextTrimming = 'CharacterEllipsis'
+        $tm = New-Object System.Windows.Controls.TextBlock; $tm.Foreground = Get-ApovBrush '#5D6470'; $tm.FontSize = 12; $tm.Margin = New-Object System.Windows.Thickness(12, 0, 0, 0)
+        [System.Windows.Controls.Grid]::SetColumn($nm, 1); [System.Windows.Controls.Grid]::SetColumn($tm, 2)
+        [void]$gr.Children.Add($ic); [void]$gr.Children.Add($nm); [void]$gr.Children.Add($tm)
+        [void]$o.apovList.Children.Add($gr)
+        $o.Rows.Add(@{ Name = "$($s.Name)"; Undo = [bool]$s.Undo; Nic = [bool]$s.Nic; State = 'wait'; Icon = $ic; Text = $nm; Time = $tm; Grid = $gr; Sw = $null })
+    }
+    $script:ApplyOv = $o
+    $g.Visibility = 'Visible'
+    Invoke-ApplyOverlayRender
+    return $true
+}
+function Set-ApplyOverlayStep([string]$Name, [bool]$Undo) {
+    $o = $script:ApplyOv; if (-not $o) { return }
+    $row = $null
+    foreach ($r in $o.Rows) { if ($r.State -eq 'wait' -and $r.Name -eq $Name -and $r.Undo -eq $Undo) { $row = $r; break } }
+    if (-not $row) { foreach ($r in $o.Rows) { if ($r.State -eq 'wait' -and $r.Name -eq $Name) { $row = $r; break } } }
+    if (-not $row) { return }
+    $row.State = 'run'; $row.Sw = [Diagnostics.Stopwatch]::StartNew()
+    $row.Icon.Text = [string][char]0x25CF; $row.Icon.Foreground = Get-ApovBrush '#4C8DFF'
+    $row.Text.Foreground = Get-ApovBrush '#E6E8EB'; $row.Text.FontWeight = 'SemiBold'
+    $o.apovCount.Text = "$($o.Done + 1) / $($o.Total)"
+    $o.apovStep.Text = $Name
+    $o.apovDesc.Text = $(if ($Undo) { T 'apov_undo' } else { T 'apov_apply' }) + $(if ($row.Nic) { T 'apov_nic' } else { "" })
+    try { $row.Grid.BringIntoView() } catch {}
+    Invoke-ApplyOverlayRender
+}
+function Set-ApplyOverlayStepDone([bool]$HadError) {
+    $o = $script:ApplyOv; if (-not $o) { return }
+    $row = $null; foreach ($r in $o.Rows) { if ($r.State -eq 'run') { $row = $r; break } }
+    if (-not $row) { return }
+    $row.State = 'done'; $o.Done++
+    if ($HadError) { $o.Err++; $row.Icon.Text = [string][char]0x2715; $row.Icon.Foreground = Get-ApovBrush '#E5484D' }
+    else { $row.Icon.Text = [string][char]0x2713; $row.Icon.Foreground = Get-ApovBrush '#3FB97A' }
+    $row.Text.Foreground = Get-ApovBrush '#C9CDD3'; $row.Text.FontWeight = 'Normal'
+    if ($row.Sw) { $row.Time.Text = ("{0:N1} sn" -f ($row.Sw.Elapsed.TotalSeconds)) }
+    if ($o.Total -gt 0) { $o.apovBar.Width = (Get-ApovBarMax $o) * $o.Done / $o.Total }
+    Invoke-ApplyOverlayRender
+}
+function Set-ApplyOverlayVerifying {
+    $o = $script:ApplyOv; if (-not $o) { return }
+    $o.apovStep.Text = (T 'apov_verify'); $o.apovDesc.Text = ""; $o.apovBar.Width = (Get-ApovBarMax $o)
+    Invoke-ApplyOverlayRender
+}
+function Hide-ApplyOverlay {
+    # §119 duzeltme: onay halinde $script:ApplyOv henuz yok (yalniz ilerleme halinde kurulur); Vazgec / Esc karti kapatamiyordu.
+    # Katman her durumda adiyla bulunup kapatilir.
+    $g = $null
+    if ($script:ApplyOv) { $g = $script:ApplyOv.Root }
+    if (-not $g) { try { $g = $Win.FindName('grdApplyOverlay') } catch {} }
+    if ($g) { try { $g.Visibility = 'Collapsed' } catch {} }
+    $script:ApplyOv = $null
+}
+# $Mode: 'reboot' (yeniden baslatma gerekli) | 'explorer' (Gezgin yeniden baslatilmali) | 'none'
+function Complete-ApplyOverlay([int]$Applied, [int]$Undone, [string]$Mode) {
+    $o = $script:ApplyOv; if (-not $o) { return }
+    $v = $script:ApplyVerify
+    $infoNames = @{}; $badNames = @{}
+    if ($v) {
+        foreach ($s in @($v.Info)) { if ($s) { $infoNames[[string]$s.Name] = "$($s.Note)" } }
+        foreach ($n in @($v.NotOn) + @($v.StillOn)) { if ($n) { $badNames[[string]$n] = $true } }
+    }
+    foreach ($r in $o.Rows) {
+        if ($badNames.ContainsKey($r.Name) -and "$($r.Icon.Text)" -ne [string][char]0x2715) { $o.Err++; $r.Icon.Text = [string][char]0x2715; $r.Icon.Foreground = Get-ApovBrush '#E5484D' }
+        elseif ($infoNames.ContainsKey($r.Name) -and "$($r.Icon.Text)" -eq [string][char]0x2713) { $r.Icon.Text = [string][char]0x2139; $r.Icon.Foreground = Get-ApovBrush '#A9B0BB' }
+    }
+    $o.apovRun.Visibility = 'Collapsed'; $o.apovEnd.Visibility = 'Visible'; $o.apovBtns.Visibility = 'Visible'
+    if ($o.Err -gt 0) { $o.apovDot.Background = Get-ApovBrush '#E0A23B'; $o.apovTitle.Text = (T 'apov_done_err') }
+    else { $o.apovDot.Background = Get-ApovBrush '#3FB97A'; $o.apovTitle.Text = (T 'apov_done') }
+    $o.apovCount.Text = ("{0} / {1} · {2:N1} sn" -f $o.Done, $o.Total, $o.Sw.Elapsed.TotalSeconds)
+    $o.apovChips.Children.Clear()
+    $chips = @()
+    if ($Applied -gt 0) { $chips += ,@(((T 'apov_c_applied') -f $Applied), '#1B2A44', '#8DB4FF') }
+    if ($Undone -gt 0)  { $chips += ,@(((T 'apov_c_undone') -f $Undone), '#1E2A24', '#7FD3A6') }
+    if ($infoNames.Count -gt 0) { $chips += ,@(((T 'apov_c_info') -f $infoNames.Count), '#23262D', '#A9B0BB') }
+    $chips += ,@(((T 'apov_c_err') -f $o.Err), $(if ($o.Err -gt 0) { '#3A1D20' } else { '#23262D' }), $(if ($o.Err -gt 0) { '#F08A8E' } else { '#A9B0BB' }))
+    foreach ($c in $chips) {
+        $bd = New-Object System.Windows.Controls.Border; $bd.Background = Get-ApovBrush $c[1]; $bd.CornerRadius = 10
+        $bd.Padding = New-Object System.Windows.Thickness(10, 3, 10, 3); $bd.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
+        $tb = New-Object System.Windows.Controls.TextBlock; $tb.Text = $c[0]; $tb.Foreground = Get-ApovBrush $c[2]; $tb.FontSize = 12.5; $tb.FontWeight = 'SemiBold'
+        $bd.Child = $tb; [void]$o.apovChips.Children.Add($bd)
+    }
+    $lines = New-Object System.Collections.Generic.List[string]
+    foreach ($k in @($infoNames.Keys | Select-Object -First 3)) { $lines.Add(([string][char]0x2139) + " " + $k + ": " + $infoNames[$k]) }
+    if ($o.Err -gt 0) { $lines.Add((T 'apov_err_note')) }
+    if ($Mode -eq 'reboot') { $lines.Add((T 'apov_reboot_note')) } elseif ($Mode -eq 'explorer') { $lines.Add((T 'apov_explorer_note')) }
+    $o.apovInfo.Text = ($lines -join "`n"); $o.apovInfo.Visibility = $(if ($lines.Count) { 'Visible' } else { 'Collapsed' })
+
+    $script:ApovMode = $Mode
+    $o.apovBtnLogs.Content = (T 'apov_logs')
+    $o.apovBtnLater.Content = (T 'apov_later'); $o.apovBtnLater.Visibility = $(if ($Mode -eq 'none') { 'Collapsed' } else { 'Visible' })
+    if ($Mode -eq 'reboot') { $o.apovBtnMain.Content = (T 'apov_restart'); $st = $Win.TryFindResource('BtnDanger'); if ($st) { $o.apovBtnMain.Style = $st } }
+    else { $o.apovBtnMain.Content = $(if ($Mode -eq 'explorer') { T 'apov_explorer' } else { T 'apov_close' }); $st = $Win.TryFindResource('BtnPrimary'); if ($st) { $o.apovBtnMain.Style = $st } }
+    if (-not $script:ApovHandlersSet) {
+        $script:ApovHandlersSet = $true
+        $o.apovBtnLogs.Add_Click({ Hide-ApplyOverlay; try { Set-LogPanelVisible $true } catch {} })
+        $o.apovBtnLater.Add_Click({
+            Hide-ApplyOverlay
+            WpfLog "[BILGI] Kullanici yeniden baslatmayi erteledi. Bazi degisiklikler bir sonraki oturum acmada uygulanacak."
+        })
+        $o.apovBtnMain.Add_Click({
+            $m = "$script:ApovMode"
+            Hide-ApplyOverlay
+            if ($m -eq 'reboot') { Start-Process shutdown.exe -ArgumentList "/r /f /t 0" -WindowStyle Hidden }   # eski pencereyle ayni komut
+            elseif ($m -eq 'explorer') { try { Invoke-ExplorerHardRestart } catch { WpfLog "[HATA] Gezgin yeniden baslatma: $($_.Exception.Message)" } }
+        })
+    }
+    Invoke-ApplyOverlayRender
+    try { $o.apovBtnMain.Focus() | Out-Null } catch {}
+}
+
 function Apply-System-Tweaks {
+    # v2.0.0 (§118): katman acikken ikinci Uygula (or. klavyeyle) baslamasin
+    if ($script:ApplyInProgress) { return }
     $script:ReapplySticky = $null   # 14. tur: guncelleme sonrasi denetim isaretleri UYGULA ile tuketilir
     $script:TweakApplyCacheHits = 0
     $script:TweakApplyLiveHits = 0
@@ -14161,15 +14855,24 @@ function Apply-System-Tweaks {
     try { WpfLog ("[UYGULA] durum: cache " + [int]$script:TweakApplyCacheHits + ", canli " + [int]$script:TweakApplyLiveHits) } catch {}
 
     $totalOps = $toEnable.Count + $toDisable.Count
-    if ($totalOps -eq 0) {[System.Windows.MessageBox]::Show((T 'mbx_nochange'), (T 'mb_info')) | Out-Null; return }
+    if ($totalOps -eq 0) { [void](Show-MrCleanMessage -Text (T 'mbx_nochange') -Title (T 'mb_info') -Icon Info); return }
 
+    # v2.0.0 (§119): onay karti (esitleme + yuksek risk + GPU + geri yukleme noktasi sorusu tek kartta). Katman yoksa eski kutular.
+    $script:ApplyInProgress = $true
+    $rpDecision = ""
+    $conf = $null
+    try { $conf = Show-ApplyConfirm $toEnable $toDisable } catch { $conf = $null; WpfLog "[UYGULA] onay karti acilamadi: $($_.Exception.Message)"; try { Hide-ApplyOverlay } catch {} }
+    if ($conf) {
+        if (-not $conf.Ok) { try { Hide-ApplyOverlay } catch {}; WpfLog "[İPTAL] Uygula onayı verilmedi."; $script:ApplyInProgress = $false; return }
+        $rpDecision = "$($conf.Rp)"
+    } else {
     # --- MESAJ GÜNCELLEMESİ (Daha Anlaşılır) ---
     $msg = "Seçimleriniz (Açık/Kapalı durumları) sisteminizle eşitlenecek.`n`n"
     if ($toEnable.Count -gt 0) { $msg += "✅ $($toEnable.Count) ayar UYGULANACAK (Açılacak).`n" }
     if ($toDisable.Count -gt 0) { $msg += "❌ $($toDisable.Count) ayar GERİ ALINACAK (Varsayılana dönecek).`n" }
     $msg += "`nDevam edilsin mi?"
     
-    if ([System.Windows.MessageBox]::Show($msg, "Tweak Eşitleme Onayı", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question) -ne 'Yes') { return }
+    if ([System.Windows.MessageBox]::Show($msg, "Tweak Eşitleme Onayı", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question) -ne 'Yes') { $script:ApplyInProgress = $false; return }
 
     # --- YÜKSEK RİSK UYARISI (Sprint 4.4) ---
     # Risk="High" olan tweak'ler icin ek onay (sadece Apply icin, Undo'da risk yok)
@@ -14181,6 +14884,7 @@ function Apply-System-Tweaks {
                  "Devam etmek istiyor musunuz?"
         if ([System.Windows.MessageBox]::Show($hrMsg, "Yüksek Risk Onayı", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning) -ne 'Yes') {
             WpfLog "[İPTAL] Yüksek riskli ayar onayı reddedildi."
+            $script:ApplyInProgress = $false
             return
         }
     }
@@ -14201,18 +14905,31 @@ function Apply-System-Tweaks {
                    "(Hibrit sistemler için — örn. dizüstü Intel+NVIDIA — devam edebilirsiniz.)"
         if ([System.Windows.MessageBox]::Show($vmMsg, "GPU Uyumsuzluk Uyarısı", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning) -ne 'Yes') {
             WpfLog "[İPTAL] GPU uyumsuzluk uyarisi reddedildi."
+            $script:ApplyInProgress = $false
             return
         }
     }
+    }   # §119: eski kutular (katman yoksa) sonu
 
-    # Sistem Geri Yukleme: mode gore sor/olustur/atla. Cancel ise tweak islemi durur.
-    $rpOK = Create-Restore-Point "Tweak Islemleri"
+    # Sistem Geri Yukleme: mode gore sor/olustur/atla. Cancel ise tweak islemi durur. (§119: Ask modunda karar onay kartindan)
+    $rpOK = Create-Restore-Point "Tweak Islemleri" -Decision $rpDecision
     if (-not $rpOK) {
         WpfLog "--- TWEAK ISLEMI IPTAL EDILDI ---"
+        try { Hide-ApplyOverlay } catch {}
+        $script:ApplyInProgress = $false
         return
     }
 
     WpfLog "--- TWEAK İŞLEMİ BAŞLATILIYOR ---"
+    # v2.0.0 (§118): ilerleme katmani — adimlar calisma sirasiyla (once guc plani, sonra geri alinanlar, sonra uygulananlar)
+    $script:ApplyInProgress = $true
+    $ovSteps = @()
+    foreach ($t in $toDisable) { if ("$($t.Group)" -eq 'PowerPlan') { $ovSteps += @{ Name = [string]$t.Name; Undo = $true;  Nic = (Test-TweakRestartsNic $t $true) } } }
+    foreach ($t in $toEnable)  { if ("$($t.Group)" -eq 'PowerPlan') { $ovSteps += @{ Name = [string]$t.Name; Undo = $false; Nic = (Test-TweakRestartsNic $t $false) } } }
+    foreach ($t in $toDisable) { if ("$($t.Group)" -ne 'PowerPlan') { $ovSteps += @{ Name = [string]$t.Name; Undo = $true;  Nic = (Test-TweakRestartsNic $t $true) } } }
+    foreach ($t in $toEnable)  { if ("$($t.Group)" -ne 'PowerPlan') { $ovSteps += @{ Name = [string]$t.Name; Undo = $false; Nic = (Test-TweakRestartsNic $t $false) } } }
+    $ovOn = $false; try { $ovOn = [bool](Show-ApplyOverlay $ovSteps) } catch { $ovOn = $false; WpfLog "[UYGULA] ilerleme katmani acilamadi: $($_.Exception.Message)" }
+    try {
     # Restart Explorer mantigi 3 seviyeli:
     #   $false / null  → hicbir sey yapma
     #   "Soft" / $true → SHChangeNotify + WM_SETTINGCHANGE broadcast (acik pencereler refresh)
@@ -14224,6 +14941,8 @@ function Apply-System-Tweaks {
     function Process-TweakItem($tweakItem, $isUndo) {
         $actionName = if ($isUndo) { "Geri Alınıyor" } else { "Uygulanıyor" }
         WpfLog "$actionName : $($tweakItem.Name)"
+        $script:ApplyStepErr = $false
+        try { Set-ApplyOverlayStep ([string]$tweakItem.Name) ([bool]$isUndo) } catch {}   # §118
         Do-Events
 
         # RestartExplorer field'ini parse et — "Hard" / $true → hard, "Soft" → soft
@@ -14284,10 +15003,11 @@ function Apply-System-Tweaks {
                         else { Set-ItemProperty -Path $sub.Key -Name $sub.ValueName -Value $targetValue -Type $sub.Type -Force -ErrorAction Stop }
                     }
                 }
-            } catch { 
+            } catch {
                 $errTitle = if ($isUndo) { "Geri Alma" } else { "Uygulama" }
                 $errMsg = $_.Exception.Message
-                
+                $script:ApplyStepErr = $true   # §118: katmanda kirmizi isaret
+
                 # Sadece kritik hataları göster
                 if ($errMsg -match "Access is denied" -or $errMsg -match "Erişim engellendi") {
                     WpfLog "🛡️ [YETKİ HATASI] $actionName ($($tweakItem.Name)): Registry erişimi engellendi."
@@ -14296,6 +15016,7 @@ function Apply-System-Tweaks {
                 }
             }
         }
+        try { Set-ApplyOverlayStepDone ([bool]$script:ApplyStepErr) } catch {}   # §118
     }
 
     # v1.3.0 (§93): once guc plani (plan degisirse acik guc ayarlari yeni plana tasinir), sonra digerleri.
@@ -14384,6 +15105,8 @@ function Apply-System-Tweaks {
     }
     
     # Cache'i silip 208'i yeniden denetleme — sadece degisen satirlari isaretle, Aktif cipini ac
+    try { Set-ApplyOverlayVerifying } catch {}   # §118
+    $script:ApplyVerify = $null
     try { Update-TweakStatusAfterApply $toEnable $toDisable } catch {
         try { WpfLog ("[UYGULA] cache guncelleme: " + $_.Exception.Message) } catch {}
     }
@@ -14405,6 +15128,12 @@ function Apply-System-Tweaks {
     # 14. tur: Explorer yeniden baslatildiysa (Baslat menusu vb.) pencere sirasi sifirlanir; diyalog ana pencerenin ARKASINDA
     # acilip programi kilitliyordu (kullanici: "dondu, kapatamiyorum"). Once ana pencere one, diyaloglar sahipli + en ustte.
     try { $Win.Activate() | Out-Null } catch {}
+    # v2.0.0 (§118): katman aciksa ozet + yeniden baslatma secenekleri kartin icinde; degilse eski pencereler
+    if ($ovOn -and $script:ApplyOv) {
+        $ovMode = if ($script:latencyChanged) { 'reboot' } elseif ($script:needsRestart) { 'explorer' } else { 'none' }
+        Complete-ApplyOverlay $appliedCount $revertedCount $ovMode
+        return
+    }
     # 2) Restart dialog — latencyChanged en agir, sonra hard restart, sonra hicbir sey
     if ($script:latencyChanged) {
         Show-RestartDialog
@@ -14418,6 +15147,15 @@ function Apply-System-Tweaks {
         } else {
             WpfLog "[BILGI] Kullanici yeniden baslatmayi erteledi. Bazi degisiklikler bir sonraki oturum acmada uygulanacak."
         }
+    }
+    } catch {
+        # §118: beklenmeyen hata katmani takili birakmasin — ozet hatayla gosterilir (Kapat / Kayitlari Goster)
+        WpfLog "❌ [HATA] Uygula: $($_.Exception.Message) (satir $($_.InvocationInfo.ScriptLineNumber))"
+        if ($script:ApplyOv) {
+            try { $script:ApplyOv.Err++; Complete-ApplyOverlay 0 0 'none' } catch { Hide-ApplyOverlay }
+        }
+    } finally {
+        $script:ApplyInProgress = $false
     }
 }
 
@@ -14521,15 +15259,16 @@ function Show-TweakManager {
                 }
             }
             if ($convertedList.Count -gt 0) { $txtBatchInput.Text = $convertedList | ConvertTo-Json -Depth 5 } 
-            else { [System.Windows.MessageBox]::Show("Geçerli format bulunamadı.", "Hata") | Out-Null }
+            else { [void](Show-MrCleanMessage -Text "Geçerli format bulunamadı." -Title "Hata" -Icon Error) }
         })
 
         $btnValidate.Add_Click({
             try {
                 if ([string]::IsNullOrWhiteSpace($txtBatchInput.Text)) { throw "Kutu boş." }
                 $testObj = $txtBatchInput.Text | ConvertFrom-Json
-                $count = if ($testObj -is [Array]) { $testObj.Count } else { 1 }[System.Windows.MessageBox]::Show("✔ JSON Yapısı Geçerli!`nToplam İşlem Sayısı: $count", "Onaylandı") | Out-Null
-            } catch { [System.Windows.MessageBox]::Show("❌ JSON Formatı HATALI!`n$($_.Exception.Message)", "Hata", [System.Windows.MessageBoxButton]::OK,[System.Windows.MessageBoxImage]::Error) | Out-Null }
+                $count = if ($testObj -is [Array]) { $testObj.Count } else { 1 }
+                [void](Show-MrCleanMessage -Text "✔ JSON Yapısı Geçerli!`nToplam İşlem Sayısı: $count" -Title "Onaylandı" -Icon Info)
+            } catch { [void](Show-MrCleanMessage -Text "❌ JSON Formatı HATALI!`n$($_.Exception.Message)" -Title "Hata" -Icon Error) }
         })
 
         $global:TweakList.Keys | ForEach-Object { $cbCategory.Items.Add($_) | Out-Null }
@@ -14749,7 +15488,7 @@ function Show-TweakManager {
         # Klonla butonu — seçili tweak'i kopyala, "(Kopya)" ekiyle yeni isim
         $btnClone.Add_Click({
             if ($lst.SelectedIndex -lt 0) {
-                [System.Windows.MessageBox]::Show("Önce bir ayar seçin.", "Klonla") | Out-Null
+                [void](Show-MrCleanMessage -Text "Önce bir ayar seçin." -Title "Klonla" -Icon Info)
                 return
             }
             # Mevcut formu olduğu gibi bırak, sadece adı değiştir ve yeni kayıt yapılacak gibi seçimi sıfırla
@@ -14757,7 +15496,7 @@ function Show-TweakManager {
             $lst.SelectedIndex = -1
             Update-TweakPreview
             # v1.3.0 (§63): klonlama iki adımlı (form kopyalanır, kayıt KAYDET ile); eskiden hiçbir geri bildirim yoktu
-            [System.Windows.MessageBox]::Show("Kopya hazırlandı: '$($txtName.Text)'.`n`nAlanları gerekirse değiştirin ve KAYDET'e basın; kopya listeye o zaman eklenir. Vazgeçmek için listeden başka bir ayar seçin.", "Klonla") | Out-Null
+            [void](Show-MrCleanMessage -Text "Kopya hazırlandı: '$($txtName.Text)'.`n`nAlanları gerekirse değiştirin ve KAYDET'e basın; kopya listeye o zaman eklenir. Vazgeçmek için listeden başka bir ayar seçin." -Title "Klonla" -Icon Info)
             $txtName.Focus() | Out-Null
             $txtName.SelectAll()
         })
@@ -14778,11 +15517,11 @@ function Show-TweakManager {
             $catName = $cbCategory.Text
             # --- TEMEL VALIDATION ---
             if ([string]::IsNullOrWhiteSpace($txtName.Text)) {
-                [System.Windows.MessageBox]::Show("'Ad' alanı zorunludur.", "Eksik Bilgi", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning) | Out-Null
+                [void](Show-MrCleanMessage -Text "'Ad' alanı zorunludur." -Title "Eksik Bilgi" -Icon Warning)
                 return
             }
             if ([string]::IsNullOrWhiteSpace($catName)) {
-                [System.Windows.MessageBox]::Show("'Kategori' alanı zorunludur.", "Eksik Bilgi", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning) | Out-Null
+                [void](Show-MrCleanMessage -Text "'Kategori' alanı zorunludur." -Title "Eksik Bilgi" -Icon Warning)
                 return
             }
             if (-not $cbCategory.Items.Contains($catName)) { $cbCategory.Items.Add($catName) | Out-Null }
@@ -14817,7 +15556,7 @@ function Show-TweakManager {
                 $v6Primary = $null; $v6Secondary = $null
                 if ($chkDnsIPv6.IsChecked) { $v6Primary = $txtDns6_1.Text; $v6Secondary = $txtDns6_2.Text }
                 if ([string]::IsNullOrWhiteSpace($v4Primary) -or [string]::IsNullOrWhiteSpace($v4Secondary)) {
-                    [System.Windows.MessageBox]::Show("DNS için en az 2 IPv4 sunucu adresi gerekir.", "DNS", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning) | Out-Null
+                    [void](Show-MrCleanMessage -Text "DNS için en az 2 IPv4 sunucu adresi gerekir." -Title "DNS" -Icon Warning)
                     return
                 }
 
@@ -14854,15 +15593,15 @@ ipconfig /flushdns > $null
             } elseif ($rbReg.IsChecked) {
                 # Registry validation
                 if ([string]::IsNullOrWhiteSpace($txtKey.Text)) {
-                    [System.Windows.MessageBox]::Show("Registry için 'Key' alanı zorunludur.", "Validation", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning) | Out-Null
+                    [void](Show-MrCleanMessage -Text "Registry için 'Key' alanı zorunludur." -Title "Validation" -Icon Warning)
                     return
                 }
                 if ($txtKey.Text -notmatch '^(HKCU|HKLM|HKCR|HKU|HKCC):\\') {
-                    [System.Windows.MessageBox]::Show("Registry Key 'HKCU:\\...', 'HKLM:\\...' formatında olmalı.", "Validation", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning) | Out-Null
+                    [void](Show-MrCleanMessage -Text "Registry Key 'HKCU:\\...', 'HKLM:\\...' formatında olmalı." -Title "Validation" -Icon Warning)
                     return
                 }
                 if ([string]::IsNullOrWhiteSpace($cbType.Text)) {
-                    [System.Windows.MessageBox]::Show("Registry için 'Tip' alanı zorunludur (DWord, String, Binary vb.).", "Validation", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning) | Out-Null
+                    [void](Show-MrCleanMessage -Text "Registry için 'Tip' alanı zorunludur (DWord, String, Binary vb.)." -Title "Validation" -Icon Warning)
                     return
                 }
                 $newObj["Key"] = $txtKey.Text; $newObj["ValueName"] = $txtValueName.Text; $newObj["Type"] = $cbType.Text; $newObj["Data"] = $txtData.Text; $newObj["Undo"] = $txtUndo.Text
@@ -14890,13 +15629,13 @@ ipconfig /flushdns > $null
                 }
                 if ($conflicts.Count -gt 0) {
                     $msg = "Bu Key+ValueName başka ayar(lar)la çakışıyor:`n`n" + ($conflicts -join "`n") + "`n`nYine de kaydedilsin mi?"
-                    if ([System.Windows.MessageBox]::Show($msg, "Çakışma Algılandı", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning) -ne 'Yes') {
+                    if ((Show-MrCleanMessage -Text $msg -Title "Çakışma Algılandı" -Buttons YesNo -Icon Warning) -ne 'Yes') {
                         return
                     }
                 }
             } elseif ($rbCmd.IsChecked) {
                 if ([string]::IsNullOrWhiteSpace($txtCommand.Text)) {
-                    [System.Windows.MessageBox]::Show("Komut tipinde 'Command' alanı zorunludur.", "Validation", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning) | Out-Null
+                    [void](Show-MrCleanMessage -Text "Komut tipinde 'Command' alanı zorunludur." -Title "Validation" -Icon Warning)
                     return
                 }
                 $newObj["Command"] = $txtCommand.Text; $newObj["UndoCommand"] = $txtUndoCommand.Text
@@ -14906,7 +15645,7 @@ ipconfig /flushdns > $null
                     $rawJson = $txtBatchInput.Text | ConvertFrom-Json -ErrorAction Stop
                     $newObj["Batch"] = if ($rawJson.value) { $rawJson.value } else { @($rawJson) }
                 } catch {
-                    [System.Windows.MessageBox]::Show("Batch JSON geçersiz: $($_.Exception.Message)", "Validation", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning) | Out-Null
+                    [void](Show-MrCleanMessage -Text "Batch JSON geçersiz: $($_.Exception.Message)" -Title "Validation" -Icon Warning)
                     return
                 }
             }
@@ -14936,7 +15675,7 @@ ipconfig /flushdns > $null
             $global:TweakList[$catName] += $newObj
             Mark-ConfigDirty; Refresh-List; Load-Tweak-Tree
             try { Check-Tweak-Status -ForceRefresh } catch {}
-            [System.Windows.MessageBox]::Show((T 'mbx_saved')) | Out-Null
+            [void](Show-MrCleanMessage -Text (T 'mbx_saved') -Title (T 'mb_success') -Icon Info)
         })
         
         # SİL BUTONU
@@ -14945,11 +15684,9 @@ ipconfig /flushdns > $null
                 $selTweak = $lst.SelectedItem.Tag
                 # v1.2.10: Yanlislikla silme onleme — onay MessageBox ekle.
                 # Profil Yoneticisi Sil ve sag tik "Listeden Sil" zaten onay soruyor; bu da uyumlu.
-                $confirm = [System.Windows.MessageBox]::Show(
-                    ("'{0}' tweak'i Ayar Yöneticisi'nden kalıcı olarak silinecek.`n`nBu tweak Tweaks sekmesindeki listeden kaldırılır, geri alınamaz. (Sıfırlamak için 'Yeni' butonu ile yeniden ekleyebilirsin veya config dosyasını sıfırlayıp varsayılana dönebilirsin.)`n`nDevam edilsin mi?" -f $selTweak.Name),
-                    "Tweak Sil — Onay",
-                    [System.Windows.MessageBoxButton]::YesNo,
-                    [System.Windows.MessageBoxImage]::Warning)
+                $confirm = Show-MrCleanMessage `
+                    -Text ("'{0}' tweak'i Ayar Yöneticisi'nden kalıcı olarak silinecek.`n`nBu tweak Tweaks sekmesindeki listeden kaldırılır, geri alınamaz. (Sıfırlamak için 'Yeni' butonu ile yeniden ekleyebilirsin veya config dosyasını sıfırlayıp varsayılana dönebilirsin.)`n`nDevam edilsin mi?" -f $selTweak.Name) `
+                    -Title "Tweak Sil — Onay" -Buttons YesNo -Icon Warning -Danger
                 if ($confirm -ne 'Yes') { return }
 
                 $cat = $global:TweakList.Keys | Where-Object { $global:TweakList[$_] -contains $selTweak }
@@ -15554,6 +16291,8 @@ function Invoke-MrCleanBenchProcess([string]$Exe, [string]$Arguments, [int]$Time
         $sw = [Diagnostics.Stopwatch]::StartNew()
         while (-not $p.HasExited) {
             if ($sw.Elapsed.TotalSeconds -gt $TimeoutSec) { try { $p.Kill() } catch {}; return @{ Ok = $false; Error = "zaman asimi" } }
+            # v2.0.0 (§131): Durdur / pencere kapatma — olcum sureci beklenmeden kapatilir
+            if ($global:BenchCancel) { try { $p.Kill() } catch {}; return @{ Ok = $false; Error = "durduruldu" } }
             Do-Events; Start-Sleep -Milliseconds 100
         }
         $line = Get-Content $tmp -ErrorAction SilentlyContinue | Where-Object { $_ -like "RESULT *" } | Select-Object -Last 1
@@ -15626,12 +16365,15 @@ function Test-GpuFrameTime {
     $fmDir = Split-Path $tools.Fm
     try {
         $fm = Start-Process $tools.Fm -ArgumentList "--demo furmark-vk --fullscreen --width $($scr.Width) --height $($scr.Height) --vsync 0 --max-time 42 --no-score-box --disable-demo-options --no-osi" -WorkingDirectory $fmDir -PassThru
-        $sw = [Diagnostics.Stopwatch]::StartNew(); while ($sw.Elapsed.TotalSeconds -lt 8) { Do-Events; Start-Sleep -Milliseconds 100 }
+        # §131: bekleme dongulerinde $global:BenchCancel; sureler asagida Kill, finally furmark / PresentMon'u kapatir
+        $sw = [Diagnostics.Stopwatch]::StartNew(); while ($sw.Elapsed.TotalSeconds -lt 8 -and -not $global:BenchCancel) { Do-Events; Start-Sleep -Milliseconds 100 }
+        if ($global:BenchCancel) { return @{ Ok = $false; Error = "durduruldu" } }
         $pm = Start-Process $tools.Pm -ArgumentList "--process_name furmark.exe --output_file `"$csv`" --timed 28 --terminate_after_timed --stop_existing_session --no_console_stats" -PassThru -WindowStyle Hidden
-        $sw.Restart(); while (-not $pm.HasExited -and $sw.Elapsed.TotalSeconds -lt 60) { Do-Events; Start-Sleep -Milliseconds 100 }
+        $sw.Restart(); while (-not $pm.HasExited -and $sw.Elapsed.TotalSeconds -lt 60 -and -not $global:BenchCancel) { Do-Events; Start-Sleep -Milliseconds 100 }
         if (-not $pm.HasExited) { try { $pm.Kill() } catch {} }
-        $sw.Restart(); while (-not $fm.HasExited -and $sw.Elapsed.TotalSeconds -lt 20) { Do-Events; Start-Sleep -Milliseconds 100 }
+        $sw.Restart(); while (-not $fm.HasExited -and $sw.Elapsed.TotalSeconds -lt 20 -and -not $global:BenchCancel) { Do-Events; Start-Sleep -Milliseconds 100 }
         if (-not $fm.HasExited) { try { $fm.Kill() } catch {} }
+        if ($global:BenchCancel) { return @{ Ok = $false; Error = "durduruldu" } }
         if (-not (Test-Path $csv)) { return @{ Ok = $false; Error = "PresentMon verisi yok" } }
         $inv = [Globalization.CultureInfo]::InvariantCulture
         $r = @(Import-Csv $csv | Where-Object { $_.Application -eq "furmark.exe" })
@@ -16104,7 +16846,7 @@ $($global:SubTheme)
     })
     $c.btnAmdDirect.Add_Click({ if (-not $st.Busy) { $st.Busy = $true; & $direct; $st.Busy = $false } })
     $c.btnAmdReboot.Add_Click({
-        if ([System.Windows.MessageBox]::Show($w, "Bilgisayar 10 saniye içinde yeniden başlatılacak. Açık çalışmalarınızı kaydettiniz mi?", "Yeniden Başlat", "YesNo", "Question") -eq 'Yes') { Start-Process shutdown.exe -ArgumentList "/r /t 10 /c `"MrClean: AMD surucu kurulumu`"" -WindowStyle Hidden }
+        if ((Show-MrCleanMessage -Text "Bilgisayar 10 saniye içinde yeniden başlatılacak. Açık çalışmalarınızı kaydettiniz mi?" -Title "Yeniden Başlat" -Buttons YesNo -Icon Question -Owner $w) -eq 'Yes') { Start-Process shutdown.exe -ArgumentList "/r /t 10 /c `"MrClean: AMD surucu kurulumu`"" -WindowStyle Hidden }
     })
     $c.btnAmdClose.Add_Click({ $w.Close() })
     $w.Add_Closed({ if ($st.X) { Remove-Item $st.X -Recurse -Force -ErrorAction SilentlyContinue } })
@@ -16213,6 +16955,8 @@ function Get-BenchSnapshot {
         $i++
         $runResults = New-Object System.Collections.Generic.List[hashtable]
         for ($r = 1; $r -le $Runs; $r++) {
+            # v2.0.0 (§131): Durdur — kalan olcumler yapilmaz, yarim snapshot kaydedilmez ($null)
+            if ($global:BenchCancel) { return $null }
             $globalStep = (($i - 1) * $Runs) + $r
             $rLabel = if ($Runs -gt 1) { "$($s.Label) (run $r/$Runs)" } else { $s.Label }
             if ($ProgressCallback) { & $ProgressCallback $globalStep $totalSteps $rLabel }
@@ -16223,6 +16967,7 @@ function Get-BenchSnapshot {
             }
             [void]$runResults.Add($rr)
         }
+        if ($global:BenchCancel) { return $null }
         # Median + CV ile birlestir
         $merged = Merge-BenchRuns -Runs @($runResults)
         $result.metrics[$s.Key] = $merged
@@ -16230,6 +16975,16 @@ function Get-BenchSnapshot {
     if ($ProgressCallback) { & $ProgressCallback $totalSteps $totalSteps "Tamamlandi" }
 
     return $result
+}
+
+# v2.0.0 (§132): snapshot zamani ekranda "25-10-2026 15:25" (dosyada ISO "2026-10-25T15:25:00" kalir; siralama ondan yapilir)
+function Format-BenchTime($Timestamp) {
+    if ($Timestamp -is [datetime]) { return $Timestamp.ToString("dd-MM-yyyy HH:mm", [Globalization.CultureInfo]::InvariantCulture) }
+    $d = [datetime]::MinValue
+    if ([datetime]::TryParseExact("$Timestamp", "yyyy-MM-ddTHH:mm:ss", [Globalization.CultureInfo]::InvariantCulture, [Globalization.DateTimeStyles]::None, [ref]$d)) {
+        return $d.ToString("dd-MM-yyyy HH:mm", [Globalization.CultureInfo]::InvariantCulture)
+    }
+    return "$Timestamp"
 }
 
 # ---- JSON CRUD ----
@@ -16372,7 +17127,7 @@ function Compare-BenchSnapshots {
 # =========================================================
 function Invoke-QuickUndo {
     if (-not $global:LastTweakOperation) {
-        [System.Windows.MessageBox]::Show((T 'mbx_noundo'), (T 'mb_info')) | Out-Null
+        [void](Show-MrCleanMessage -Text (T 'mbx_noundo') -Title (T 'mb_info') -Icon Info)
         return
     }
     $op = $global:LastTweakOperation
@@ -16381,21 +17136,42 @@ function Invoke-QuickUndo {
     $total = $applied.Count + $undone.Count
     if ($total -eq 0) { return }
 
-    $msg = "Son tweak islemi tersine cevrilecek:`n`n" +
-           "  • $($applied.Count) ayar GERI ALINACAK (Apply edilen → Undo)`n" +
-           "  • $($undone.Count) ayar TEKRAR UYGULANACAK (Undo edilen → Apply)`n`n" +
-           "Devam edilsin mi?"
-    if ([System.Windows.MessageBox]::Show($msg, "Geri Al Onayi", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question) -ne 'Yes') {
-        return
+    if ($script:ApplyInProgress) { return }   # §120: Uygula / Geri Al karti acikken ikinci islem baslamasin
+
+    # v2.0.0 (§120): Uygula ile ayni kart — onay (tekrar uygulanacaklar + geri alinacaklar), ilerleme, ozet. Katman yoksa eski kutu.
+    $script:ApplyInProgress = $true
+    $conf = $null
+    try { $conf = Show-ApplyConfirm $undone $applied -Title (T 'apc_undo_title') -Sub (T 'apc_undo_sub') -NoRestorePoint } catch { $conf = $null; WpfLog "[GERI AL] onay karti acilamadi: $($_.Exception.Message)"; try { Hide-ApplyOverlay } catch {} }
+    if ($conf) {
+        if (-not $conf.Ok) { try { Hide-ApplyOverlay } catch {}; WpfLog "[İPTAL] Hızlı Geri Al onayı verilmedi."; $script:ApplyInProgress = $false; return }
+    } else {
+        $msg = "Son tweak islemi tersine cevrilecek:`n`n" +
+               "  • $($applied.Count) ayar GERI ALINACAK (Apply edilen → Undo)`n" +
+               "  • $($undone.Count) ayar TEKRAR UYGULANACAK (Undo edilen → Apply)`n`n" +
+               "Devam edilsin mi?"
+        if ([System.Windows.MessageBox]::Show($msg, "Geri Al Onayi", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question) -ne 'Yes') {
+            $script:ApplyInProgress = $false
+            return
+        }
     }
+    try {
 
     Refresh-PowerCfg-Cache
     WpfLog "--- QUICK UNDO BASLADI ---"
+    # §120: ilerleme hali (ayni kart). Adim sirasi Apply ile ayni: once guc plani, sonra geri alinanlar, sonra yeniden uygulananlar
+    $ovSteps = @()
+    foreach ($t in $applied) { if ("$($t.Group)" -eq 'PowerPlan') { $ovSteps += @{ Name = [string]$t.Name; Undo = $true;  Nic = (Test-TweakRestartsNic $t $true) } } }
+    foreach ($t in $undone)  { if ("$($t.Group)" -eq 'PowerPlan') { $ovSteps += @{ Name = [string]$t.Name; Undo = $false; Nic = (Test-TweakRestartsNic $t $false) } } }
+    foreach ($t in $applied) { if ("$($t.Group)" -ne 'PowerPlan') { $ovSteps += @{ Name = [string]$t.Name; Undo = $true;  Nic = (Test-TweakRestartsNic $t $true) } } }
+    foreach ($t in $undone)  { if ("$($t.Group)" -ne 'PowerPlan') { $ovSteps += @{ Name = [string]$t.Name; Undo = $false; Nic = (Test-TweakRestartsNic $t $false) } } }
+    $ovOn = $false; if ($conf) { try { $ovOn = [bool](Show-ApplyOverlay $ovSteps) } catch { $ovOn = $false } }
 
     # Process-TweakItem inline kopyasi (Apply-System-Tweaks icindeki nested fonksiyona disardan erisemiyoruz)
     function Invoke-TweakAction($tweakItem, [bool]$isUndo) {
         $actionName = if ($isUndo) { "Geri Aliniyor" } else { "Yeniden Uygulaniyor" }
         WpfLog "$actionName : $($tweakItem.Name)"
+        $script:ApplyStepErr = $false
+        try { Set-ApplyOverlayStep ([string]$tweakItem.Name) ([bool]$isUndo) } catch {}   # §120
         Do-Events
         $batchList = if ($tweakItem.Batch) { $tweakItem.Batch } else { @($tweakItem) }
         foreach ($sub in $batchList) {
@@ -16426,9 +17202,11 @@ function Invoke-QuickUndo {
                     }
                 }
             } catch {
+                $script:ApplyStepErr = $true   # §120
                 WpfLog "❌ [HATA] $actionName ($($tweakItem.Name)): $($_.Exception.Message)"
             }
         }
+        try { Set-ApplyOverlayStepDone ([bool]$script:ApplyStepErr) } catch {}   # §120
     }
 
     # Apply edilenler → Undo, Undone → Apply (TERSINE)
@@ -16444,13 +17222,15 @@ function Invoke-QuickUndo {
     # v1.3.0 (§98): Uygula'daki gibi Gezgin yenileme (eskiden Hizli Geri Al'da yoktu: Dosya Uzantilari geri alininca
     # masaustu / acik pencereler eski hâlde kaliyordu). Hard: onayla Explorer yeniden baslatma, Soft: yenileme.
     $rx = @(@($applied) + @($undone) | Where-Object { $_ } | ForEach-Object { "$($_.RestartExplorer)" })
-    if ($rx -contains 'Hard' -or $rx -contains 'True') {
+    $needHard = ($rx -contains 'Hard' -or $rx -contains 'True')
+    # §120: kart aciksa Gezgin / yeniden baslatma secenegi ozette (asagida); degilse eski kutu
+    if ($needHard -and -not $ovOn) {
         try { $Win.Activate() | Out-Null } catch {}
         $msg = "Bu degisiklikler icin Windows Gezgini'nin yeniden baslatilmasi gerekiyor.`n`nAcik Explorer pencereleri kapatilacak (taskbar/desktop yenilenecek).`n`nSimdi yapilsin mi?"
         if ([System.Windows.MessageBox]::Show($Win, $msg, "Explorer Yeniden Baslat", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question) -eq 'Yes') { Invoke-ExplorerHardRestart }
         else { WpfLog "[BILGI] Kullanici yeniden baslatmayi erteledi. Bazi degisiklikler bir sonraki oturum acmada uygulanacak." }
     }
-    elseif ($rx -contains 'Soft') { Invoke-ShellSoftRefresh }
+    elseif (-not $needHard -and $rx -contains 'Soft') { Invoke-ShellSoftRefresh }
 
     # Geri alindi → tek seferlik kullanilir, simdi temizle
     $global:LastTweakOperation = $null
@@ -16462,7 +17242,23 @@ function Invoke-QuickUndo {
         $cachePath = Get-TweakStatusCachePath
         if ($cachePath -and (Test-Path $cachePath)) { Remove-Item $cachePath -Force -ErrorAction SilentlyContinue }
     } catch {}
+    if ($ovOn) { try { Set-ApplyOverlayVerifying } catch {} }
+    $script:ApplyVerify = $null   # Hizli Geri Al tam denetim yapar (asagida); ozet dogrulama satiri olmadan
     Check-Tweak-Status -ForceRefresh
+
+    # §120: ozet + secenekler kartta. Yeniden baslatma: Uygula'daki kosulun aynisi; yalniz Gezgin: RestartExplorer=Hard.
+    if ($ovOn -and $script:ApplyOv) {
+        $needReboot = @(@($applied) + @($undone) | Where-Object { $_ -and (Test-TweakNeedsRebootFlag $_) }).Count -gt 0
+        $ovMode = if ($needReboot) { 'reboot' } elseif ($needHard) { 'explorer' } else { 'none' }
+        try { $Win.Activate() | Out-Null } catch {}
+        Complete-ApplyOverlay @($undone).Count @($applied).Count $ovMode
+    }
+    } catch {
+        WpfLog "❌ [HATA] Hızlı Geri Al: $($_.Exception.Message) (satir $($_.InvocationInfo.ScriptLineNumber))"
+        if ($script:ApplyOv) { try { $script:ApplyOv.Err++; Complete-ApplyOverlay 0 0 'none' } catch { Hide-ApplyOverlay } }
+    } finally {
+        $script:ApplyInProgress = $false
+    }
 }
 
 # =========================================================
@@ -16580,7 +17376,7 @@ function Request-MrCleanAdminLauncherOnce {
         $msg = "MrClean; servis, kayıt defteri, ses (Equalizer APO) ve zamanlanmış görev ayarları için her zaman YÖNETİCİ yetkisiyle çalışır — bu yüzden Windows her açılışta onay (UAC) soruyor.`n`n" +
                "Bir kez izin verirseniz: Masaüstü ve Başlat menüsündeki 'MrClean' kısayolu bundan sonra ONAY SORMADAN açılır; ayarların yetki yüzünden yarım kalması diye bir durum olmaz.`n`n" +
                "Güvenlik: yetkili kopya 'C:\Program Files\MrClean' içinde tutulur (yalnızca yönetici değiştirebilir). Ayarlar'dan istediğiniz an kapatabilirsiniz.`n`nEtkinleştirilsin mi?"
-        if ([System.Windows.MessageBox]::Show($msg, "MrClean — Tek Seferlik İzin", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question) -eq "Yes") { [void](Enable-MrCleanAdminLauncher) }
+        if ((Show-MrCleanMessage -Text $msg -Title "MrClean — Tek Seferlik İzin" -Buttons YesNo -Icon Question) -eq "Yes") { [void](Enable-MrCleanAdminLauncher) }
     } catch {}
 }
 
@@ -16647,7 +17443,7 @@ function Start-MrCleanDriftCheck {
             $list = ($rev | Select-Object -First 15 | ForEach-Object { "  • $_" }) -join "`n"
             if ($rev.Count -gt 15) { $list += "`n  … +$($rev.Count - 15)" }
             $msg = "$($script:DriftChanges -join ", ") algilandi. Uyguladiginiz $($rev.Count) ayar su an uygulanmis gorunmuyor (sebep guncelleme, sizin degisikliginiz ya da MrClean'in yeni surumundeki daha siki kontrol olabilir):`n`n$list`n`nTweaks sekmesinde isaretlensin mi? (Kontrol edip UYGULA ya basarak geri getirirsiniz.)"
-            $r = [System.Windows.MessageBox]::Show($msg, "Güncelleme Sonrası Denetim", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Information)
+            $r = Show-MrCleanMessage -Text $msg -Title "Güncelleme Sonrası Denetim" -Buttons YesNo -Icon Question
             if ($r -eq 'Yes') {
                 $script:PendingReapply = $rev
                 try { $tabTweaks.IsSelected = $true } catch {}
@@ -17042,7 +17838,7 @@ function Invoke-RetiredTweakCleanup {
     if ($done.Count -eq 0) { return }
     WpfLog "[Emekli] $($done.Count) etkisiz ayar Windows varsayilanina dondu (bir kismi yeniden baslatma sonrasi tam etkili olur)."
     $list = ($done | ForEach-Object { "  • $_" }) -join "`n"
-    try { [System.Windows.MessageBox]::Show("Bu sürümde ölçüm ve araştırma sonucunda etkisiz (ya da zararlı) bulunan $($done.Count) ayar menüden kaldırıldı ve bu bilgisayarda Windows varsayılanına döndürüldü:`n`n$list`n`nBir kısmı yeniden başlatma sonrası tam etkili olur.", "MrClean — Kaldırılan Ayarlar", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null } catch {}
+    try { [void](Show-MrCleanMessage -Text "Bu sürümde ölçüm ve araştırma sonucunda etkisiz (ya da zararlı) bulunan $($done.Count) ayar menüden kaldırıldı ve bu bilgisayarda Windows varsayılanına döndürüldü:`n`n$list`n`nBir kısmı yeniden başlatma sonrası tam etkili olur." -Title "MrClean — Kaldırılan Ayarlar" -Icon Info) } catch {}
 }
 
 function Test-TweakApplied($tweak) {
@@ -17234,7 +18030,7 @@ function Check-And-Close-Browsers {
     if ($uniqueTargets) {
         $running = Get-Process -Name $uniqueTargets -ErrorAction SilentlyContinue
         if ($running) {
-            if ([System.Windows.MessageBox]::Show((T 'mbx_clean_browsers'), (T 'mb_warn'), [System.Windows.MessageBoxButton]::YesNo) -eq 'Yes') { $running | Stop-Process -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2 }
+            if ((Show-MrCleanMessage -Text (T 'mbx_clean_browsers') -Title (T 'mb_warn') -Buttons YesNo -Icon Warning) -eq 'Yes') { $running | Stop-Process -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 2 }
         }
     }
 }
@@ -17244,7 +18040,8 @@ function Check-Browser-Safety {
     function Scan-Risky($items) { foreach ($item in $items) { $chk = Get-CheckFromItem $item; if ($chk.IsChecked) { $name = $chk.Content.ToString(); $isRisky = $false; foreach ($kw in $keywords) { if ($name -match $kw) { $isRisky = $true; break } } if ($name -match "Search Engine") { $isRisky = $false } if ($isRisky) { $riskyItems.Add($item) | Out-Null } } if ($item.Items.Count -gt 0) { Scan-Risky $item.Items } } }
     Scan-Risky $tvBrowser.Items
     if ($riskyItems.Count -gt 0) {
-        $res = [System.Windows.MessageBox]::Show((T 'mbx_clean_critical'), (T 'mb_warn'), [System.Windows.MessageBoxButton]::YesNoCancel, [System.Windows.MessageBoxImage]::Warning)
+        # §123: Evet = kritik verilerle devam (sifreler silinebilir) -> Danger: Evet kirmizi, Enter / Esc = Iptal
+        $res = Show-MrCleanMessage -Text (T 'mbx_clean_critical') -Title (T 'mb_warn') -Buttons YesNoCancel -Icon Warning -Danger
         if ($res -eq 'Cancel') { return "STOP" }
         if ($res -eq 'No') { foreach ($i in $riskyItems) { (Get-CheckFromItem $i).IsChecked = $false }; WpfLog "[GÜVENLİK] Kritik öğelerin seçimi kaldırıldı."; return "GO" }
     }
@@ -18463,9 +19260,7 @@ function Refresh-Winget-Status {
         foreach ($d in $matchDebug) { WpfLog "[Winget]   $d" }
 
         if (-not $Silent) {
-            [System.Windows.MessageBox]::Show(
-                ("Tarama tamamlandı.`n`nSistemde toplam: $($installedNames.Count) program`nListedeki paketler: $($global:WingetApps.Count)`nKurulu olarak işaretlendi: $($detectedIDs.Count)`n`nDetay için log'a bakın (her eşleşme yazıldı)."),
-                "Winget Tarama") | Out-Null
+            [void](Show-MrCleanMessage -Text ("Tarama tamamlandı.`n`nSistemde toplam: $($installedNames.Count) program`nListedeki paketler: $($global:WingetApps.Count)`nKurulu olarak işaretlendi: $($detectedIDs.Count)`n`nDetay için log'a bakın (her eşleşme yazıldı).") -Title "Winget Tarama" -Icon Info)
         }
     } catch { WpfLog "Hata: $_" }
     Stop-MrCleanMeasure 'Winget kurulu taraması'
@@ -18706,7 +19501,7 @@ $script:ExportDriversBlock = {
         # Klasör dolu mu kontrolü
         if ((Get-ChildItem $targetDir -ErrorAction SilentlyContinue).Count -gt 0) {
             $msg = "Seçilen klasör boş değil. Mevcut dosyaların üzerine yazılabilir veya karmaşa oluşabilir.`n`nYine de devam edilsin mi?"
-            if ([System.Windows.MessageBox]::Show($msg, "Uyarı", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning) -eq 'No') { return }
+            if ((Show-MrCleanMessage -Text $msg -Title "Uyarı" -Buttons YesNo -Icon Warning) -eq 'No') { return }
         }
 
         # UI Hazırlığı
@@ -18776,7 +19571,9 @@ function Get-ProfileTweaks {
             "Görüşmede Oyun/Müzik Sesini Kısmayı Kapat (Discord)",
             "Ses Kartı Güç Tasarrufunu Kapat (Ses Başı Kesilmesi / Pıt Sesi)",
             "Dinamik Aydınlatmayı Kapat (RGB)",
-            "İçerik Uyarlamalı Parlaklığı Kapat (CABC)"
+            "İçerik Uyarlamalı Parlaklığı Kapat (CABC)",
+            "Pencereli Oyunlarda Değişken Yenileme Hızı (VRR) İyileştirmesi",
+            "Defender Tarama CPU Kullanımını Sınırla (%25)"
         )
         "Gizlilik" = @(
             "Reklam Kimliğini Kapat",
@@ -18815,7 +19612,21 @@ function Get-ProfileTweaks {
             "Aramada Bulut İçeriği ve Cihaz Arama Geçmişini Kapat",
             "Ek Telemetri Politikaları (Cihaz Adı / Döküm / Yazım Verisi)",
             "Hızlı Erişimde Son Kullanılan ve Sık Kullanılanları Gizle",
-            "Phone Link / Mobil Cihazları Kapat"
+            "Phone Link / Mobil Cihazları Kapat",
+            "Windows Tanılama Verileri Kapat",
+            "Microsoft Özellik Deneylerini Kapat (Experimentation)",
+            "Microsoft Office Telemetrisini Kapat",
+            "Çevrimiçi Konuşma Tanımayı ve Konuşma Modeli İndirmeyi Kapat",
+            "Yakın Paylaşım ve Cihazlar Arası Oturumları Kapat",
+            "Güncelleme Sonrası Otomatik Oturum Açmayı Kapat (ARSO)",
+            "Ayarlar ve Windows Genelinde Önerileri Gizle",
+            "Başlatma ve Arama Sonuçlarını Geliştir Kapat",
+            "Not Defteri (Notepad) AI Özelliklerini Kapat",
+            "Paint AI Özelliklerini Kapat (Cocreator / Üretken Dolgu / Silgi)",
+            "Dosya Gezgini Sağ Tık AI Eylemleri Menüsünü Gizle",
+            "Edge Copilot ve AI Özelliklerini Kapat",
+            "Donanım Üreticisi Telemetrisini Kapat (Intel / AMD / HP / Dell / Lenovo)",
+            "NVIDIA Telemetri Kapat"
         )
         "Hiz" = @(
             "Görsel Efektler: Özel (Yazı Tipi + Küçük Resimler Açık)",
@@ -18823,10 +19634,8 @@ function Get-ProfileTweaks {
             "Hızlı Başlatmayı Kapat (Fast Startup)",
             "Nihai Performans Güç Planını Aktif Et",
             "Cortana ve Cloud Aramayı Tamamen Kapat",
-            "Windows Update'i Kısıtla (Otomatik Yüklemeyi Kapat)",
             "Xbox Game DVR Kapat",
             "Pencere Öğelerini (Widget) Kapat",
-            "OneDrive'ı Sistemden Tamamen Kaldır",
             "Uygulama Başlangıç Gecikmesini Kaldır (Startup Delay)",
             "Edge Arka Planda Çalışmasın (Startup Boost + Arka Plan Modu)",
             "Windows AI Servisini Otomatik Başlatma (WSAIFabricSvc)",
@@ -18840,7 +19649,10 @@ function Get-ProfileTweaks {
             "Uygulama Arşivlemeyi Kapat (Oyunlar Silinmesin)",
             "Dev Home ve Yeni Outlook'un Kendiliğinden Kurulmasını Engelle",
             "Dinamik Aydınlatmayı Kapat (RGB)",
-            "Phone Link / Mobil Cihazları Kapat"
+            "Phone Link / Mobil Cihazları Kapat",
+            "Haritaların Otomatik Güncellenmesini Kapat",
+            "Teslim İyileştirmeyi Kapat (P2P Güncelleme Paylaşımı)",
+            "AMD Adrenalin Optimizasyonu (Reklam/Popup/Bildirim Kapat)"
         )
     }
 
@@ -18853,16 +19665,26 @@ function Get-ProfileTweaks {
     $skipPlan = $false
     try { $skipPlan = (Test-IsAmdCpu) -or (Test-IsLaptop) } catch {}
     if ($skipPlan) { $profileTweakNames = @($profileTweakNames | Where-Object { $_ -ne "Nihai Performans Güç Planını Aktif Et" }) }
-    # v1.3.0 (5. tur): donanima ozel eklemeler (uyumsuz olanlar asagida zaten elenir)
+    # Donanima ozel kurallar. Donanim gercekten bulunursa eklenir (algilama basarisizsa eklenmez);
+    # uyumsuzlar (Requires / Vendor / surum) asagida ayrica elenir. Wi-Fi ayarlari Ethernet de olsa uygulanir (kablo arizalaninca hazir olur).
     try {
         $hw = Get-MrCleanHwProfile
         if ($ProfileKey -eq "Oyun") {
             if ($hw.HasHDD) { $profileTweakNames += "Disklerin Kapanmasını Engelle (Prizde: Asla)" }
-            # v1.3.0 (8. tur): Wi-Fi karti VARSA (Ethernet de olsa) uygulanir — kablo arizalanip Wi-Fi ye gecilince ayar zaten hazir olur.
-            # Ayar sadece Wi-Fi kartinin surucu kaydini degistirir; bagli degilken Ethernet e etkisi yoktur.
+            if ($hw.HasEthernet) { $profileTweakNames += "Ethernet Alım Arabelleğini Artır (Receive Buffers ≥ 1024)" }
             if ($hw.HasWiFi) { $profileTweakNames += "Wi-Fi: 5 GHz Bandını Tercih Et" }
-            if ($hw.HasWiFi -and -not $hw.IsLaptop) { $profileTweakNames += "Wi-Fi: Dolaşımı En Aza İndir ve Güç Tasarrufunu Kapat (Tek Modem)" }
             if ($hw.HasWiFi -and $hw.IsLaptop) { $profileTweakNames += "Wi-Fi Güç Tasarrufunu Pilde de Kapat (Dizüstü)" }
+            # Masaustu: dolasim / Wi-Fi guc, PCIe ASPM ve Power Throttling (dizustunde pil omrunu dusurur)
+            if (-not $hw.IsLaptop) {
+                if ($hw.HasWiFi) { $profileTweakNames += "Wi-Fi: Dolaşımı En Aza İndir ve Güç Tasarrufunu Kapat (Tek Modem)" }
+                $profileTweakNames += "PCIe Bağlantı Güç Tasarrufunu Kapat (ASPM, Prizde)"
+                $profileTweakNames += "Power Throttling Kapat (CPU Tam Frekans)"
+            }
+            # Iki ekran karti (dahili + harici): oyunlar yuksek performans GPU'ya atanir
+            if (@($hw.GpuNames).Count -ge 2) { $profileTweakNames += "Algılanan Oyunlara Yüksek Performans GPU Ata" }
+            # Cift CCD X3D: core parking'i kapatmak V-Cache cekirdek yonlendirmesini bozar (AMD onerisi)
+            # (Get-DualCcdX3DName ile ayni esleme; islemci adi onbellekteki donanim profilinden, CIM sorgusu yok)
+            if ("$($hw.Cpu)" -match "Ryzen\s+9\s+\d{4}H?X3D") { $profileTweakNames = @($profileTweakNames | Where-Object { $_ -ne "CPU Core Parking Devre Dışı (Tüm Çekirdekler Aktif)" }) }
         }
     } catch {}
     $result = @()
@@ -18955,7 +19777,7 @@ $($global:SubTheme)
                             Margin="0,0,0,4">
                         <TextBlock Foreground="#A9B0BB" FontSize="13" TextWrapping="Wrap">
                             <Run Text="$oyunCount tweak" FontWeight="Bold" Foreground="#3FB97A"/>
-                            <Run Text=" · Güç planı, fare ivmesi, MSI Mode, Bellek Bütünlüğü, RSC, Game DVR, HAGS, pencereli oyun"/>
+                            <Run Text=" · Güç planı, fare ivmesi, MSI Mode, RSC, Game DVR, HAGS, pencereli oyun, USB / ağ / ses güç tasarrufu"/>
                         </TextBlock>
                     </Border>
                     <ScrollViewer x:Name="svOyun" MaxHeight="160"
@@ -18991,7 +19813,7 @@ $($global:SubTheme)
                             Margin="0,0,0,4">
                         <TextBlock Foreground="#A9B0BB" FontSize="13" TextWrapping="Wrap">
                             <Run Text="$gizlilikCount tweak" FontWeight="Bold" Foreground="#4C8DFF"/>
-                            <Run Text=" · Konum, kamera, telemetri, Cortana, arka plan uygulamaları, izinler"/>
+                            <Run Text=" · Konum, telemetri, uygulama izinleri, Cortana, reklam önerileri, Windows AI"/>
                         </TextBlock>
                     </Border>
                     <ScrollViewer x:Name="svGizlilik" MaxHeight="160"
@@ -19244,10 +20066,7 @@ $($global:SubTheme)
                               "  🆕 $willChange tweak yeni uygulanacak`n`n" +
                               "Toplam $($unique.Count) tweak.`n`n" +
                               "Devam edilsin mi?"
-                $confirmRes = [System.Windows.MessageBox]::Show(
-                    $confirmMsg, "Profil Uygula",
-                    [System.Windows.MessageBoxButton]::YesNo,
-                    [System.Windows.MessageBoxImage]::Question)
+                $confirmRes = Show-MrCleanMessage -Text $confirmMsg -Title "Profil Uygula" -Buttons YesNo -Icon Question
 
                 if ($confirmRes -ne 'Yes') {
                     # Kullanici Hayir dedi — snapshot'tan geri al
@@ -19267,7 +20086,7 @@ $($global:SubTheme)
 
         $winP.ShowDialog() | Out-Null
     } catch {
-        [System.Windows.MessageBox]::Show("Pencere açılamadı: $($_.Exception.Message)", "Hata") | Out-Null
+        [void](Show-MrCleanMessage -Text "Pencere açılamadı: $($_.Exception.Message)" -Title "Hata" -Icon Error)
     }
 }
 
@@ -19625,11 +20444,9 @@ $($global:SubTheme)
         $btnDel.Add_Click({
             $sel = $lstP.SelectedItem
             if (-not $sel) { return }
-            $confirm = [System.Windows.MessageBox]::Show(
-                ("'{0}' profili kalıcı olarak silinecek.`n`nDosya: {1}`n`nDevam edilsin mi?" -f $sel.Name, $sel.FilePath),
-                "Profil Sil",
-                [System.Windows.MessageBoxButton]::YesNo,
-                [System.Windows.MessageBoxImage]::Warning)
+            $confirm = Show-MrCleanMessage `
+                -Text ("'{0}' profili kalıcı olarak silinecek.`n`nDosya: {1}`n`nDevam edilsin mi?" -f $sel.Name, $sel.FilePath) `
+                -Title "Profil Sil" -Buttons YesNo -Icon Warning -Danger
             if ($confirm -ne 'Yes') { return }
             try {
                 Remove-Item -Path $sel.FilePath -Force -ErrorAction Stop
@@ -19638,9 +20455,7 @@ $($global:SubTheme)
                 $btnDel.IsEnabled = $false
                 $btnLd.IsEnabled  = $false
             } catch {
-                [System.Windows.MessageBox]::Show(
-                    ("Profil silinemedi: {0}" -f $_.Exception.Message),
-                    "Hata", "OK", "Error") | Out-Null
+                [void](Show-MrCleanMessage -Text ("Profil silinemedi: {0}" -f $_.Exception.Message) -Title "Hata" -Icon Error)
             }
         })
 
@@ -19708,11 +20523,7 @@ $($global:SubTheme)
             }
 
             $winPM.Close()
-            [System.Windows.MessageBox]::Show(
-                "'$($sel.Name)' profili yüklendi.`n$loaded tweak işaretlendi.`n`nUYGULA butonuna basarak sisteme uygulayabilirsiniz.",
-                "Profil Yüklendi",
-                [System.Windows.MessageBoxButton]::OK,
-                [System.Windows.MessageBoxImage]::Information) | Out-Null
+            [void](Show-MrCleanMessage -Text "'$($sel.Name)' profili yüklendi.`n$loaded tweak işaretlendi.`n`nUYGULA butonuna basarak sisteme uygulayabilirsiniz." -Title "Profil Yüklendi" -Icon Info)
         })
 
         # v1.2.25: O an tvTweaks'te isaretli tweak isimlerini topla (btnSave ScanSave ile ayni mantik)
@@ -19754,7 +20565,7 @@ $($global:SubTheme)
             }
 
             if ($expTweaks.Count -eq 0) {
-                [System.Windows.MessageBox]::Show("Aktarilacak tweak yok (hic isaretli tweak yok veya profil bos).", "Uyari", "OK", "Warning") | Out-Null
+                [void](Show-MrCleanMessage -Text "Aktarilacak tweak yok (hic isaretli tweak yok veya profil bos)." -Title "Uyari" -Icon Warning)
                 return
             }
 
@@ -19765,11 +20576,9 @@ $($global:SubTheme)
                 try {
                     $data = @{ Name=$expName; Date=(Get-Date -Format "yyyy-MM-dd HH:mm"); Tweaks=$expTweaks; AppVersion=$global:AppVersion }
                     $data | ConvertTo-Json -Depth 3 | Set-Content $sfd.FileName -Encoding UTF8
-                    [System.Windows.MessageBox]::Show(
-                        ("Profil disa aktarildi.`n`n  Ad: {0}`n  Tweak: {1}`n  Dosya: {2}`n`nBu dosyayi baska biriyle paylasabilirsin." -f $expName, $expTweaks.Count, $sfd.FileName),
-                        "Başarılı", "OK", "Information") | Out-Null
+                    [void](Show-MrCleanMessage -Text ("Profil disa aktarildi.`n`n  Ad: {0}`n  Tweak: {1}`n  Dosya: {2}`n`nBu dosyayi baska biriyle paylasabilirsin." -f $expName, $expTweaks.Count, $sfd.FileName) -Title "Başarılı" -Icon Info)
                 } catch {
-                    [System.Windows.MessageBox]::Show("Dosya yazma hatasi: $($_.Exception.Message)", "Hata", "OK", "Error") | Out-Null
+                    [void](Show-MrCleanMessage -Text "Dosya yazma hatasi: $($_.Exception.Message)" -Title "Hata" -Icon Error)
                 }
             }
         })
@@ -19782,13 +20591,13 @@ $($global:SubTheme)
             try {
                 $imp = Get-Content $ofd.FileName -Raw -ErrorAction Stop | ConvertFrom-Json
             } catch {
-                [System.Windows.MessageBox]::Show("Dosya okunamadi veya gecersiz JSON: $($_.Exception.Message)", "Hata", "OK", "Error") | Out-Null
+                [void](Show-MrCleanMessage -Text "Dosya okunamadi veya gecersiz JSON: $($_.Exception.Message)" -Title "Hata" -Icon Error)
                 return
             }
             $impName = if ($imp.Name) { [string]$imp.Name } else { "Bilinmeyen" }
             $impTweaks = @($imp.Tweaks)
             if ($impTweaks.Count -eq 0) {
-                [System.Windows.MessageBox]::Show("Dosyada tweak bulunamadi (gecersiz veya bos profil).", "Uyari", "OK", "Warning") | Out-Null
+                [void](Show-MrCleanMessage -Text "Dosyada tweak bulunamadi (gecersiz veya bos profil)." -Title "Uyari" -Icon Warning)
                 return
             }
 
@@ -19803,7 +20612,7 @@ $($global:SubTheme)
             $resp = Show-ImportConfirmDialog -ProfileName $impName -AppVer $imp.AppVersion -FoundList $found -MissingList $missing -Owner $winPM
             if ($resp -eq 'cancel') { return }
             if ($found.Count -eq 0) {
-                [System.Windows.MessageBox]::Show("Uygulanabilir tweak yok (hepsi bu surumde eksik).", "Uyari", "OK", "Warning") | Out-Null
+                [void](Show-MrCleanMessage -Text "Uygulanabilir tweak yok (hepsi bu surumde eksik)." -Title "Uyari" -Icon Warning)
                 return
             }
 
@@ -19832,14 +20641,14 @@ $($global:SubTheme)
                 # Hemen uygula
                 Apply-System-Tweaks
             } else {
-                [System.Windows.MessageBox]::Show("$marked tweak isaretlendi.`n`nTweaks sekmesinde UYGULA butonuna basarak sisteme uygulayabilirsin.", "İçe Aktarildi", "OK", "Information") | Out-Null
+                [void](Show-MrCleanMessage -Text "$marked tweak isaretlendi.`n`nTweaks sekmesinde UYGULA butonuna basarak sisteme uygulayabilirsin." -Title "İçe Aktarildi" -Icon Info)
             }
         })
 
         $btnCl.Add_Click({ $winPM.Close() })
         $winPM.ShowDialog() | Out-Null
     } catch {
-        [System.Windows.MessageBox]::Show("Pencere açılamadı: $($_.Exception.Message)", "Hata") | Out-Null
+        [void](Show-MrCleanMessage -Text "Pencere açılamadı: $($_.Exception.Message)" -Title "Hata" -Icon Error)
     }
 }
 
@@ -20044,7 +20853,7 @@ $($global:SubTheme)
             
             $global:PathOverrides[$appName] = $newRules
             Mark-ConfigDirty
-            [System.Windows.MessageBox]::Show("'$appName' için özel ayarlar kaydedildi.`nAna menüdeki Güncelle -> Listeyi Yenile butonuna basarak görebilirsiniz.", "Başarılı") | Out-Null
+            [void](Show-MrCleanMessage -Text "'$appName' için özel ayarlar kaydedildi.`nAna menüdeki Güncelle -> Listeyi Yenile butonuna basarak görebilirsiniz." -Title "Başarılı" -Icon Info)
             $winEd.Close()
         }
     })
@@ -20055,7 +20864,7 @@ $($global:SubTheme)
             if ($global:PathOverrides.ContainsKey($appName)) {
                 $global:PathOverrides.Remove($appName)
                 Mark-ConfigDirty
-                [System.Windows.MessageBox]::Show("Özel ayar silindi. Orijinal Winapp2 ayarlarına dönüldü.", "Bilgi") | Out-Null
+                [void](Show-MrCleanMessage -Text "Özel ayar silindi. Orijinal Winapp2 ayarlarına dönüldü." -Title "Bilgi" -Icon Info)
                 $winEd.Close()
             }
         }
@@ -20315,7 +21124,7 @@ function Show-FeedbackWindow {
 # ---- Show-AppUpdateWindow (Otomatik program guncellemesi, Show-UpdateWindow Winapp2 icin) ----
 function Show-AppUpdateWindow {
     if (-not $global:UpdateAvailable) {
-        [System.Windows.MessageBox]::Show("Su an icin yeni bir surum yok veya kontrol henuz tamamlanmadi.", "Guncelleme Yok", "OK", "Information") | Out-Null
+        [void](Show-MrCleanMessage -Text "Su an icin yeni bir surum yok veya kontrol henuz tamamlanmadi." -Title "Guncelleme Yok" -Icon Info)
         return
     }
     $upd = $global:UpdateAvailable
@@ -20477,7 +21286,7 @@ $($global:SubTheme)
                     if ($Win) { $Win.Close() }
                     [Environment]::Exit(0)
                 } else {
-                    [System.Windows.MessageBox]::Show("Guncelleme basarisiz oldu. Log'u kontrol edin.", "Hata", "OK", "Error") | Out-Null
+                    [void](Show-MrCleanMessage -Text "Guncelleme basarisiz oldu. Log'u kontrol edin." -Title "Hata" -Icon Error)
                     $btnUpdate.IsEnabled = $true
                     $btnSkip.IsEnabled = $true
                     $btnLater.IsEnabled = $true
@@ -21337,7 +22146,7 @@ $($global:SubTheme)
         $winHW.ShowDialog() | Out-Null
 
     } catch {
-        [System.Windows.MessageBox]::Show("Pencere acilamadi: $($_.Exception.Message)", "Hata") | Out-Null
+        [void](Show-MrCleanMessage -Text "Pencere acilamadi: $($_.Exception.Message)" -Title "Hata" -Icon Error)
     }
 }
 
@@ -22127,8 +22936,8 @@ $($global:SubTheme)
 
         $w.FindName('lblALabel').Text = if ($SnapA.label) { $SnapA.label } else { "(etiketsiz)" }
         $w.FindName('lblBLabel').Text = if ($SnapB.label) { $SnapB.label } else { "(etiketsiz)" }
-        $w.FindName('lblATime').Text  = $SnapA.timestamp
-        $w.FindName('lblBTime').Text  = $SnapB.timestamp
+        $w.FindName('lblATime').Text  = Format-BenchTime $SnapA.timestamp
+        $w.FindName('lblBTime').Text  = Format-BenchTime $SnapB.timestamp
 
         $lv = $w.FindName('lvDiff')
         $win = 0; $loss = 0; $neutral = 0; $na = 0
@@ -22161,7 +22970,7 @@ $($global:SubTheme)
             try {
                 $aLab = if ($SnapA.label) { $SnapA.label } else { "(etiketsiz)" }
                 $bLab = if ($SnapB.label) { $SnapB.label } else { "(etiketsiz)" }
-                Show-BenchDiffChart -Rows $rows -ALabel $aLab -BLabel $bLab -ATime $SnapA.timestamp -BTime $SnapB.timestamp -Owner $w
+                Show-BenchDiffChart -Rows $rows -ALabel $aLab -BLabel $bLab -ATime (Format-BenchTime $SnapA.timestamp) -BTime (Format-BenchTime $SnapB.timestamp) -Owner $w
             } catch {
                 WpfLog ("BenchChart Hata: " + $_.Exception.Message)
             }
@@ -22191,7 +23000,7 @@ function Show-BenchDiffChart {
     # Sadece sayisal (N/A olmayan) ve degisimli metrikleri al — temiz chart
     $chartRows = @($Rows | Where-Object { $null -ne $_.PctChange })
     if ($chartRows.Count -eq 0) {
-        [System.Windows.MessageBox]::Show("Grafige cevrilebilir veri yok (tum metrikler N/A).", "Bilgi") | Out-Null
+        [void](Show-MrCleanMessage -Text "Grafige cevrilebilir veri yok (tum metrikler N/A)." -Title "Bilgi" -Icon Info)
         return
     }
 
@@ -22759,7 +23568,7 @@ $($global:SubTheme)
                         <GridView.ColumnHeaderContainerStyle>
                             <Style TargetType="GridViewColumnHeader" BasedOn="{StaticResource SwGridHeader}"/>
                         </GridView.ColumnHeaderContainerStyle>
-                        <GridViewColumn Header="Tarih"     Width="160" DisplayMemberBinding="{Binding timestamp}"/>
+                        <GridViewColumn Header="Tarih"     Width="160" DisplayMemberBinding="{Binding _date}"/>
                         <GridViewColumn Header="Etiket"    Width="240" DisplayMemberBinding="{Binding label}"/>
                         <GridViewColumn Header="Timer Avg" Width="90"  DisplayMemberBinding="{Binding _timer}"/>
                         <GridViewColumn Header="GW Ping"   Width="90"  DisplayMemberBinding="{Binding _gw}"/>
@@ -22851,6 +23660,7 @@ $($global:SubTheme)
                 $s | Add-Member -NotePropertyName "_proc"  -NotePropertyValue ("$proc ms") -Force
                 $s | Add-Member -NotePropertyName "_dpc"   -NotePropertyValue ("$dpc %")   -Force
                 $s | Add-Member -NotePropertyName "_ram"   -NotePropertyValue ("$ram MB")  -Force
+                $s | Add-Member -NotePropertyName "_date"  -NotePropertyValue (Format-BenchTime $s.timestamp) -Force   # §132
                 $c2l = try { if ($s.metrics.gameLoad.Ok) { "{0:N0}" -f [double]$s.metrics.gameLoad.Cs2Low1 } else { "-" } } catch { "-" }
                 $b6l = try { if ($s.metrics.gameLoad.Ok) { "{0:N0}" -f [double]$s.metrics.gameLoad.Bf6Low1 } else { "-" } } catch { "-" }
                 $inp = try { if ($s.metrics.gameLoad.Ok) { "{0:N0} µs" -f [double]$s.metrics.gameLoad.InputP99Us } else { "-" } } catch { "-" }
@@ -22875,8 +23685,20 @@ $($global:SubTheme)
             else                { $btnCmp.Content = ("🔄 Karsilastir ($cnt/2 sec)") }
         })
 
+        # v2.0.0 (§131): olcum calisirken ayni dugme "Durdur" olur; pencere kapatilirsa onay sorulur. Eskiden olcum
+        # durdurulamiyordu, pencere / program kapatilsa da gizli surec olcumleri bitirene kadar calisiyordu.
+        $global:BenchRunning = $false; $global:BenchCancel = $false
+        $runContent = $btnRun.Content; $runStyle = $btnRun.Style
         $btnRun.Add_Click({
-            $btnRun.IsEnabled = $false
+            if ($global:BenchRunning) {
+                $global:BenchCancel = $true
+                $btnRun.IsEnabled = $false
+                $lblStat.Text = "Durduruluyor... (süren adım bitince)"
+                return
+            }
+            $global:BenchRunning = $true; $global:BenchCancel = $false
+            $btnRun.Content = "⏹ Durdur"
+            try { $btnRun.Style = $winB.FindResource('SwBtnDanger') } catch {}
             $btnRefresh.IsEnabled = $false
             $lv.IsEnabled = $false
             $pb.Value = 0
@@ -22897,7 +23719,7 @@ $($global:SubTheme)
             # v1.3.0 (13. tur): istege bagli GPU testi — araclar yoksa onay alinip resmi kaynaktan indirilir (SHA-256 / imza dogrulamali)
             $global:BenchGpuEnabled = [bool]$chkGpu.IsChecked
             if ($global:BenchGpuEnabled -and -not (Get-MrCleanBenchGpuTools)) {
-                $q = [System.Windows.MessageBox]::Show("GPU testi için iki araç indirilecek (~36 MB, bir kez):`n`n  • PresentMon 2.6 — Intel, github.com/GameTechDev (Intel imzası doğrulanır)`n  • FurMark 2.10 — Geeks3D, resmi indirme sunucusu (SHA-256 doğrulanır)`n`nİndirilsin mi? (Hayır: GPU testi atlanır, diğer ölçümler yapılır.)", "GPU Testi", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+                $q = Show-MrCleanMessage -Text "GPU testi için iki araç indirilecek (~36 MB, bir kez):`n`n  • PresentMon 2.6 — Intel, github.com/GameTechDev (Intel imzası doğrulanır)`n  • FurMark 2.10 — Geeks3D, resmi indirme sunucusu (SHA-256 doğrulanır)`n`nİndirilsin mi? (Hayır: GPU testi atlanır, diğer ölçümler yapılır.)" -Title "GPU Testi" -Buttons YesNo -Icon Question
                 if ($q -eq 'Yes') { $lblStat.Text = "GPU araçları indiriliyor..."; Do-Events; if (-not (Get-MrCleanBenchGpuTools -Download)) { $global:BenchGpuEnabled = $false; $lblStat.Text = "GPU araçları indirilemedi — GPU testi atlanıyor" } }
                 else { $global:BenchGpuEnabled = $false }
             }
@@ -22911,22 +23733,36 @@ $($global:SubTheme)
 
             try {
                 $snap = Get-BenchSnapshot -ProgressCallback $progressCb -Label $label -Runs $runs
-                $fp = Save-BenchSnapshot -Snapshot $snap
-                if ($fp) {
-                    $lblStat.Text = "Snapshot kaydedildi: " + (Split-Path $fp -Leaf)
-                    $txtLabel.Text = ""
-                    Refresh-BenchList
+                if ($global:BenchCancel -or $null -eq $snap) {
+                    $lblStat.Text = "Durduruldu — snapshot kaydedilmedi"
+                    WpfLog "[Bench] Olcum kullanici tarafindan durduruldu."
                 } else {
-                    $lblStat.Text = "HATA: snapshot kaydedilemedi (log'a bak)"
+                    $fp = Save-BenchSnapshot -Snapshot $snap
+                    if ($fp) {
+                        $lblStat.Text = "Snapshot kaydedildi: " + (Split-Path $fp -Leaf)
+                        $txtLabel.Text = ""
+                        Refresh-BenchList
+                    } else {
+                        $lblStat.Text = "HATA: snapshot kaydedilemedi (log'a bak)"
+                    }
                 }
             } catch {
                 $lblStat.Text = "HATA: " + $_.Exception.Message
             } finally {
                 $pb.Value = 100
+                $global:BenchRunning = $false; $global:BenchCancel = $false
+                $btnRun.Content = $runContent; $btnRun.Style = $runStyle
                 $btnRun.IsEnabled = $true
                 $btnRefresh.IsEnabled = $true
                 $lv.IsEnabled = $true
             }
+        })
+
+        $winB.Add_Closing({
+            param($sender, $e)
+            if (-not $global:BenchRunning) { return }
+            $r = Show-MrCleanMessage -Text "Benchmark sürüyor. Durdurulsun mu?`n`nYarım kalan ölçüm kaydedilmez." -Title "Benchmark" -Buttons YesNo -Icon Warning
+            if ($r -eq 'Yes') { $global:BenchCancel = $true } else { $e.Cancel = $true }
         })
 
         $btnCmp.Add_Click({
@@ -22940,27 +23776,22 @@ $($global:SubTheme)
         $btnRelabel.Add_Click({
             if ($lv.SelectedItems.Count -ne 1) { return }
             $sel = $lv.SelectedItem
-            Add-Type -AssemblyName Microsoft.VisualBasic
-            $newLbl = [Microsoft.VisualBasic.Interaction]::InputBox(
-                "Yeni etiket (snapshot icin):",
-                "Etiket Degistir",
-                [string]$sel.label)
+            # v2.0.0 (§133): temali giris penceresi (eskiden VB InputBox)
+            $newLbl = Show-MrCleanInput -Prompt "Yeni etiket (snapshot için):" -Title "Etiket Değiştir" -Value ([string]$sel.label)
             if ($null -eq $newLbl) { return }
             if ([string]::IsNullOrWhiteSpace($newLbl)) { return }
             $ok = Set-BenchSnapshotLabel -Path $sel._path -NewLabel $newLbl
             if ($ok) {
                 Refresh-BenchList
             } else {
-                [System.Windows.MessageBox]::Show("Etiket degistirilemedi.", "Hata", "OK", "Error") | Out-Null
+                [void](Show-MrCleanMessage -Text "Etiket degistirilemedi." -Title "Hata" -Icon Error)
             }
         })
 
         $btnDel.Add_Click({
             $sels = @($lv.SelectedItems)
             if ($sels.Count -eq 0) { return }
-            $confirm = [System.Windows.MessageBox]::Show(
-                ("$($sels.Count) snapshot silinecek. Devam edilsin mi?"),
-                "Sil Onayi", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning)
+            $confirm = Show-MrCleanMessage -Text ("$($sels.Count) snapshot silinecek. Devam edilsin mi?") -Title "Sil Onayi" -Buttons YesNo -Icon Warning -Danger
             if ($confirm -ne 'Yes') { return }
             $ok = 0; $fail = 0
             foreach ($s in $sels) {
@@ -22978,9 +23809,7 @@ $($global:SubTheme)
         $winB.ShowDialog() | Out-Null
     } catch {
         WpfLog ("Benchmark Hata: " + $_.Exception.Message)
-        [System.Windows.MessageBox]::Show(
-            ("Benchmark panel acilamadi: {0}" -f $_.Exception.Message),
-            "Hata", "OK", "Error") | Out-Null
+        [void](Show-MrCleanMessage -Text ("Benchmark panel acilamadi: {0}" -f $_.Exception.Message) -Title "Hata" -Icon Error)
     }
 }
 
@@ -23437,6 +24266,25 @@ function Set-PreferredDns {
     return $count
 }
 
+# v2.0.0 (§132): Set-PreferredDns'in yazacagi kartlarin (Up, Ethernet / Wi-Fi) hepsinde IPv4 DNS listesi istenenle birebir ayni mi
+# (sira dahil). Ayniysa Uygula hicbir sey yazmaz; kart yoksa ya da okunamazsa $false (eskisi gibi uygulanir).
+function Test-PreferredDnsApplied {
+    param(
+        [Parameter(Mandatory=$true)][string]$PrimaryIp,
+        [string]$SecondaryIp = ""
+    )
+    try {
+        $want = @($PrimaryIp); if ($SecondaryIp) { $want += $SecondaryIp }
+        $adapters = @(Get-NetAdapter -ErrorAction SilentlyContinue | Where-Object { $_.Status -eq "Up" -and $_.InterfaceType -in @(6, 71) })
+        if ($adapters.Count -eq 0) { return $false }
+        foreach ($a in $adapters) {
+            $have = @(Get-DnsClientServerAddress -InterfaceIndex $a.ifIndex -AddressFamily IPv4 -ErrorAction Stop | ForEach-Object { $_.ServerAddresses })
+            if (($have -join ',') -ne ($want -join ',')) { return $false }
+        }
+        return $true
+    } catch { return $false }
+}
+
 function Show-DnsBenchmark {
     # v1.2.22 WPF + PARALEL RUNSPACE rewrite.
     # NOT (kok neden gecmisi): Onceki crash ("Bagimsiz degisken turleri eslesmiyor") WPF/WinForms
@@ -23700,11 +24548,16 @@ $($global:SubTheme)
                 $msg += "`n  Server: $vendor`n`nTum aktif NIC'lere yazilir + DNS cache flush. Devam?"
                 # v1.3.0 (5. tur): YogaDNS / NextDNS / GoodbyeDPI vb. calisiyorsa DNS e dokunma
                 $g = @(Get-MrCleanDnsGuard -Fresh)
-                if ($g.Count -gt 0) { [System.Windows.MessageBox]::Show("DNS degistirilmedi: $($g -join ", ") calisiyor ve DNS ayarini o yonetiyor.`n`nDNS i degistirmek istiyorsaniz once o araci kapatin.", "DNS") | Out-Null; return }
-                $resp = [System.Windows.MessageBox]::Show($msg, "DNS Apply - Onay", "YesNo", "Question")
+                if ($g.Count -gt 0) { [void](Show-MrCleanMessage -Text "DNS degistirilmedi: $($g -join ", ") calisiyor ve DNS ayarini o yonetiyor.`n`nDNS i degistirmek istiyorsaniz once o araci kapatin." -Title "DNS" -Icon Warning); return }
+                if (Test-PreferredDnsApplied -PrimaryIp $primary -SecondaryIp $secondary) {
+                    $cur = if ($secondary) { "$primary, $secondary" } else { $primary }
+                    [void](Show-MrCleanMessage -Text "Bu DNS zaten uygulanmış ($($vendor): $cur).`n`nDeğişiklik yapılmadı." -Title "DNS" -Icon Info)
+                    return
+                }
+                $resp = Show-MrCleanMessage -Text $msg -Title "DNS Apply - Onay" -Buttons YesNo -Icon Question
                 if ($resp -ne "Yes") { return }
                 $count = Set-PreferredDns -PrimaryIp $primary -SecondaryIp $secondary
-                [System.Windows.MessageBox]::Show("DNS uygulandi.`n`n  $count NIC guncellendi`n  DNS cache flush yapildi`n`nDashboard 'Aktif DNS' gostergesi 5-10 sn icinde guncellenir.", "Basarili") | Out-Null
+                [void](Show-MrCleanMessage -Text "DNS uygulandi.`n`n  $count NIC guncellendi`n  DNS cache flush yapildi`n`nDashboard 'Aktif DNS' gostergesi 5-10 sn icinde guncellenir." -Title "Basarili" -Icon Info)
             } catch {
                 WpfLog ("DnsBenchmark apply hata: " + $_.Exception.Message)
             }
@@ -23925,7 +24778,26 @@ $($global:SubTheme)
         $d = 0; for ($i = 1; $i -lt $arr.Count; $i++) { $d += [Math]::Abs($arr[$i] - $arr[$i - 1]) }
         return @{ Med = [Math]::Round($m, 1); Min = [Math]::Round($s[0], 1); Jit = [Math]::Round($(if ($arr.Count -gt 1) { $d / ($arr.Count - 1) } else { 0 }), 1); P90 = [Math]::Round($s[[Math]::Min($s.Count - 1, [int][Math]::Floor(0.9 * ($s.Count - 1) + 0.5))], 1) } }
     $grade = { param($delta) if ($delta -le 5) { "A+" } elseif ($delta -le 30) { "A" } elseif ($delta -le 60) { "B" } elseif ($delta -le 200) { "C" } elseif ($delta -le 400) { "D" } else { "F" } }
-    $loadHist = { try { $raw = (Get-ItemProperty -Path $script:NqHistKey -Name "NetTestHistory" -ErrorAction SilentlyContinue).NetTestHistory; if ($raw) { return @($raw | ConvertFrom-Json) } } catch {}; return @() }
+    # v2.0.0 (§113): PS 5.1'de ConvertFrom-Json diziyi TEK nesne verir ve eski kayit dizileri {"value":[...],"Count":n} sarmalayicisiyla
+    # ic ice yaziyordu; ikinci kayittan sonra [double]$_.Dom bir dizi gorup ShowDialog'u dusuruyordu. Burada her duzey acilir,
+    # yalniz T + Dom alanli kayitlar alinir ve tarihe gore siralanir (bozuk eski kayit da kendiliginden duzelir).
+    $loadHist = {
+        $acc = New-Object System.Collections.Generic.List[object]
+        try {
+            $raw = (Get-ItemProperty -Path $script:NqHistKey -Name "NetTestHistory" -ErrorAction SilentlyContinue).NetTestHistory
+            if ($raw) {
+                $q = New-Object System.Collections.Generic.Queue[object]; $q.Enqueue(($raw | ConvertFrom-Json))
+                while ($q.Count -gt 0) {
+                    $x = $q.Dequeue()
+                    if ($null -eq $x) { continue }
+                    if ($x -is [array]) { foreach ($e in $x) { $q.Enqueue($e) } }
+                    elseif ($x.PSObject.Properties['T'] -and $x.PSObject.Properties['Dom']) { $acc.Add($x) }
+                    elseif ($x.PSObject.Properties['value']) { $q.Enqueue($x.value) }
+                }
+            }
+        } catch {}
+        return @($acc | Sort-Object { "$($_.T)" })
+    }
 
     $script:NqTimer = New-Object System.Windows.Threading.DispatcherTimer
     $script:NqTimer.Interval = [TimeSpan]::FromMilliseconds(300)
@@ -23934,6 +24806,8 @@ $($global:SubTheme)
         if (-not $sy.Done) { $txtNqStatus.Text = "⏳ $($sy.Phase)   $($sy.Live)"; return }
         $script:NqTimer.Stop(); $btnNqStart.IsEnabled = $true
         if ($sy.Err) { $txtNqStatus.Text = "❌ Test tamamlanamadı: $($sy.Err)"; return }
+        # v2.0.0 (§113): sonuc islenirken cikan hata pencerenin olay dongusunu (ShowDialog) dusurmesin; Kapat calismaya devam eder
+        try {
         $vpn = @(); try { $vpn = @((Get-MrCleanVpnState).Connected) } catch {}
         $i = & $stat $sy.Idle.S; $dn = & $stat $sy.Dom.Pings; $up = & $stat $sy.Up.Pings
         $dDelta = if (@($sy.Dom.Pings).Count) { [Math]::Max(0, $dn.Med - $i.Med) } else { $null }
@@ -23982,7 +24856,9 @@ $($global:SubTheme)
         $entry = [ordered]@{ T = (Get-Date).ToString("yyyy-MM-dd HH:mm"); Dom = $sy.Dom.Mbps; Intl = $intlMed; Up = $sy.Up.Mbps; Bd = $dDelta; Bu = $uDelta; Idle = $i.Med; Vpn = [bool]$vpn.Count; Colo = $sy.Colo }
         if (-not $vpn.Count) {
             $hist = @(@($hist) + @([pscustomobject]$entry) | Select-Object -Last 6)
-            try { if (-not (Test-Path $script:NqHistKey)) { New-Item -Path $script:NqHistKey -Force | Out-Null }; Set-ItemProperty -Path $script:NqHistKey -Name "NetTestHistory" -Value (ConvertTo-Json @($hist) -Compress) -Type String -Force } catch {}
+            # v2.0.0 (§113): her kayit ayri ayri JSON'a cevrilip elle diziye birlestirilir (PS 5.1 dizi sarmalayicisi yazilmaz)
+            $histJson = "[" + ((@($hist) | ForEach-Object { ConvertTo-Json -InputObject $_ -Compress }) -join ",") + "]"
+            try { if (-not (Test-Path $script:NqHistKey)) { New-Item -Path $script:NqHistKey -Force | Out-Null }; Set-ItemProperty -Path $script:NqHistKey -Name "NetTestHistory" -Value $histJson -Type String -Force } catch {}
         }
         $hn = @($hist).Count
         $hDom = & $med @($hist | ForEach-Object { [double]$_.Dom }); $hUp = & $med @($hist | ForEach-Object { [double]$_.Up }); $hIntl = & $med @($hist | ForEach-Object { [double]$_.Intl })
@@ -24057,12 +24933,16 @@ $($global:SubTheme)
         if ($hn -ge 2) { $adv.Add("📊 Son $hn testin ortancası: yurtiçi $([Math]::Round($hDom)) Mbps · yurtdışı $([Math]::Round($hIntl)) Mbps · yükleme $([Math]::Round($hUp)) Mbps. Öneriler tek ölçüme değil bu ortancaya göredir.") }
         $adv.Add("ℹ️ Hız bazlı elle ayar YAPILMAZ ve bu test hiçbir ayarı değiştirmez: Windows TCP otomatik ayarı 10 Mbps'ten 10 Gbps'e kadar her hıza ve her mesafeye (İstanbul 15 ms, Frankfurt 55 ms) kendiliğinden uyum sağlar. Hat kapasitesinin tamamını oyun + Discord + müzik arasında dengeli kullanmanın doğru yolu uygulama önceliği değil, modemde SQM'dir.")
         $txtNqAdvice.Text = ($adv -join "`n`n")
+        } catch {
+            $txtNqStatus.Text = "❌ Sonuçlar işlenirken hata: $($_.Exception.Message)"
+            WpfLog "[Ag Testi] Sonuç işleme hatası: $($_.Exception.Message) (satır $($_.InvocationInfo.ScriptLineNumber))"
+        }
     })
 
     $btnNqStart.Add_Click({
         $vpnNow = @(); try { $vpnNow = @((Get-MrCleanVpnState).Connected) } catch {}
         if ($vpnNow.Count) {
-            $a = [System.Windows.MessageBox]::Show("VPN bağlı: $($vpnNow -join ', ')`n`nTest VPN sunucusu üzerinden ölçer (hattınızın gerçek değeri değil) ve sonuç geçmişe kaydedilmez. Yine de devam edilsin mi?", "Ağ Kalite Testi", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Information)
+            $a = Show-MrCleanMessage -Text "VPN bağlı: $($vpnNow -join ', ')`n`nTest VPN sunucusu üzerinden ölçer (hattınızın gerçek değeri değil) ve sonuç geçmişe kaydedilmez. Yine de devam edilsin mi?" -Title "Ağ Kalite Testi" -Buttons YesNo -Icon Question
             if ($a -ne 'Yes') { return }
         }
         $btnNqStart.IsEnabled = $false; $txtNqAdvice.Text = ""
@@ -25601,10 +26481,10 @@ $($global:SubTheme)
         # Windows varsayilani. Eskiden her zaman varsayilan (yildizli) mikrofon seciliyordu.
         $caps = @($script:AsRows | Where-Object { $_.Plan.Dev.Flow -eq "Capture" -and $_.Plan.Dev.State -eq 1 })
         $mic = @($caps | Sort-Object { -not [bool]$_.Chk.IsChecked }, { -not $_.Plan.Dev.Default } | Select-Object -First 1)
-        if (-not $mic) { [System.Windows.MessageBox]::Show("Bağlı bir mikrofon bulunamadı.", "Mikrofon Testi") | Out-Null; return }
-        if (@($caps | Where-Object { $_.Chk.IsChecked }).Count -gt 1) { [System.Windows.MessageBox]::Show("Birden fazla mikrofon işaretli — test edilecek mikrofonu tek başına işaretleyin (diğerlerinin işaretini kaldırın).", "Mikrofon Testi") | Out-Null; return }
+        if (-not $mic) { [void](Show-MrCleanMessage -Text "Bağlı bir mikrofon bulunamadı." -Title "Mikrofon Testi" -Icon Info); return }
+        if (@($caps | Where-Object { $_.Chk.IsChecked }).Count -gt 1) { [void](Show-MrCleanMessage -Text "Birden fazla mikrofon işaretli — test edilecek mikrofonu tek başına işaretleyin (diğerlerinin işaretini kaldırın)." -Title "Mikrofon Testi" -Icon Info); return }
         $dv = $mic[0].Plan.Dev
-        $ok = [System.Windows.MessageBox]::Show("Mikrofon: $($dv.Name) ($($dv.Desc))$(if (-not $mic[0].Chk.IsChecked) { "`n(listede işaretli mikrofon yok — Windows varsayılanı test ediliyor; başka mikrofon için listede onu işaretleyin)" })`n`nTest 10 saniye sürer:`n  1) İlk bipten sonra 5 sn SESSİZ kalın (klavye / fare dokunmayın) - odanızın gürültüsü ölçülür`n  2) İkinci bipten sonra 5 sn EN YÜKSEK sesinizle konuşun / bağırın - mikrofon kırpılıyor mu ölçülür`n`nKayıt sadece ölçüm için kullanılır, saklanmaz. Başlansın mı?", "Mikrofon Testi", [System.Windows.MessageBoxButton]::OKCancel, [System.Windows.MessageBoxImage]::Information)
+        $ok = Show-MrCleanMessage -Text "Mikrofon: $($dv.Name) ($($dv.Desc))$(if (-not $mic[0].Chk.IsChecked) { "`n(listede işaretli mikrofon yok — Windows varsayılanı test ediliyor; başka mikrofon için listede onu işaretleyin)" })`n`nTest 10 saniye sürer:`n  1) İlk bipten sonra 5 sn SESSİZ kalın (klavye / fare dokunmayın) - odanızın gürültüsü ölçülür`n  2) İkinci bipten sonra 5 sn EN YÜKSEK sesinizle konuşun / bağırın - mikrofon kırpılıyor mu ölçülür`n`nKayıt sadece ölçüm için kullanılır, saklanmaz. Başlansın mı?" -Title "Mikrofon Testi" -Buttons OKCancel -Icon Info
         if ($ok -ne "OK") { return }
         $txtAsLog.Clear(); & $log "Mikrofon testi: $($dv.Name)..."
         $script:AsMicTestDev = $dv
@@ -25618,11 +26498,11 @@ $($global:SubTheme)
     $btnAsUser.Add_Click({
         $cfg = Get-MrCleanEapoConfigDir
         $uf = if ($cfg) { Join-Path $cfg "MrClean-user.txt" } else { $null }
-        if (-not $uf -or -not (Test-Path $uf)) { [System.Windows.MessageBox]::Show("Önce '⚡ Otomatik Kur' çalıştırılmalı.", "İnce Ayar") | Out-Null; return }
+        if (-not $uf -or -not (Test-Path $uf)) { [void](Show-MrCleanMessage -Text "Önce '⚡ Otomatik Kur' çalıştırılmalı." -Title "İnce Ayar" -Icon Info); return }
         try { Start-Process notepad.exe -ArgumentList "`"$uf`"" } catch {}
     })
     $btnAsSpatial.Add_Click({
-        [System.Windows.MessageBox]::Show("Açılan pencerede: aygıtı seçin → 'Uzamsal ses' (Spatial sound) → 'Kapalı'.`n`nWindows bu ayarı yalnızca kullanıcının değiştirmesine izin verir (programla kapatılamaz). Dolby Access uygulaması kurulu kalabilir; uzamsal ses 'Kapalı' olunca devre dışıdır.", "Uzamsal Ses") | Out-Null
+        [void](Show-MrCleanMessage -Text "Açılan pencerede: aygıtı seçin → 'Uzamsal ses' (Spatial sound) → 'Kapalı'.`n`nWindows bu ayarı yalnızca kullanıcının değiştirmesine izin verir (programla kapatılamaz). Dolby Access uygulaması kurulu kalabilir; uzamsal ses 'Kapalı' olunca devre dışıdır." -Title "Uzamsal Ses" -Icon Info)
         try { Start-Process "ms-settings:sound" } catch {}
     })
 
@@ -25687,7 +26567,7 @@ $($global:SubTheme)
                     $clipTxt = if ($m.Clip -gt 0) { "⚠ KIRPILMA VAR: en yüksek seste mikrofon sınırı aştı ($($m.Clip) örnek, tepe $($m.Peak) dBFS). Bu patlama / cızırtı yazılımla düzelmez: mikrofonun kendi kazanç düğmesini ya da Windows Ses > mikrofon seviyesini biraz düşürüp testi tekrarlayın." } elseif ($m.Peak -gt -3) { "Sınırda: en yüksek seste tepe $($m.Peak) dBFS — biraz daha bağırırsanız kırpılabilir; kazancı bir tık düşürmek güvenli olur." } else { "✔ Kırpılma yok (en yüksek seste tepe $($m.Peak) dBFS)." }
                     $res = "Oda gürültüsü: $($m.Floor) dBFS → $room`nGürültü bastırma gücü: $($m.Atten) dB (DeepFilterNet3) olarak ayarlandı.`n`n$clipTxt`n`n$applied"
                     & $log $res
-                    [System.Windows.MessageBox]::Show($res, "Mikrofon Testi — sonuç", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information) | Out-Null
+                    [void](Show-MrCleanMessage -Text $res -Title "Mikrofon Testi — sonuç" -Icon Info)
                 }
                 if ($sy.Ok -and $script:AsMicSelected) { & $script:AsReadWin "🎙 Mikrofon — yapmanız gerekenler" $script:AsMicNoteLong 760 560 }
             }
@@ -25700,7 +26580,7 @@ $($global:SubTheme)
         $plans = @(); foreach ($r in $script:AsRows) { $r.Plan.Enabled = [bool]$r.Chk.IsChecked; if ("$($r.Kind.SelectedItem.Tag)" -eq "Skip") { $r.Plan.Enabled = $false }; $plans += $r.Plan }
         $sel = @($plans | Where-Object { $_.Enabled })
         $script:AsMicSelected = [bool](@($sel | Where-Object { $_.Kind -eq "Mic" }).Count)
-        if ($sel.Count -eq 0) { [System.Windows.MessageBox]::Show("Hiçbir aygıt seçilmedi.", "Otomatik Ses") | Out-Null; return }
+        if ($sel.Count -eq 0) { [void](Show-MrCleanMessage -Text "Hiçbir aygıt seçilmedi." -Title "Otomatik Ses" -Icon Info); return }
         # 10. tur: indirilecekler DOSYAYA BAKILARAK listelenir (eskiden kurulu olanlar da "indirilir" yaziyordu); kurulu olanlar ayri satirda
         $vdir = if ($inst) { Join-Path $inst "VSTPlugins" } else { "" }
         $have = { param($f) [bool]($vdir -and (Test-Path (Join-Path $vdir $f))) }
@@ -25727,7 +26607,7 @@ $($global:SubTheme)
                $(if ($chkAsAuto.IsChecked) { "    • Oyun açılınca kulaklık otomatik 'Oyun' moduna geçer`n" } else { "" }) +
                "    • Ses 2-3 sn kesilir; bilgisayarı / MrClean'i yeniden başlatmak GEREKMEZ`n" +
                "`nHer şey 'Hepsini Geri Al' ile geri alınır. Devam edilsin mi?"
-        if ([System.Windows.MessageBox]::Show($msg, "Otomatik Ses", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question) -ne "Yes") { return }
+        if ((Show-MrCleanMessage -Text $msg -Title "Otomatik Ses" -Buttons YesNo -Icon Question) -ne "Yes") { return }
         $games = @(); try { $games = @(Get-MrCleanGameExes | ForEach-Object { [IO.Path]::GetFileName("$_").ToLower() }) } catch {}
         $settings = @{ DefaultMode = "$($cbAsMode.SelectedItem.Tag)"; GameCurve = "$($cbAsGame.SelectedItem.Tag)"; MicEngine = "$($cbAsMicEng.SelectedItem.Tag)"; MicLevel = [bool]$chkAsMicLvl.IsChecked; MicAtten = [int](Get-MrCleanAudioSettings).MicAtten; AutoGame = [bool]$chkAsAuto.IsChecked; Bass = [double]$sldAsBass.Value; Boost = [int]$cbAsBoost.SelectedItem.Tag; Leveler = "$($cbAsLev.SelectedItem.Tag)"; Games = $games }
         $txtAsLog.Clear(); & $log "Başlıyor..."
@@ -25736,9 +26616,9 @@ $($global:SubTheme)
     $btnAsRemove.Add_Click({
         # 10. tur (kullanici: "programlari silmesin, fark anlasilsin diye geri alinabilir"): varsayilan SADECE AYARLAR geri alinir;
         # Equalizer APO + eklentiler kalir (Otomatik Kur ile saniyeler icinde, indirmeden geri gelir). Program kaldirma ayri, varsayilani "Hayir".
-        $a = [System.Windows.MessageBox]::Show("MrClean'in yaptığı ses ayarları geri alınsın mı?`n`n• Aygıtlar eski (orijinal) sesine döner, oyun modu görevi kaldırılır`n• Equalizer APO ve eklentiler bilgisayarda KALIR — '⚡ Otomatik Kur' ile saniyeler içinde, hiçbir şey indirmeden geri açılır (farkı karşılaştırmak için idealdir)`n• Kendi ince ayar dosyalarınız (MrClean-user*.txt) korunur", "Hepsini Geri Al", [System.Windows.MessageBoxButton]::OKCancel, [System.Windows.MessageBoxImage]::Question)
+        $a = Show-MrCleanMessage -Text "MrClean'in yaptığı ses ayarları geri alınsın mı?`n`n• Aygıtlar eski (orijinal) sesine döner, oyun modu görevi kaldırılır`n• Equalizer APO ve eklentiler bilgisayarda KALIR — '⚡ Otomatik Kur' ile saniyeler içinde, hiçbir şey indirmeden geri açılır (farkı karşılaştırmak için idealdir)`n• Kendi ince ayar dosyalarınız (MrClean-user*.txt) korunur" -Title "Hepsini Geri Al" -Buttons OKCancel -Icon Question
         if ($a -ne "OK") { return }
-        $rmApo = ([System.Windows.MessageBox]::Show("Equalizer APO programı da bilgisayardan TAMAMEN kaldırılsın mı?`n`nÖnerilmez: tekrar kullanmak isterseniz yeniden indirilip kurulur. MrClean'i hiç kullanmayacaksanız 'Evet' deyin.", "Programı da kaldır?", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning, [System.Windows.MessageBoxResult]::No) -eq "Yes")
+        $rmApo = ((Show-MrCleanMessage -Text "Equalizer APO programı da bilgisayardan TAMAMEN kaldırılsın mı?`n`nÖnerilmez: tekrar kullanmak isterseniz yeniden indirilip kurulur. MrClean'i hiç kullanmayacaksanız 'Evet' deyin." -Title "Programı da kaldır?" -Buttons YesNo -Icon Warning -Danger) -eq "Yes")
         $txtAsLog.Clear(); & $log "Geri alınıyor..."
         & $runWorker "remove" @() @{} $rmApo
     })
@@ -26086,17 +26966,19 @@ $($global:SubTheme)
         </TextBlock>
 
         <!-- LAUNCHER FILTER -->
-        <Border Grid.Row="2" Background="#15181E" CornerRadius="5" Padding="10" Margin="0,0,0,10">
-            <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Launcher filtresi:" Foreground="#C9CED6" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                <CheckBox x:Name="cbSteam"     Content="Steam"           IsChecked="True" Foreground="#E6E8EB" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                <CheckBox x:Name="cbEpic"      Content="Epic Games"      IsChecked="True" Foreground="#E6E8EB" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                <CheckBox x:Name="cbEA"        Content="EA Desktop"      IsChecked="True" Foreground="#E6E8EB" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                <CheckBox x:Name="cbRiot"     Content="Riot Games"       IsChecked="True" Foreground="#E6E8EB" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                <CheckBox x:Name="cbBnet"     Content="Battle.net"       IsChecked="True" Foreground="#E6E8EB" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                <CheckBox x:Name="cbUbi"      Content="Ubisoft Connect"  IsChecked="True" Foreground="#E6E8EB" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                <CheckBox x:Name="cbGog"      Content="GOG Galaxy"       IsChecked="True" Foreground="#E6E8EB" VerticalAlignment="Center"/>
-            </StackPanel>
+        <Border Grid.Row="2" Background="#15181E" CornerRadius="5" Padding="10,6" Margin="0,0,0,10">
+            <!-- v2.0.0 (§127, Onizleme16): dar pencerede kutular kesilmek yerine alt satira gecer; §129 (Onizleme17): ogelerde 4 px ust / alt, satirlar arasi 8 px -->
+            <WrapPanel Orientation="Horizontal">
+                <TextBlock Text="Launcher filtresi:" Foreground="#C9CED6" VerticalAlignment="Center" Margin="0,4,12,4"/>
+                <CheckBox x:Name="cbSteam"     Content="Steam"           IsChecked="True" Foreground="#E6E8EB" VerticalAlignment="Center" Margin="0,4,12,4"/>
+                <CheckBox x:Name="cbEpic"      Content="Epic Games"      IsChecked="True" Foreground="#E6E8EB" VerticalAlignment="Center" Margin="0,4,12,4"/>
+                <CheckBox x:Name="cbEA"        Content="EA Desktop"      IsChecked="True" Foreground="#E6E8EB" VerticalAlignment="Center" Margin="0,4,12,4"/>
+                <CheckBox x:Name="cbRiot"     Content="Riot Games"       IsChecked="True" Foreground="#E6E8EB" VerticalAlignment="Center" Margin="0,4,12,4"/>
+                <CheckBox x:Name="cbBnet"     Content="Battle.net"       IsChecked="True" Foreground="#E6E8EB" VerticalAlignment="Center" Margin="0,4,12,4"/>
+                <CheckBox x:Name="cbUbi"      Content="Ubisoft Connect"  IsChecked="True" Foreground="#E6E8EB" VerticalAlignment="Center" Margin="0,4,12,4"/>
+                <CheckBox x:Name="cbGog"      Content="GOG Galaxy"       IsChecked="True" Foreground="#E6E8EB" VerticalAlignment="Center" Margin="0,4,12,4"/>
+                <CheckBox x:Name="cbManual"   Content="Manuel"           IsChecked="True" Foreground="#E6E8EB" VerticalAlignment="Center" Margin="0,4,0,4" ToolTip="Manuel / diğer: hiçbir oyunun yoluna denk gelmeyen istisnalar (Manuel Klasör, başka araçlar)"/>
+            </WrapPanel>
         </Border>
 
         <!-- GAMES LIST -->
@@ -26121,27 +27003,19 @@ $($global:SubTheme)
 
         <TextBlock Grid.Row="4" x:Name="txtDEStat" Foreground="#8A919C" FontSize="12" Margin="0,8,0,0" TextWrapping="Wrap"/>
 
-        <Grid Grid.Row="5" Margin="0,8,0,0">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="8"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="8"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="8"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="8"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-            <Button x:Name="btnDERescan"  Grid.Column="0" Style="{StaticResource DEBtn}" Content="🔄 Yeniden Tara"        MinWidth="130" Height="32"/>
-            <Button x:Name="btnDEAdd"     Grid.Column="2" Style="{StaticResource SwBtnPrimary}" Content="✅ Seçilenleri Exclude Et" MinWidth="200" Height="32" IsEnabled="False"/>
-            <Button x:Name="btnDERemove"  Grid.Column="4" Style="{StaticResource SwBtnDanger}" Content="❌ Exclusion Kaldır"      MinWidth="160" Height="32" IsEnabled="False"/>
-            <Button x:Name="btnDEManual"  Grid.Column="6" Style="{StaticResource DEBtn}" Content="📁 Manuel Klasör Ekle"   MinWidth="180" Height="32"/>
-            <Button x:Name="btnDEList"    Grid.Column="8" Style="{StaticResource DEBtn}" Content="📋 Mevcut Exclusions"     MinWidth="170" Height="32"/>
-            <Button x:Name="btnDEClose"   Grid.Column="10" Style="{StaticResource DEBtn}" Content="@@m_close@@"                   MinWidth="100" Height="32"/>
-        </Grid>
+        <!-- v2.0.0 (§129, Onizleme17): sagdaki iki dugme sabit; islem dugmeleri sigmazsa alt satira gecer (900 px'te Kapat kesiliyordu) -->
+        <DockPanel Grid.Row="5" Margin="0,8,0,-6">
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Top">
+                <Button x:Name="btnDEList"    Style="{StaticResource DEBtn}" Content="📋 Mevcut Exclusions"     MinWidth="170" Height="32" Margin="8,0,0,6"/>
+                <Button x:Name="btnDEClose"   Style="{StaticResource DEBtn}" Content="@@m_close@@"                   MinWidth="100" Height="32" Margin="8,0,0,6"/>
+            </StackPanel>
+            <WrapPanel Orientation="Horizontal">
+                <Button x:Name="btnDERescan"  Style="{StaticResource DEBtn}" Content="🔄 Yeniden Tara"        MinWidth="130" Height="32" Margin="0,0,8,6"/>
+                <Button x:Name="btnDEAdd"     Style="{StaticResource SwBtnPrimary}" Content="✅ Seçilenleri Exclude Et" MinWidth="200" Height="32" Margin="0,0,8,6" IsEnabled="False"/>
+                <Button x:Name="btnDERemove"  Style="{StaticResource SwBtnDanger}" Content="❌ Exclusion Kaldır"      MinWidth="160" Height="32" Margin="0,0,8,6" IsEnabled="False"/>
+                <Button x:Name="btnDEManual"  Style="{StaticResource DEBtn}" Content="📁 Manuel Klasör Ekle"   MinWidth="180" Height="32" Margin="0,0,8,6"/>
+            </WrapPanel>
+        </DockPanel>
     </Grid>
 </Window>
 "@
@@ -26160,6 +27034,7 @@ $($global:SubTheme)
         $cbBnet     = $winDE.FindName('cbBnet')
         $cbUbi      = $winDE.FindName('cbUbi')
         $cbGog      = $winDE.FindName('cbGog')
+        $cbManual   = $winDE.FindName('cbManual')
         $btnRescan  = $winDE.FindName('btnDERescan')
         $btnAdd     = $winDE.FindName('btnDEAdd')
         $btnRemove  = $winDE.FindName('btnDERemove')
@@ -26206,7 +27081,22 @@ $($global:SubTheme)
                 $shown++
                 if ($isExc) { $excluded++ }
             }
-            $txtStat.Text = "$shown oyun gosteriliyor (toplam tespit: $($script:DEAllGames.Count)) · $excluded tanesi zaten Defender exclusion listesinde · Sistem toplam exclusion: $($script:DEExclusions.Count)"
+            # v2.0.0 (§125): hicbir oyunun yoluna denk gelmeyen istisnalar (Manuel Klasor, baska araclar) "Manuel" satiri olarak listelenir;
+            # eskiden listede gorunmedikleri icin buradan kaldirilamiyordu. Oyun filtrelerine bagli degil, oyunlar filtreyle gizli olsa da eslesme bozulmaz.
+            # §127: "Manuel" kutusu kapaliyken satirlar gizlenir; sayi durum satirinda yine yazar.
+            $gamePaths = @{}
+            foreach ($g in $script:DEAllGames) { if ($g.Path) { $gamePaths[$g.Path.TrimEnd('\').ToLower()] = $true } }
+            $manual = 0
+            foreach ($e in $script:DEExclusions) {
+                if (-not $e) { continue }
+                if ($gamePaths.ContainsKey("$e".TrimEnd('\').ToLower())) { continue }
+                # Ad metinden alinir: Split-Path "C:" gibi kok surucuyu o anki klasore cozuyordu
+                $trim = "$e".TrimEnd('\'); $cut = $trim.LastIndexOf('\')
+                $leaf = if ($cut -ge 0 -and $cut -lt $trim.Length - 1) { $trim.Substring($cut + 1) } else { "$e" }
+                if ($cbManual.IsChecked) { $lv.Items.Add([pscustomobject]@{ Name = $leaf; Launcher = "Manuel"; Path = "$e"; StatusIcon = "✅ Excluded"; IsExcluded = $true }) | Out-Null }
+                $manual++
+            }
+            $txtStat.Text = "$shown oyun gosteriliyor (toplam tespit: $($script:DEAllGames.Count)) · $excluded tanesi zaten Defender exclusion listesinde · $manual manuel / diger exclusion · Sistem toplam exclusion: $($script:DEExclusions.Count)"
         }
 
         $cbSteam.Add_Click({ Apply-DEFilter })
@@ -26216,6 +27106,7 @@ $($global:SubTheme)
         $cbBnet.Add_Click({ Apply-DEFilter })
         $cbUbi.Add_Click({ Apply-DEFilter })
         $cbGog.Add_Click({ Apply-DEFilter })
+        $cbManual.Add_Click({ Apply-DEFilter })
 
         $lv.Add_SelectionChanged({
             $cnt = $lv.SelectedItems.Count
@@ -26239,14 +27130,14 @@ $($global:SubTheme)
             foreach ($s in $sels | Select-Object -First 5) { $msg += "  + $($s.Path)`n" }
             if ($sels.Count -gt 5) { $msg += "  ... ve $($sels.Count - 5) daha`n" }
             $msg += "`n⚠️ Exclude edilen klasördeki dosyalar Defender tarafından TARANMAYACAK. Sadece güvendiğiniz oyun klasörlerini ekleyin.`n`nDevam edilsin mi?"
-            $resp = [System.Windows.MessageBox]::Show($msg, "Defender Exclusion - Onay", "YesNo", "Question")
+            $resp = Show-MrCleanMessage -Text $msg -Title "Defender Exclusion - Onay" -Buttons YesNo -Icon Question
             if ($resp -ne 'Yes') { return }
 
             $ok = 0; $fail = 0
             foreach ($s in $sels) {
                 if (Add-DefenderExclusion -Path $s.Path) { $ok++ } else { $fail++ }
             }
-            [System.Windows.MessageBox]::Show("Tamamlandi:`n`n  ✅ Eklendi: $ok`n  ❌ Hata: $fail`n`n(Defender icin admin yetkisi gerekir, program zaten admin calistirilmali)", "Sonuc") | Out-Null
+            [void](Show-MrCleanMessage -Text "Tamamlandi:`n`n  ✅ Eklendi: $ok`n  ❌ Hata: $fail`n`n(Defender icin admin yetkisi gerekir, program zaten admin calistirilmali)" -Title "Sonuc" -Icon Info)
             Refresh-DEList
         })
 
@@ -26256,21 +27147,21 @@ $($global:SubTheme)
             # Sadece zaten excluded olanlar uzerinde calis
             $toRemove = @($sels | Where-Object { $_.IsExcluded })
             if ($toRemove.Count -eq 0) {
-                [System.Windows.MessageBox]::Show("Secilen oyunlardan hicbiri Defender exclusion listesinde DEGIL. Once 'Exclude Et' butonuyla ekleyin.", "Bilgi") | Out-Null
+                [void](Show-MrCleanMessage -Text "Secilen oyunlardan hicbiri Defender exclusion listesinde DEGIL. Once 'Exclude Et' butonuyla ekleyin." -Title "Bilgi" -Icon Info)
                 return
             }
             $msg = "$($toRemove.Count) klasor Defender exclusion listesinden cikarilacak:`n`n"
             foreach ($s in $toRemove | Select-Object -First 5) { $msg += "  - $($s.Path)`n" }
             if ($toRemove.Count -gt 5) { $msg += "  ... ve $($toRemove.Count - 5) daha`n" }
             $msg += "`nDevam edilsin mi?"
-            $resp = [System.Windows.MessageBox]::Show($msg, "Defender Exclusion Kaldir - Onay", "YesNo", "Warning")
+            $resp = Show-MrCleanMessage -Text $msg -Title "Defender Exclusion Kaldir - Onay" -Buttons YesNo -Icon Warning
             if ($resp -ne 'Yes') { return }
 
             $ok = 0; $fail = 0
             foreach ($s in $toRemove) {
                 if (Remove-DefenderExclusion -Path $s.Path) { $ok++ } else { $fail++ }
             }
-            [System.Windows.MessageBox]::Show("Tamamlandi:`n`n  ✅ Kaldirildi: $ok`n  ❌ Hata: $fail", "Sonuc") | Out-Null
+            [void](Show-MrCleanMessage -Text "Tamamlandi:`n`n  ✅ Kaldirildi: $ok`n  ❌ Hata: $fail" -Title "Sonuc" -Icon Info)
             Refresh-DEList
         })
 
@@ -26280,13 +27171,13 @@ $($global:SubTheme)
             $dlg.ShowNewFolderButton = $false
             if ($dlg.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
                 $folderPath = $dlg.SelectedPath
-                $resp = [System.Windows.MessageBox]::Show(("'{0}' klasoru Defender exclusion listesine eklenecek. Devam?" -f $folderPath), "Manuel Klasor - Onay", "YesNo", "Question")
+                $resp = Show-MrCleanMessage -Text ("'{0}' klasoru Defender exclusion listesine eklenecek. Devam?" -f $folderPath) -Title "Manuel Klasor - Onay" -Buttons YesNo -Icon Question
                 if ($resp -eq 'Yes') {
                     if (Add-DefenderExclusion -Path $folderPath) {
-                        [System.Windows.MessageBox]::Show("Eklendi: $folderPath", "Basarili") | Out-Null
+                        [void](Show-MrCleanMessage -Text "Eklendi: $folderPath" -Title "Basarili" -Icon Info)
                         Refresh-DEList
                     } else {
-                        [System.Windows.MessageBox]::Show("Eklenemedi (admin yetkisi yok mu?). Detay icin log'a bakin.", "Hata", "OK", "Error") | Out-Null
+                        [void](Show-MrCleanMessage -Text "Eklenemedi (admin yetkisi yok mu?). Detay icin log'a bakin." -Title "Hata" -Icon Error)
                     }
                 }
             }
@@ -26295,13 +27186,13 @@ $($global:SubTheme)
         $btnList.Add_Click({
             $excs = @(Get-DefenderExclusions)
             if ($excs.Count -eq 0) {
-                [System.Windows.MessageBox]::Show("Sistemde Defender exclusion yok.", "Bilgi") | Out-Null
+                [void](Show-MrCleanMessage -Text "Sistemde Defender exclusion yok." -Title "Bilgi" -Icon Info)
                 return
             }
             $msg = "Toplam $($excs.Count) Defender exclusion var:`n`n"
             foreach ($e in $excs | Select-Object -First 30) { $msg += "  • $e`n" }
-            if ($excs.Count -gt 30) { $msg += "`n... ve $($excs.Count - 30) tane daha (UI'da gormek icin Auto-Detect ile cikan listede bakin)" }
-            [System.Windows.MessageBox]::Show($msg, "Mevcut Exclusion'lar") | Out-Null
+            if ($excs.Count -gt 30) { $msg += "`n... ve $($excs.Count - 30) tane daha (hepsi pencerenin listesinde; oyun olmayanlar 'Manuel' satirinda)" }
+            [void](Show-MrCleanMessage -Text $msg -Title "Mevcut Exclusion'lar" -Icon Info)
         })
 
         $btnClose.Add_Click({ $winDE.Close() })
@@ -26310,7 +27201,7 @@ $($global:SubTheme)
         $winDE.ShowDialog() | Out-Null
     } catch {
         WpfLog ("DefenderExclusion Hata: " + $_.Exception.Message)
-        [System.Windows.MessageBox]::Show(("Defender Exclusion Manager acilamadi: {0}" -f $_.Exception.Message), "Hata", "OK", "Error") | Out-Null
+        [void](Show-MrCleanMessage -Text ("Defender Exclusion Manager acilamadi: {0}" -f $_.Exception.Message) -Title "Hata" -Icon Error)
     }
 }
 
@@ -26541,10 +27432,7 @@ $($global:SubTheme)
             }
             $msg += "`nDevam edilsin mi?"
 
-            $confirm = [System.Windows.MessageBox]::Show(
-                $msg, "Geri Al Onayi",
-                [System.Windows.MessageBoxButton]::YesNo,
-                [System.Windows.MessageBoxImage]::Question)
+            $confirm = Show-MrCleanMessage -Text $msg -Title "Geri Al Onayi" -Buttons YesNo -Icon Question
             if ($confirm -ne 'Yes') { return }
 
             Refresh-PowerCfg-Cache
@@ -26596,10 +27484,7 @@ $($global:SubTheme)
                 if ($failNotes.Count -gt 5) { $resultMsg += "  ... ve $($failNotes.Count - 5) daha" }
             }
             $resultMsg += "`n`nTweaks sekmesi otomatik yenilendi. Bazi ayarlar icin Explorer veya reboot gerekebilir."
-            [System.Windows.MessageBox]::Show(
-                $resultMsg, "Geri Al Sonucu",
-                [System.Windows.MessageBoxButton]::OK,
-                [System.Windows.MessageBoxImage]::Information) | Out-Null
+            [void](Show-MrCleanMessage -Text $resultMsg -Title "Geri Al Sonucu" -Icon Info)
 
             Refresh-ActivityList
         }
@@ -26659,9 +27544,7 @@ $($global:SubTheme)
         $winAL.ShowDialog() | Out-Null
     } catch {
         WpfLog ("ActivityLog Hata: {0}" -f $_.Exception.Message)
-        [System.Windows.MessageBox]::Show(
-            ("Aktivite Log acilamadi: {0}" -f $_.Exception.Message),
-            "Hata", "OK", "Error") | Out-Null
+        [void](Show-MrCleanMessage -Text ("Aktivite Log acilamadi: {0}" -f $_.Exception.Message) -Title "Hata" -Icon Error)
     }
 }
 
@@ -26844,27 +27727,27 @@ $($global:SubTheme)
             # --- RANGE VALIDATION (min/max sinirlari — kullanici hatasi onleme) ---
             # Sinirlari etiketlerde belirttik, dialog kapanmadan once bir kez daha kontrol.
             if ($newSettings.AutoTuneStartMs -lt 0.4 -or $newSettings.AutoTuneStartMs -gt 1.5) {
-                [System.Windows.MessageBox]::Show("Ilk test degeri 0.4 - 1.5 ms araliginda olmali.", "Aralik Disi Deger", "OK", "Error") | Out-Null
+                [void](Show-MrCleanMessage -Text "Ilk test degeri 0.4 - 1.5 ms araliginda olmali." -Title "Aralik Disi Deger" -Icon Error)
                 return
             }
             if ($newSettings.AutoTuneEndMs -lt 0.4 -or $newSettings.AutoTuneEndMs -gt 1.5) {
-                [System.Windows.MessageBox]::Show("Son test degeri 0.4 - 1.5 ms araliginda olmali.", "Aralik Disi Deger", "OK", "Error") | Out-Null
+                [void](Show-MrCleanMessage -Text "Son test degeri 0.4 - 1.5 ms araliginda olmali." -Title "Aralik Disi Deger" -Icon Error)
                 return
             }
             if ($newSettings.AutoTuneIncrementMs -lt 0.0005 -or $newSettings.AutoTuneIncrementMs -gt 0.1) {
-                [System.Windows.MessageBox]::Show("Degerler arasi fark 0.0005 - 0.1 ms araliginda olmali.", "Aralik Disi Deger", "OK", "Error") | Out-Null
+                [void](Show-MrCleanMessage -Text "Degerler arasi fark 0.0005 - 0.1 ms araliginda olmali." -Title "Aralik Disi Deger" -Icon Error)
                 return
             }
             if ($newSettings.AutoTuneStartMs -ge $newSettings.AutoTuneEndMs) {
-                [System.Windows.MessageBox]::Show("Ilk test degeri Son test degerinden kucuk olmali.", "Mantik Hatasi", "OK", "Error") | Out-Null
+                [void](Show-MrCleanMessage -Text "Ilk test degeri Son test degerinden kucuk olmali." -Title "Mantik Hatasi" -Icon Error)
                 return
             }
             if ($newSettings.AutoTuneSampleCount -lt 5 -or $newSettings.AutoTuneSampleCount -gt 1000) {
-                [System.Windows.MessageBox]::Show("Her deger icin olcum sayisi 5 - 1000 araliginda olmali.", "Aralik Disi Deger", "OK", "Error") | Out-Null
+                [void](Show-MrCleanMessage -Text "Her deger icin olcum sayisi 5 - 1000 araliginda olmali." -Title "Aralik Disi Deger" -Icon Error)
                 return
             }
             if ($newSettings.StressDurationSec -lt 10 -or $newSettings.StressDurationSec -gt 600) {
-                [System.Windows.MessageBox]::Show("Stress suresi 10 - 600 sn araliginda olmali.", "Aralik Disi Deger", "OK", "Error") | Out-Null
+                [void](Show-MrCleanMessage -Text "Stress suresi 10 - 600 sn araliginda olmali." -Title "Aralik Disi Deger" -Icon Error)
                 return
             }
 
@@ -26875,21 +27758,17 @@ $($global:SubTheme)
             $stressTotalSec = $countV * $newSettings.StressDurationSec
             if ($stressTotalSec -gt 3600) {
                 $totalMin = [Math]::Round($stressTotalSec / 60.0, 1)
-                $confirm = [System.Windows.MessageBox]::Show(
-                    ("Stress Bench toplam suresi {0} dakika olacak ({1} deger x {2} sn).`n`n1 saatten uzun sure — emin misiniz?" -f $totalMin, $countV, $newSettings.StressDurationSec),
-                    "Uzun Sure Onayi",
-                    "YesNo",
-                    "Warning")
+                $confirm = Show-MrCleanMessage -Text ("Stress Bench toplam suresi {0} dakika olacak ({1} deger x {2} sn).`n`n1 saatten uzun sure — emin misiniz?" -f $totalMin, $countV, $newSettings.StressDurationSec) -Title "Uzun Sure Onayi" -Buttons YesNo -Icon Warning
                 if ($confirm -ne 'Yes') { return }
             }
 
             if (Save-TRTSettings -Settings $newSettings) {
                 $win.Close()
             } else {
-                [System.Windows.MessageBox]::Show("Ayarlar kaydedilemedi (dosya yazma hatasi).", "Hata", "OK", "Error") | Out-Null
+                [void](Show-MrCleanMessage -Text "Ayarlar kaydedilemedi (dosya yazma hatasi)." -Title "Hata" -Icon Error)
             }
         } catch {
-            [System.Windows.MessageBox]::Show("Gecersiz deger formati: $($_.Exception.Message)", "Hata", "OK", "Error") | Out-Null
+            [void](Show-MrCleanMessage -Text "Gecersiz deger formati: $($_.Exception.Message)" -Title "Hata" -Icon Error)
         }
     })
 
@@ -27136,7 +28015,7 @@ $($global:SubTheme)
             $msg += "⚠️ Mevcut Timer Resolution helper'i tespit edildi. Test sırasında geçici durdurulacak — sonra otomatik geri yüklenmez. Benchmark bittiğinde 'Optimal ile Başlat' butonu ile yeni değerle helper'ı yeniden kuracaksın.`n`n"
         }
         $msg += "Devam edilsin mi?"
-        if ([System.Windows.MessageBox]::Show($msg, "Otomatik İnce Ayar", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question) -ne 'Yes') { return }
+        if ((Show-MrCleanMessage -Text $msg -Title "Otomatik İnce Ayar" -Buttons YesNo -Icon Question) -ne 'Yes') { return }
 
         # Helper'i gecici durdur (varsa) — temiz olcum icin sart
         if ($hasHelper) {
@@ -27298,7 +28177,7 @@ $($global:SubTheme)
                     "  'Optimal ile Baslat' butonu ile yeni deger uygulayabilirsin.`n`n"
         }
         $msg += "Devam edilsin mi?"
-        if ([System.Windows.MessageBox]::Show($msg, "Stress Benchmark", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning) -ne 'Yes') { return }
+        if ((Show-MrCleanMessage -Text $msg -Title "Stress Benchmark" -Buttons YesNo -Icon Warning) -ne 'Yes') { return }
 
         # Helper gecici durdur
         if ($hasHelper) {
@@ -27472,10 +28351,10 @@ $($global:SubTheme)
     # --- v1.3.0 (5. tur): Kaldir — tum timer ayarlarini geri al ---
     if ($btnRemoveTimer) {
         $btnRemoveTimer.Add_Click({
-            $r = [System.Windows.MessageBox]::Show("Timer ayarlari (yardimci gorev, GlobalTimerResolutionRequests, disabledynamictick, EcoQoS muafiyeti) kaldirilsin mi?", "Timer", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+            $r = Show-MrCleanMessage -Text "Timer ayarlari (yardimci gorev, GlobalTimerResolutionRequests, disabledynamictick, EcoQoS muafiyeti) kaldirilsin mi?" -Title "Timer" -Buttons YesNo -Icon Question
             if ($r -ne 'Yes') { return }
             try { Disable-MrCleanTimerResolution } catch {}
-            [System.Windows.MessageBox]::Show("Kaldirildi. Tam etki icin bilgisayari yeniden baslatin.", "Timer") | Out-Null
+            [void](Show-MrCleanMessage -Text "Kaldirildi. Tam etki icin bilgisayari yeniden baslatin." -Title "Timer" -Icon Info)
         })
     }
 
@@ -27487,19 +28366,9 @@ $($global:SubTheme)
             Enable-MrCleanTimerResolution -TargetMs $script:TRTOptimalMs
             Start-Sleep -Milliseconds 500
             $newRes = [TimerRes]::QueryMs()
-            [System.Windows.MessageBox]::Show(
-                ("✅ Helper {0:N4} ms ile başlatıldı.`n`nMevcut sistem timer resolution: {1:N4} ms`n`nUser logon trigger'lı scheduled task ile her oturum açılışında otomatik aktif olacak." -f $script:TRTOptimalMs, $newRes),
-                "Optimal Uygulandı",
-                [System.Windows.MessageBoxButton]::OK,
-                [System.Windows.MessageBoxImage]::Information
-            ) | Out-Null
+            [void](Show-MrCleanMessage -Text ("✅ Helper {0:N4} ms ile başlatıldı.`n`nMevcut sistem timer resolution: {1:N4} ms`n`nUser logon trigger'lı scheduled task ile her oturum açılışında otomatik aktif olacak." -f $script:TRTOptimalMs, $newRes) -Title "Optimal Uygulandı" -Icon Info)
         } catch {
-            [System.Windows.MessageBox]::Show(
-                ("Helper başlatılamadı: $($_.Exception.Message)"),
-                "Hata",
-                [System.Windows.MessageBoxButton]::OK,
-                [System.Windows.MessageBoxImage]::Error
-            ) | Out-Null
+            [void](Show-MrCleanMessage -Text ("Helper başlatılamadı: $($_.Exception.Message)") -Title "Hata" -Icon Error)
         }
     })
 
@@ -27648,7 +28517,7 @@ $($global:SubTheme)
 
             if ($toRemove.Count -eq 0) { return }
 
-            if ([System.Windows.MessageBox]::Show(((T 'mbx_bloat_confirm') -f $toRemove.Count), (T 'mb_confirm'), [System.Windows.MessageBoxButton]::YesNo) -eq 'Yes') {
+            if ((Show-MrCleanMessage -Text ((T 'mbx_bloat_confirm') -f $toRemove.Count) -Title (T 'mb_confirm') -Buttons YesNo -Icon Warning -Danger) -eq 'Yes') {
                 $winBloat.Close()
                 WpfLog "--- BLOATWARE TEMİZLİĞİ BAŞLIYOR ---"
                 
@@ -27997,8 +28866,8 @@ $ctxToggleStartup.Add_Click({ if ($lvStartup.SelectedItem) { Switch-StartupItem 
 $ctxDeleteStartup.Add_Click({
     if ($lvStartup.SelectedItem) {
         $item = $lvStartup.SelectedItem
-        if ($item.Source -eq "UWP") { [System.Windows.MessageBox]::Show((T 'su_uwp_nodelete'), "Bilgi") | Out-Null; return }
-        if ([System.Windows.MessageBox]::Show("'$($item.Name)' KALICI OLARAK SİLİNECEK! Emin misiniz?", "Sil", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning) -eq 'Yes') {
+        if ($item.Source -eq "UWP") { [void](Show-MrCleanMessage -Text (T 'su_uwp_nodelete') -Title "Bilgi" -Icon Info); return }
+        if ((Show-MrCleanMessage -Text "'$($item.Name)' KALICI OLARAK SİLİNECEK! Emin misiniz?" -Title "Sil" -Buttons YesNo -Icon Warning -Danger) -eq 'Yes') {
             try {
                 if ($item.Source -eq "Registry") { 
                     Remove-ItemProperty -Path $item.RegPath -Name $item.RawName -Force -ErrorAction SilentlyContinue 
@@ -28014,7 +28883,7 @@ $ctxDeleteStartup.Add_Click({
                 $script:StartupAll.Remove($item)
                 Update-StartupSummary
                 WpfLog "🗑️ [SİLİNDİ] $($item.Name)"
-            } catch { [System.Windows.MessageBox]::Show("Silinemedi!", "Hata") | Out-Null }
+            } catch { [void](Show-MrCleanMessage -Text "Silinemedi!" -Title "Hata" -Icon Error) }
         }
     }
 })
@@ -28030,7 +28899,7 @@ $ctxOpenStartupLoc.Add_Click({
             [FileSelector]::Select($path)
         }
         else { 
-            [System.Windows.MessageBox]::Show("Dosya bulunamadı: $path", "Hata") | Out-Null 
+            [void](Show-MrCleanMessage -Text "Dosya bulunamadı: $path" -Title "Hata" -Icon Error) 
         }
     }
 })
@@ -28049,7 +28918,7 @@ $ctxCopyStartupPath.Add_Click({
             [System.Windows.Clipboard]::SetText($path)
             WpfLog "📋 [KOPYALANDI] Dosya Yolu: $path"
         } else {
-            [System.Windows.MessageBox]::Show("Kopyalanacak geçerli bir yol bulunamadı.", "Hata") | Out-Null
+            [void](Show-MrCleanMessage -Text "Kopyalanacak geçerli bir yol bulunamadı." -Title "Hata" -Icon Error)
         }
     }
 })
@@ -28088,7 +28957,7 @@ $ctxOpenStartupReg.Add_Click({
             Start-Process taskschd.msc
         } 
         else {
-            [System.Windows.MessageBox]::Show("Bu öğe için özel bir pencere desteklenmiyor.", "Bilgi") | Out-Null 
+            [void](Show-MrCleanMessage -Text "Bu öğe için özel bir pencere desteklenmiyor." -Title "Bilgi" -Icon Info) 
         }
     }
 })
@@ -28193,7 +29062,7 @@ if ($ctxOpenReg) {
             } catch {
                 WpfLog "❌ HATA: Kayıt defteri konumu açılamadı. ($($_.Exception.Message))"
             }
-        } else {[System.Windows.MessageBox]::Show("Bu bir Registry ayarı değil.", "Bilgi") | Out-Null
+        } else { [void](Show-MrCleanMessage -Text "Bu bir Registry ayarı değil." -Title "Bilgi" -Icon Info)
         }
     })
 }
@@ -28201,7 +29070,7 @@ if ($ctxOpenReg) {
 if ($ctxDelTweak) {
     $ctxDelTweak.Add_Click({
         $tweak = $this.Parent.PlacementTarget.Tag
-        if ([System.Windows.MessageBox]::Show("'$($tweak.Name)' silinsin mi?", "Sil", [System.Windows.MessageBoxButton]::YesNo) -eq 'Yes') {
+        if ((Show-MrCleanMessage -Text "'$($tweak.Name)' silinsin mi?" -Title "Sil" -Buttons YesNo -Icon Warning -Danger) -eq 'Yes') {
             foreach ($cat in $global:TweakList.Keys) { if ($global:TweakList[$cat].Name -contains $tweak.Name) { $arr = [System.Collections.ArrayList]$global:TweakList[$cat]; $arr.Remove($tweak); $global:TweakList[$cat] = $arr.ToArray(); break } }
             Mark-ConfigDirty; Load-Tweak-Tree
         }
@@ -28217,7 +29086,7 @@ if ($ctxForceClean) {
             $appName = $Matches[1]
             
             $msg = "DİKKAT: '$appName' için tanımlı olan tüm veriler (Dosyalar, Klasörler, Kayıt Defteri girdileri) analiz edilmeden KALICI OLARAK silinecek.`n`nBu işlem, programı tamamen kaldırmaz ancak tüm ayarlarını ve kalıntılarını yok eder.`n`nEmin misiniz?"
-            if ([System.Windows.MessageBox]::Show($msg, "Kritik Temizlik", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning) -eq 'Yes') {
+            if ((Show-MrCleanMessage -Text $msg -Title "Kritik Temizlik" -Buttons YesNo -Icon Warning -Danger) -eq 'Yes') {
                 
                 WpfLog "--- ZORLA TEMİZLİK: $appName ---"
                 
@@ -28298,7 +29167,7 @@ if ($ctxForceClean) {
                         }
                     })
 
-                    [System.Windows.MessageBox]::Show("$appName kalıntıları tamamen temizlendi ve listeden kaldırıldı.", "Bilgi") | Out-Null
+                    [void](Show-MrCleanMessage -Text "$appName kalıntıları tamamen temizlendi ve listeden kaldırıldı." -Title "Bilgi" -Icon Info)
                 } else {
                     WpfLog "[HATA] Kural bulunamadı."
                 }
@@ -29008,7 +29877,7 @@ $ctxOpenDump.Add_Click({
             [FileSelector]::Select($dPath)
             WpfLog "💾 Dump dosyası konumu açıldı. Bu dosyayı WinDbg ile analiz edebilirsiniz."
         } else {
-            [System.Windows.MessageBox]::Show("Bu hata için kayıtlı bir Dump (.dmp) dosyası bulunamadı. Kara kutu ayarlarının aktif olduğundan emin olun.", "Bulunamadı",[System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Warning) | Out-Null
+            [void](Show-MrCleanMessage -Text "Bu hata için kayıtlı bir Dump (.dmp) dosyası bulunamadı. Kara kutu ayarlarının aktif olduğundan emin olun." -Title "Bulunamadı" -Icon Warning)
         }
     }
 })
@@ -29037,7 +29906,7 @@ $btnFixBlackBox.Add_Click({
             WpfLog "✅ Kara Kutu devre dışı bırakıldı."
 
         } else {
-            $confirm = [System.Windows.MessageBox]::Show((T 'cr_bb_confirm'), (T 'cr_bb_title'), [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+            $confirm = Show-MrCleanMessage -Text (T 'cr_bb_confirm') -Title (T 'cr_bb_title') -Buttons YesNo -Icon Question
             if ($confirm -ne [System.Windows.MessageBoxResult]::Yes) {
                 $btnFixBlackBox.IsEnabled = $true
                 return
@@ -29087,10 +29956,7 @@ $btnFixBlackBox.Add_Click({
 # --- ONARIM SEKMESİ BUTONLARI (ARKAPLAN İŞÇİSİ İLE) ---
 
 $btnFixUpdate.Add_Click({
-    $confirm = [System.Windows.MessageBox]::Show(
-        "Windows Update onarımı başlatılacak. Bu işlem servisleri durdurup önbelleği temizleyecektir.`nDevam edilsin mi?", 
-        "Onay", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning
-    )
+    $confirm = Show-MrCleanMessage -Text "Windows Update onarımı başlatılacak. Bu işlem servisleri durdurup önbelleği temizleyecektir.`nDevam edilsin mi?" -Title "Onay" -Buttons YesNo -Icon Warning
     
     if ($confirm -eq 'Yes') {
         # UI Hazırlığı
@@ -29159,7 +30025,7 @@ $btnFixUpdate.Add_Click({
 
 if ($btnFixAmd) { $btnFixAmd.Add_Click({ try { Show-AmdChipsetRepair } catch { WpfLog "[AMD] Hata: $($_.Exception.Message)" } }) }
 $btnResetNet.Add_Click({
-    if ([System.Windows.MessageBox]::Show((T 'mbx_net_reset'), (T 'mb_confirm'), [System.Windows.MessageBoxButton]::YesNo,[System.Windows.MessageBoxImage]::Warning) -eq 'Yes') {
+    if ((Show-MrCleanMessage -Text (T 'mbx_net_reset') -Title (T 'mb_confirm') -Buttons YesNo -Icon Warning) -eq 'Yes') {
         
         $txtLog.Text = ""
         WpfLog "--- AĞ SIFIRLAMA (RAM) ---"
@@ -29441,8 +30307,8 @@ $btnInstallWinget.Add_Click({
     Find $tvWinget.Items
     
     # Kontroller
-    if ($list.Count -eq 0) {[System.Windows.MessageBox]::Show((T 'mbx_winget_noselect')) | Out-Null; return }
-    if ([System.Windows.MessageBox]::Show(((T 'mbx_winget_install') -f $list.Count), (T 'mb_confirm'),[System.Windows.MessageBoxButton]::YesNo) -ne 'Yes') { return }
+    if ($list.Count -eq 0) { [void](Show-MrCleanMessage -Text (T 'mbx_winget_noselect') -Title (T 'mb_info') -Icon Info); return }
+    if ((Show-MrCleanMessage -Text ((T 'mbx_winget_install') -f $list.Count) -Title (T 'mb_confirm') -Buttons YesNo -Icon Question) -ne 'Yes') { return }
     
     # 2. UI Hazırlık
     $txtLog.Text = ""
@@ -29510,8 +30376,8 @@ $btnUninstallWinget.Add_Click({
     Find $tvWinget.Items
     
     # Kontroller
-    if ($list.Count -eq 0) {[System.Windows.MessageBox]::Show((T 'mbx_noselect'))|Out-Null; return }
-    if ([System.Windows.MessageBox]::Show((T 'mbx_del_selected'), (T 'mb_warn'),[System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning) -ne 'Yes') { return }
+    if ($list.Count -eq 0) { [void](Show-MrCleanMessage -Text (T 'mbx_noselect') -Title (T 'mb_info') -Icon Info); return }
+    if ((Show-MrCleanMessage -Text (T 'mbx_del_selected') -Title (T 'mb_warn') -Buttons YesNo -Icon Warning -Danger) -ne 'Yes') { return }
     
     $txtLog.Text = ""
     # Base64 Kodlama (Veri Transferi İçin)
@@ -29961,7 +30827,7 @@ $btnSettings.Add_Click({
                 if (-not $sel) { return }
                 $newLang = [string]$sel.Tag
                 if ($newLang -eq $global:CurrentLang) { return }
-                $resp = [System.Windows.MessageBox]::Show($winSet, (T 'lang_restart_msg'), (T 'lang_restart_title'), [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Question)
+                $resp = Show-MrCleanMessage -Text (T 'lang_restart_msg') -Title (T 'lang_restart_title') -Buttons YesNo -Icon Question -Owner $winSet
                 if ($resp -eq 'Yes') {
                     $global:CurrentLang = $newLang
                     $global:ConfigDirty = $true
@@ -30220,7 +31086,7 @@ $btnSettings.Add_Click({
         
         $bDel.Add_Click({
             if ($lstF.SelectedItems.Count -eq 0) { return }
-            if ([System.Windows.MessageBox]::Show((T 'mbx_del_files'), (T 'm_delete'), [System.Windows.MessageBoxButton]::YesNo) -eq 'Yes') {
+            if ((Show-MrCleanMessage -Text (T 'mbx_del_files') -Title (T 'm_delete') -Buttons YesNo -Icon Warning -Danger) -eq 'Yes') {
                 foreach ($item in $lstF.SelectedItems) {
                     $fname = $item.ToString().Split(' ')[0]; $fullPath = "$AppDataPath\$fname"
                     Remove-Item $fullPath -Force -ErrorAction SilentlyContinue
@@ -30244,8 +31110,8 @@ $btnSettings.Add_Click({
                     if ($json.MyProfile) { $global:MyProfile = $json.MyProfile; $count++ }
                     
                     Mark-ConfigDirty; Load-All-Settings; Start-Winapp2-Process; Load-Winget-Tree; Load-Tweak-Tree
-                    [System.Windows.MessageBox]::Show("$count kategori başarıyla birleştirildi.", "Bilgi") | Out-Null
-                } catch { [System.Windows.MessageBox]::Show("Dosya hatası: $_", "Hata") | Out-Null }
+                    [void](Show-MrCleanMessage -Text "$count kategori başarıyla birleştirildi." -Title "Bilgi" -Icon Info)
+                } catch { [void](Show-MrCleanMessage -Text "Dosya hatası: $_" -Title "Hata" -Icon Error) }
             }
         })
         
@@ -30271,7 +31137,7 @@ $btnSettings.Add_Click({
                         if ($cPr.IsChecked) { $exportData["MyProfile"] = $global:MyProfile }
                         
                         $exportData | ConvertTo-Json -Depth 10 | Set-Content $sfd.FileName -Encoding UTF8
-                        [System.Windows.MessageBox]::Show((T 'mbx_saved'), (T 'mb_success')) | Out-Null
+                        [void](Show-MrCleanMessage -Text (T 'mbx_saved') -Title (T 'mb_success') -Icon Info)
                         $winExp.Close()
                     }
                 })
@@ -30449,11 +31315,7 @@ $btnRun.Add_Click({
     if ($global:ShellBagsTargets.Count -gt 0 -and -not $global:StopOperation) {
         $doReset = $false
         if ($global:IsDesktopResetSelected) {
-            $r = [System.Windows.MessageBox]::Show(
-                "Masaüstü simgeleri sola yaslanacak. Onaylıyor musunuz?",
-                "Uyarı",
-                [System.Windows.MessageBoxButton]::YesNoCancel,
-                [System.Windows.MessageBoxImage]::Warning)
+            $r = Show-MrCleanMessage -Text "Masaüstü simgeleri sola yaslanacak. Onaylıyor musunuz?" -Title "Uyarı" -Buttons YesNoCancel -Icon Warning
             if ($r -eq 'Cancel') { $global:ShellBagsTargets = @() }
             elseif ($r -eq 'Yes') { $doReset = $true }
         }
@@ -30551,6 +31413,8 @@ if ($chkDebug) {
 
 $Win.Add_Closing({
     WpfLog "[SİSTEM] Kapatılıyor, bellek temizleniyor..."
+    # v2.0.0 (§131): suren benchmark varsa durdurulur (yoksa gizli surec olcumler bitene kadar kalirdi)
+    if ($global:BenchRunning) { $global:BenchCancel = $true }
     
     # 1. Tüm Zamanlayıcıları (Timers) Durdur
     # Timer'lar durdurulmazsa arka planda UI nesnelerine erişmeye çalışıp hata fırlatabilirler.
@@ -30875,7 +31739,7 @@ $ctxDeleteLargeFile.Add_Click({
         $item = $lvLargeFiles.SelectedItem
         $msg = "Dosya: $($item.Name)`nBoyut: $($item.SizeStr)`n`nBu dosya KALICI OLARAK silinecek. Geri dönüşüm kutusuna gitmez!`nEmin misiniz?"
         
-        if ([System.Windows.MessageBox]::Show($msg, "Dosya Silme", [System.Windows.MessageBoxButton]::YesNo, [System.Windows.MessageBoxImage]::Warning) -eq 'Yes') {
+        if ((Show-MrCleanMessage -Text $msg -Title "Dosya Silme" -Buttons YesNo -Icon Warning -Danger) -eq 'Yes') {
             try {
                 Remove-Item -Path $item.FullName -Force -ErrorAction Stop
                 $lvLargeFiles.Items.Remove($item)
@@ -30883,7 +31747,7 @@ $ctxDeleteLargeFile.Add_Click({
                 Update-LfSummary
                 WpfLog "🗑️ [SİLİNDİ] $($item.FullName)"
             } catch {
-                [System.Windows.MessageBox]::Show("Silinemedi. Dosya kullanımda olabilir veya yetki yok.", "Hata") | Out-Null
+                [void](Show-MrCleanMessage -Text "Silinemedi. Dosya kullanımda olabilir veya yetki yok." -Title "Hata" -Icon Error)
             }
         }
     }
