@@ -906,7 +906,7 @@ $global:Strings = @{
         dash_detail='Donanım detayı'; dash_test='Ağ testi'
         dash_rec_card='ÖNERİ'; dash_pingcard='GECİKME'; dash_sysinfo='Sistem bilgisi'; dash_rec_title='Önerilen işlemler'; dash_rec_wait='Öneriler hazırlanıyor…'; dash_rec_n='Bekleyen öneri: {0}'; dash_rec_none='Bekleyen öneri yok'; dash_src_hw='Donanım özeti (WMI) · {0}'; dash_src_wg='winget upgrade · {0}'; dash_src_su='Kayıt defteri ve Başlangıç klasörü · az önce'; dash_src_tw='Tweaks bekleyen listesi · az önce'; dash_wg_n='{0} paket güncellemesi var'; dash_wg_fail='Güncelleme kontrol edilemedi'; dash_wg_ok0='winget: güncelleme yok'; dash_wg_wait='Güncellemeler kontrol ediliyor…'; dash_su_n='Açılışta {0} uygulama başlıyor'; dash_tw_n='{0} tweak uygulanmayı bekliyor'; dash_disk_full='C: diski yüzde {0} dolu'; dash_age_now='az önce'; dash_age_min='{0} dk önce'; dash_age_hour='{0} sa önce'; dash_card_mem='BELLEK'; dash_card_disk='DİSK C:'; dash_ram_free='Boşalt'; dash_ping_gw='ağ geçidi'; dash_ping_tip='Ağ testi: Cloudflare, Google ve ağ geçidi ortalaması (ms). Büyük sayı ağ geçidinin canlı pingidir.'; dash_more='Ayrıntılar'; dash_row_os='İşletim sistemi'; dash_row_cpu='İşlemci'; dash_row_gpu='Ekran kartı'; dash_row_mem='Bellek'; dash_row_disk='Disk C:'; dash_row_sec='Önyükleme'; dash_row_up='Çalışma süresi'; dash_row_upd='Son güncelleme'; dash_row_dns='DNS'; dash_row_net='Bağlantı'; dash_hist_title='Son işlemler'; dash_hist_clean='Temizlik  ·  {0} silindi'; dash_hist_tw_apply='Tweaks  ·  {0} ayar uygulandı'; dash_hist_tw_undo='Tweaks  ·  {0} ayar geri alındı'; dash_yesterday='Dün'
         btn_check='♻ Denetle'; btn_manage='⚙ Yönet'; btn_saveprofile='💾 Profil'; btn_quickundo='↶ Geri Al'
-        tw_search_ph='Ayar ara...'; tw_cats_title='KATEGORİLER'; tw_badge_reboot='YENİDEN BAŞLATMA'; tw_badge_risk_high='YÜKSEK RİSK'; tw_badge_risk_med='RİSKLİ'; tw_badge_pending='BEKLİYOR'; tw_badge_pending_tip='Uygula''ya basınca bu ayar değişecek'; log_toggle_show='İşlem kayıtları  ˄'; log_toggle_hide='İşlem kayıtları  ˅'; tw_filter_tip='Yazdıkça tweak listesini daraltır — isim, açıklama ve kategori içinde arar (Türkçe karakter gerekmez: sifre → Şifresiz). Esc ile temizlenir.'; tw_filter_clear='Aramayı temizle'; tw_filter_count='{0} / {1} tweak'; tw_active_count='✅ {0} / {1} aktif'; tw_incompat_count='⛔ {0} bu PC''de uygulanamaz'; tw_chip_all='Tümü'; tw_chip_active='✅ Aktif'; tw_chip_passive='○ Pasif'; tw_chip_new='✦ Yeni'; tw_chip_risky='⚠ Riskli'; tw_chip_reboot='↻ Yeniden başlatma'; tw_progress_tip='Aktif tweak oranı (son denetime göre)'; tw_badge_reboot_tip='Uygulandıktan sonra yeniden başlatma gerekir'; tw_hw_wifi='Wi-Fi kartı yok'; tw_hw_eth='Ethernet kartı yok'; tw_hw_laptop='Sadece dizüstü'; tw_hw_hdd='Mekanik disk (HDD) yok'; tw_hw_ssd='SSD yok'; tw_hw_cores='En az 4 çekirdek gerekir'; tw_hw_dnstool='{0} çalışıyor — DNS ayarını o yönetiyor'; tw_hw_wifiband='Wi-Fi kartı 5 GHz bant tercihini desteklemiyor (2.4 GHz kart veya sürücüde ayar yok)'; tw_hw_wifiadv='Wi-Fi sürücüsünde bu ayarlar yok'; tw_hw_vendortel='Bu PC''de Intel / AMD / HP / Dell / Lenovo telemetri bileşeni kurulu değil'; tw_hw_adrenalin='AMD Software (Adrenalin) kurulu değil';  tw_hw_uefi='Bu sistem UEFI değil (eski BIOS)'; tw_hw_cabc='Bu ekranda içerik uyarlamalı parlaklık (CABC) yok'; tw_hw_gpu='{0} ekran kartı yok'; tw_hw_tip='⛔ Bu bilgisayarda uygulanamaz: {0}'; tw_badge_new='YENİ'; tw_incompat_tip='⛔ Bu ayar Windows {0} gerektirir. Sisteminiz: {1}'
+        tw_search_ph='Ayar ara...'; tw_cats_title='KATEGORİLER'; tw_badge_reboot='YENİDEN BAŞLATMA'; tw_badge_risk_high='YÜKSEK RİSK'; tw_badge_risk_med='RİSKLİ'; tw_badge_pending='BEKLİYOR'; tw_badge_pending_tip='Uygula''ya basınca bu ayar değişecek'; log_toggle_show='İşlem kayıtları  ˄'; log_toggle_hide='İşlem kayıtları  ˅'; tw_filter_tip='Yazdıkça tweak listesini daraltır — isim, açıklama ve kategori içinde arar (Türkçe karakter gerekmez: sifre → Şifresiz). Esc ile temizlenir.'; tw_filter_clear='Aramayı temizle'; tw_filter_count='{0} / {1} tweak'; tw_active_count='✅ {0} / {1} aktif'; tw_incompat_count='⛔ {0} bu PC''de uygulanamaz'; tw_chip_all='Tümü'; tw_chip_active='✅ Aktif'; tw_chip_passive='○ Pasif'; tw_chip_new='✦ Yeni'; tw_chip_risky='⚠ Riskli'; tw_chip_reboot='↻ Yeniden başlatma'; tw_progress_tip='Aktif tweak oranı (son denetime göre)'; tw_badge_reboot_tip='Uygulandıktan sonra yeniden başlatma gerekir'; tw_hw_wifi='Wi-Fi kartı yok'; tw_hw_eth='Ethernet kartı yok'; tw_hw_laptop='Sadece dizüstü'; tw_hw_hdd='Mekanik disk (HDD) yok'; tw_hw_ssd='SSD yok'; tw_hw_cores='En az 4 çekirdek gerekir'; tw_hw_dnstool='{0} çalışıyor — DNS ayarını o yönetiyor'; tw_hw_wifiband='Wi-Fi kartı 5 GHz bant tercihini desteklemiyor (2.4 GHz kart veya sürücüde ayar yok)'; tw_hw_wifiadv='Wi-Fi sürücüsünde bu ayarlar yok'; tw_hw_vendortel='Bu PC''de Intel / AMD / HP / Dell / Lenovo telemetri bileşeni kurulu değil'; tw_hw_adrenalin='AMD Software (Adrenalin) kurulu değil';  tw_hw_uefi='Bu sistem UEFI değil (eski BIOS)'; tw_hw_nosvc='Bu Windows''ta yok'; tw_hwwarn_printer='Yazıcı algılandı: {0}'; tw_hwwarn_scanner='Tarayıcı / kamera algılandı: {0}'; tw_hwwarn_camera='Kamera algılandı: {0}'; tw_hwwarn_sensor='Sensör algılandı: {0}'; tw_hwwarn_laptop='Dizüstü bilgisayar: döndürme / parlaklık sensörleri kullanılıyor olabilir'; tw_hwwarn_cellular='Hücresel modem algılandı: {0}'; tw_hwwarn_nfc='NFC aygıtı algılandı: {0}'; tw_hwwarn_domain='Bu bilgisayar bir etki alanına bağlı: {0}'; tw_hwwarn_insider='Bu bilgisayar Windows Insider programına kayıtlı'; tw_hwwarn_tail='kapatırsanız bu aygıt / özellik çalışmaz.'; tw_hwwarn_badge='AYGIT VAR'; tw_hwwarn_title='{0} kapatılsın mı?'; tw_hwwarn_q='Yine de kapatılsın mı? Geri Al, servisi önceki ayarına aynen döndürür.'; tw_hw_novm='Fiziksel bilgisayarda etkisiz (yalnız sanal makinede)'; tw_hwwarn_bluetooth='Bluetooth algılandı: {0}'; tw_hwwarn_wifi='Wi-Fi kartı algılandı'; tw_hwwarn_location='Konum açık'; tw_hwwarn_cliphist='Pano geçmişi (Win+V) açık'; tw_hwwarn_vm='Bu bir sanal makine: {0}'; tw_mode_manual='El ile'; tw_mode_disabled='Devre dışı'; tw_mode_tip='El ile: Windows gerektiğinde yine başlatır. Devre dışı: hiç başlamaz.'; tw_hw_cabc='Bu ekranda içerik uyarlamalı parlaklık (CABC) yok'; tw_hw_gpu='{0} ekran kartı yok'; tw_hw_tip='⛔ Bu bilgisayarda uygulanamaz: {0}'; tw_badge_new='YENİ'; tw_incompat_tip='⛔ Bu ayar Windows {0} gerektirir. Sisteminiz: {1}'
         btn_refresh='♻ Yenile'
         lf_userfolders='Kullanıcı Klasörleri'; lf_cdisk='C: Diski (Sistem)'; lf_customfolder='Özel Klasör Seç...';
         ctx_openloc='Dosya Konumunu Aç (Seç)'; ctx_copypath='Yolu Kopyala'; ctx_deleteperm='Kalıcı Olarak SİL'
@@ -1023,7 +1023,7 @@ $global:Strings = @{
         dash_detail='Hardware details'; dash_test='Network test'
         dash_rec_card='TO DO'; dash_pingcard='LATENCY'; dash_sysinfo='System info'; dash_rec_title='Suggested actions'; dash_rec_wait='Preparing suggestions…'; dash_rec_n='Pending suggestions: {0}'; dash_rec_none='No pending suggestions'; dash_src_hw='Hardware summary (WMI) · {0}'; dash_src_wg='winget upgrade · {0}'; dash_src_su='Registry and Startup folder · just now'; dash_src_tw='Tweaks pending list · just now'; dash_wg_n='{0} package updates available'; dash_wg_fail='Could not check for updates'; dash_wg_ok0='winget: no updates'; dash_wg_wait='Checking for updates…'; dash_su_n='{0} apps start with Windows'; dash_tw_n='{0} tweaks waiting to apply'; dash_disk_full='Drive C: is {0} percent full'; dash_age_now='just now'; dash_age_min='{0} min ago'; dash_age_hour='{0} h ago'; dash_card_mem='MEMORY'; dash_card_disk='DISK C:'; dash_ram_free='Free up'; dash_ping_gw='gateway'; dash_ping_tip='Network test: Cloudflare, Google and gateway average (ms). The large number is the live gateway ping.'; dash_more='Details'; dash_row_os='Operating system'; dash_row_cpu='Processor'; dash_row_gpu='Graphics'; dash_row_mem='Memory'; dash_row_disk='Disk C:'; dash_row_sec='Boot'; dash_row_up='Uptime'; dash_row_upd='Last update'; dash_row_dns='DNS'; dash_row_net='Connection'; dash_hist_title='Recent activity'; dash_hist_clean='Cleanup  ·  {0} removed'; dash_hist_tw_apply='Tweaks  ·  {0} applied'; dash_hist_tw_undo='Tweaks  ·  {0} undone'; dash_yesterday='Yesterday'
         btn_check='♻ Check'; btn_manage='⚙ Manage'; btn_saveprofile='💾 Profile'; btn_quickundo='↶ Undo'
-        tw_search_ph='Search tweaks...'; tw_cats_title='CATEGORIES'; tw_badge_reboot='RESTART'; tw_badge_risk_high='HIGH RISK'; tw_badge_risk_med='RISKY'; tw_badge_pending='PENDING'; tw_badge_pending_tip='This setting will change when you press Apply'; log_toggle_show='Activity log  ˄'; log_toggle_hide='Activity log  ˅'; tw_filter_tip='Narrows the tweak list as you type — searches name, description and category. Press Esc to clear.'; tw_filter_clear='Clear search'; tw_filter_count='{0} / {1} tweaks'; tw_active_count='✅ {0} / {1} active'; tw_incompat_count='⛔ {0} unavailable on this PC'; tw_chip_all='All'; tw_chip_active='✅ Active'; tw_chip_passive='○ Inactive'; tw_chip_new='✦ New'; tw_chip_risky='⚠ Risky'; tw_chip_reboot='↻ Needs restart'; tw_progress_tip='Share of active tweaks (last check)'; tw_badge_reboot_tip='Requires a restart after applying'; tw_hw_wifi='No Wi-Fi adapter'; tw_hw_eth='No Ethernet adapter'; tw_hw_laptop='Laptops only'; tw_hw_hdd='No hard disk (HDD)'; tw_hw_ssd='No SSD'; tw_hw_cores='Needs at least 4 cores'; tw_hw_dnstool='{0} is running and manages DNS'; tw_hw_wifiband='Wi-Fi adapter has no 5 GHz band preference (2.4 GHz only or not exposed by driver)'; tw_hw_wifiadv='Wi-Fi driver does not expose these settings'; tw_hw_vendortel='No Intel / AMD / HP / Dell / Lenovo telemetry component installed on this PC'; tw_hw_adrenalin='AMD Software (Adrenalin) is not installed'; tw_hw_uefi='This system is not UEFI (legacy BIOS)'; tw_hw_cabc='Content adaptive brightness (CABC) is not available on this display'; tw_hw_gpu='No {0} graphics card'; tw_hw_tip='⛔ Not applicable on this PC: {0}'; tw_badge_new='NEW'; tw_incompat_tip='⛔ This setting requires Windows {0}. Your system: {1}'
+        tw_search_ph='Search tweaks...'; tw_cats_title='CATEGORIES'; tw_badge_reboot='RESTART'; tw_badge_risk_high='HIGH RISK'; tw_badge_risk_med='RISKY'; tw_badge_pending='PENDING'; tw_badge_pending_tip='This setting will change when you press Apply'; log_toggle_show='Activity log  ˄'; log_toggle_hide='Activity log  ˅'; tw_filter_tip='Narrows the tweak list as you type — searches name, description and category. Press Esc to clear.'; tw_filter_clear='Clear search'; tw_filter_count='{0} / {1} tweaks'; tw_active_count='✅ {0} / {1} active'; tw_incompat_count='⛔ {0} unavailable on this PC'; tw_chip_all='All'; tw_chip_active='✅ Active'; tw_chip_passive='○ Inactive'; tw_chip_new='✦ New'; tw_chip_risky='⚠ Risky'; tw_chip_reboot='↻ Needs restart'; tw_progress_tip='Share of active tweaks (last check)'; tw_badge_reboot_tip='Requires a restart after applying'; tw_hw_wifi='No Wi-Fi adapter'; tw_hw_eth='No Ethernet adapter'; tw_hw_laptop='Laptops only'; tw_hw_hdd='No hard disk (HDD)'; tw_hw_ssd='No SSD'; tw_hw_cores='Needs at least 4 cores'; tw_hw_dnstool='{0} is running and manages DNS'; tw_hw_wifiband='Wi-Fi adapter has no 5 GHz band preference (2.4 GHz only or not exposed by driver)'; tw_hw_wifiadv='Wi-Fi driver does not expose these settings'; tw_hw_vendortel='No Intel / AMD / HP / Dell / Lenovo telemetry component installed on this PC'; tw_hw_adrenalin='AMD Software (Adrenalin) is not installed'; tw_hw_uefi='This system is not UEFI (legacy BIOS)'; tw_hw_nosvc='Not present in this Windows'; tw_hwwarn_printer='Printer detected: {0}'; tw_hwwarn_scanner='Scanner / camera detected: {0}'; tw_hwwarn_camera='Camera detected: {0}'; tw_hwwarn_sensor='Sensor detected: {0}'; tw_hwwarn_laptop='Laptop: rotation / brightness sensors may be in use'; tw_hwwarn_cellular='Cellular modem detected: {0}'; tw_hwwarn_nfc='NFC device detected: {0}'; tw_hwwarn_domain='This PC is joined to a domain: {0}'; tw_hwwarn_insider='This PC is enrolled in the Windows Insider Program'; tw_hwwarn_tail='if you disable it, this device / feature stops working.'; tw_hwwarn_badge='DEVICE FOUND'; tw_hwwarn_title='Disable {0}?'; tw_hwwarn_q='Disable anyway? Undo restores the service''s previous setting exactly.'; tw_hw_novm='Has no effect on a physical PC (virtual machines only)'; tw_hwwarn_bluetooth='Bluetooth detected: {0}'; tw_hwwarn_wifi='Wi-Fi adapter detected'; tw_hwwarn_location='Location is on'; tw_hwwarn_cliphist='Clipboard history (Win+V) is on'; tw_hwwarn_vm='This is a virtual machine: {0}'; tw_mode_manual='Manual'; tw_mode_disabled='Disabled'; tw_mode_tip='Manual: Windows still starts it when needed. Disabled: it never starts.'; tw_hw_cabc='Content adaptive brightness (CABC) is not available on this display'; tw_hw_gpu='No {0} graphics card'; tw_hw_tip='⛔ Not applicable on this PC: {0}'; tw_badge_new='NEW'; tw_incompat_tip='⛔ This setting requires Windows {0}. Your system: {1}'
         btn_refresh='♻ Refresh'
         lf_userfolders='User Folders'; lf_cdisk='Disk C: (System)'; lf_customfolder='Select Custom Folder...';
         ctx_openloc='Open File Location (Select)'; ctx_copypath='Copy Path'; ctx_deleteperm='Delete Permanently'
@@ -1140,7 +1140,7 @@ $global:Strings = @{
         dash_detail='Détail matériel'; dash_test='Test réseau'
         dash_rec_card='À FAIRE'; dash_pingcard='LATENCE'; dash_sysinfo='Infos système'; dash_rec_title='Actions suggérées'; dash_rec_wait='Préparation des suggestions…'; dash_rec_n='Suggestions en attente : {0}'; dash_rec_none='Aucune suggestion'; dash_src_hw='Résumé matériel (WMI) · {0}'; dash_src_wg='winget upgrade · {0}'; dash_src_su='Registre et dossier Démarrage · à l''instant'; dash_src_tw='Liste des tweaks en attente · à l''instant'; dash_wg_n='{0} mises à jour de paquets'; dash_wg_fail='Contrôle des mises à jour impossible'; dash_wg_ok0='winget : aucune mise à jour'; dash_wg_wait='Vérification des mises à jour…'; dash_su_n='{0} applications au démarrage'; dash_tw_n='{0} tweaks en attente d''application'; dash_disk_full='Le disque C: est plein à {0} %'; dash_age_now='à l''instant'; dash_age_min='il y a {0} min'; dash_age_hour='il y a {0} h'; dash_card_mem='MÉMOIRE'; dash_card_disk='DISQUE C:'; dash_ram_free='Libérer'; dash_ping_gw='passerelle'; dash_ping_tip='Test réseau : moyenne Cloudflare, Google et passerelle (ms). Le grand nombre est le ping en direct de la passerelle.'; dash_more='Détails'; dash_row_os='Système'; dash_row_cpu='Processeur'; dash_row_gpu='Carte graphique'; dash_row_mem='Mémoire'; dash_row_disk='Disque C:'; dash_row_sec='Démarrage'; dash_row_up='Temps de fonctionnement'; dash_row_upd='Dernière mise à jour'; dash_row_dns='DNS'; dash_row_net='Connexion'; dash_hist_title='Activité récente'; dash_hist_clean='Nettoyage  ·  {0} supprimés'; dash_hist_tw_apply='Tweaks  ·  {0} appliqués'; dash_hist_tw_undo='Tweaks  ·  {0} annulés'; dash_yesterday='Hier'
         btn_check='♻ Vérifier'; btn_manage='⚙ Gérer'; btn_saveprofile='💾 Profil'; btn_quickundo='↶ Annuler'
-        tw_search_ph='Rechercher...'; tw_cats_title='CATÉGORIES'; tw_badge_reboot='REDÉMARRAGE'; tw_badge_risk_high='RISQUE ÉLEVÉ'; tw_badge_risk_med='RISQUÉ'; tw_badge_pending='EN ATTENTE'; tw_badge_pending_tip='Ce réglage changera quand vous cliquerez sur Appliquer'; log_toggle_show='Journal  ˄'; log_toggle_hide='Journal  ˅'; tw_filter_tip='Filtre la liste des tweaks pendant la saisie — recherche dans le nom, la description et la catégorie. Échap pour effacer.'; tw_filter_clear='Effacer la recherche'; tw_filter_count='{0} / {1} tweaks'; tw_active_count='✅ {0} / {1} actifs'; tw_incompat_count='⛔ {0} indisponibles sur ce PC'; tw_chip_all='Tous'; tw_chip_active='✅ Actifs'; tw_chip_passive='○ Inactifs'; tw_chip_new='✦ Nouveaux'; tw_chip_risky='⚠ Risqués'; tw_chip_reboot='↻ Redémarrage'; tw_progress_tip='Part des tweaks actifs (dernière vérification)'; tw_badge_reboot_tip='Redémarrage requis après application'; tw_hw_wifi='Aucune carte Wi-Fi'; tw_hw_eth='Aucune carte Ethernet'; tw_hw_laptop='Portables uniquement'; tw_hw_hdd='Aucun disque dur (HDD)'; tw_hw_ssd='Aucun SSD'; tw_hw_cores='4 cœurs minimum requis'; tw_hw_dnstool='{0} est actif et gère le DNS'; tw_hw_wifiband='La carte Wi-Fi ne propose pas la préférence 5 GHz'; tw_hw_wifiadv='Le pilote Wi-Fi ne propose pas ces réglages'; tw_hw_vendortel='Aucun composant de télémétrie Intel / AMD / HP / Dell / Lenovo installé sur ce PC'; tw_hw_adrenalin='AMD Software (Adrenalin) n''est pas installé'; tw_hw_uefi='Ce système n''est pas UEFI (BIOS hérité)'; tw_hw_cabc='Luminosité adaptative au contenu (CABC) indisponible sur cet écran'; tw_hw_gpu='Aucune carte graphique {0}'; tw_hw_tip='⛔ Non applicable sur ce PC : {0}'; tw_badge_new='NOUVEAU'; tw_incompat_tip='⛔ Ce réglage nécessite Windows {0}. Votre système : {1}'
+        tw_search_ph='Rechercher...'; tw_cats_title='CATÉGORIES'; tw_badge_reboot='REDÉMARRAGE'; tw_badge_risk_high='RISQUE ÉLEVÉ'; tw_badge_risk_med='RISQUÉ'; tw_badge_pending='EN ATTENTE'; tw_badge_pending_tip='Ce réglage changera quand vous cliquerez sur Appliquer'; log_toggle_show='Journal  ˄'; log_toggle_hide='Journal  ˅'; tw_filter_tip='Filtre la liste des tweaks pendant la saisie — recherche dans le nom, la description et la catégorie. Échap pour effacer.'; tw_filter_clear='Effacer la recherche'; tw_filter_count='{0} / {1} tweaks'; tw_active_count='✅ {0} / {1} actifs'; tw_incompat_count='⛔ {0} indisponibles sur ce PC'; tw_chip_all='Tous'; tw_chip_active='✅ Actifs'; tw_chip_passive='○ Inactifs'; tw_chip_new='✦ Nouveaux'; tw_chip_risky='⚠ Risqués'; tw_chip_reboot='↻ Redémarrage'; tw_progress_tip='Part des tweaks actifs (dernière vérification)'; tw_badge_reboot_tip='Redémarrage requis après application'; tw_hw_wifi='Aucune carte Wi-Fi'; tw_hw_eth='Aucune carte Ethernet'; tw_hw_laptop='Portables uniquement'; tw_hw_hdd='Aucun disque dur (HDD)'; tw_hw_ssd='Aucun SSD'; tw_hw_cores='4 cœurs minimum requis'; tw_hw_dnstool='{0} est actif et gère le DNS'; tw_hw_wifiband='La carte Wi-Fi ne propose pas la préférence 5 GHz'; tw_hw_wifiadv='Le pilote Wi-Fi ne propose pas ces réglages'; tw_hw_vendortel='Aucun composant de télémétrie Intel / AMD / HP / Dell / Lenovo installé sur ce PC'; tw_hw_adrenalin='AMD Software (Adrenalin) n''est pas installé'; tw_hw_uefi='Ce système n''est pas UEFI (BIOS hérité)'; tw_hw_nosvc='Absent de ce Windows'; tw_hwwarn_printer='Imprimante détectée : {0}'; tw_hwwarn_scanner='Scanner / caméra détecté : {0}'; tw_hwwarn_camera='Caméra détectée : {0}'; tw_hwwarn_sensor='Capteur détecté : {0}'; tw_hwwarn_laptop='Portable : les capteurs de rotation / luminosité peuvent être utilisés'; tw_hwwarn_cellular='Modem cellulaire détecté : {0}'; tw_hwwarn_nfc='Appareil NFC détecté : {0}'; tw_hwwarn_domain='Ce PC est joint à un domaine : {0}'; tw_hwwarn_insider='Ce PC est inscrit au programme Windows Insider'; tw_hwwarn_tail='si vous le désactivez, cet appareil / cette fonction ne marche plus.'; tw_hwwarn_badge='APPAREIL DÉTECTÉ'; tw_hwwarn_title='Désactiver {0} ?'; tw_hwwarn_q='Désactiver quand même ? Annuler rétablit exactement le réglage précédent du service.'; tw_hw_novm='Sans effet sur un PC physique (machines virtuelles uniquement)'; tw_hwwarn_bluetooth='Bluetooth détecté : {0}'; tw_hwwarn_wifi='Carte Wi-Fi détectée'; tw_hwwarn_location='Localisation activée'; tw_hwwarn_cliphist='Historique du presse-papiers (Win+V) activé'; tw_hwwarn_vm='Ceci est une machine virtuelle : {0}'; tw_mode_manual='Manuel'; tw_mode_disabled='Désactivé'; tw_mode_tip='Manuel : Windows le démarre encore si nécessaire. Désactivé : il ne démarre jamais.'; tw_hw_cabc='Luminosité adaptative au contenu (CABC) indisponible sur cet écran'; tw_hw_gpu='Aucune carte graphique {0}'; tw_hw_tip='⛔ Non applicable sur ce PC : {0}'; tw_badge_new='NOUVEAU'; tw_incompat_tip='⛔ Ce réglage nécessite Windows {0}. Votre système : {1}'
         btn_refresh='♻ Actualiser'
         lf_userfolders='Dossiers utilisateur'; lf_cdisk='Disque C: (Système)'; lf_customfolder='Choisir un dossier...';
         ctx_openloc='Ouvrir l''emplacement (Sélectionner)'; ctx_copypath='Copier le chemin'; ctx_deleteperm='Supprimer définitivement'
@@ -2211,26 +2211,6 @@ public class SpiFx {
                 Key="HKLM:\SOFTWARE\Policies\Microsoft\Windows\System"; ValueName="AllowClipboardHistory"; Type="DWord"; Data=0; Undo="DELETE_VALUE"
             },
 
-            @{
-                Name="Connected Devices Platform (CDP) Servisini El Ile Al";
-                Aliases=@("Connected Devices Platform (CDP) Servisini Kapat");
-                SubCategory="Telemetri";
-                Risk="Low"; RestartExplorer=$false;
-                Description="Bağlı Cihazlar Platformu servisini (CDPSvc) durdurur ve 'El ile' başlatmaya alır — kapatmaz. Arka planda sürekli çalışmaz; Bluetooth Swift Pair veya Yakın Paylaşım gerektiğinde Windows yine başlatır.`n`n⚠️ Telefon Bağlantısı, PC'den sesli arama ve telefon-PC dosya paylaşımı gecikebilir ya da zayıflayabilir.`n↩️ Geri alma servisi yeniden otomatik başlatır.";
-                Command='
-                    try { Stop-Service "CDPSvc" -Force -ErrorAction SilentlyContinue } catch {}
-                    # v1.3.0: Devre Disi yerine El ile — Bluetooth Swift Pair eslestirme bildirimleri ve Yakin Paylasim gerektiginde calisabilir
-                    try { Set-Service "CDPSvc" -StartupType Manual -ErrorAction SilentlyContinue } catch {}
-                ';
-                UndoCommand='
-                    try { Set-Service "CDPSvc" -StartupType Automatic -ErrorAction SilentlyContinue } catch {}
-                    try { Start-Service "CDPSvc" -ErrorAction SilentlyContinue } catch {}
-                ';
-                DetectScript='
-                    $s = Get-Service -Name "CDPSvc" -ErrorAction SilentlyContinue
-                    return ($s -and ("$($s.StartType)" -eq "Disabled" -or "$($s.StartType)" -eq "Manual"))
-                '
-            },
 
             @{
                 Name="Tailored Experiences (Kisisellestirilmis Deneyimler) Kapat";
@@ -2497,48 +2477,6 @@ public class SpiFx {
                 )
             },
             @{
-                Name="Donanım Üreticisi Telemetrisini Kapat (Intel / AMD / HP / Dell / Lenovo)";
-                SubCategory="Telemetri"; Since="2.0.0"; Requires=@("VendorTel");
-                Risk="Low"; RestartExplorer=$false;
-                Description="Sadece kullanım verisi göndermek için kurulan, kapatılınca hiçbir donanım özelliğini bozmayan üretici bileşenlerini kapatır (yalnızca bu PC'de KURULU olanlar):`n`n• Intel Computing Improvement Program (SUR / ESRV servisleri) — Intel'in kendi tanımıyla isteğe bağlı program, hiçbir sürücü kullanmaz`n• AMD User Experience Program (AUEPLauncher) — Adrenalin'deki 'Kullanıcı Deneyimi Programı'`n• HP Insights / Touchpoint Analytics — saf telemetri (HP güncellemesi geri açabilir; MrClean açılış denetimi yakalar)`n• Dell Data Vault (SupportAssist telemetri toplayıcı)`n• Lenovo Vantage günlük telemetri görevi`n`n🛡️ BİLEREK DOKUNULMAYANLAR: Logitech G HUB (LGHUBUpdaterService — kapanırsa G HUB açılmaz), Razer Synapse / Game Manager, SteelSeries GG / Sonar, Corsair iCUE (AIO pompa / fan kontrolü), ASUS Armoury Crate, Realtek ve Dolby ses servisleri, AMD External Events (FreeSync), Dell Client Management, Lenovo ImController (kısayol / pil). Bunlarda salt-telemetri servis yok; telemetriyi uygulamanın kendi ayarından kapatın (G HUB: Ayarlar > Hesap > Analitik; Synapse / iCUE / GG: Ayarlar > Gizlilik).`n`n↩️ Geri al: servislerin ÖNCEKİ başlangıç türü yedekten geri yüklenir.";
-                DetectScript='
-                    $l = @(Get-MrCleanVendorTelemetry -Fresh)
-                    if ($l.Count -eq 0) { return $false }
-                    return (-not ($l | Where-Object { -not $_.Off }))
-                ';
-                Command='
-                    $bk = "HKLM:\SOFTWARE\MrClean\VendorTelBackup"
-                    if (-not (Test-Path $bk)) { New-Item -Path $bk -Force | Out-Null }
-                    foreach ($c in @(Get-MrCleanVendorTelemetry -Fresh)) {
-                        if ($c.Kind -eq "Task") {
-                            Get-ScheduledTask -TaskPath "\Lenovo\Vantage\Schedule\" -TaskName $c.Name -ErrorAction SilentlyContinue | Disable-ScheduledTask -ErrorAction SilentlyContinue | Out-Null
-                            continue
-                        }
-                        $reg = "HKLM:\SYSTEM\CurrentControlSet\Services\$($c.Name)"
-                        $st = (Get-ItemProperty -Path $reg -Name "Start" -ErrorAction SilentlyContinue).Start
-                        if ($null -eq (Get-ItemProperty -Path $bk -Name $c.Name -ErrorAction SilentlyContinue)) { Set-ItemProperty -Path $bk -Name $c.Name -Value "$st" -Type String -Force }
-                        try { Stop-Service -Name $c.Name -Force -ErrorAction SilentlyContinue } catch {}
-                        try { Set-Service -Name $c.Name -StartupType Disabled -ErrorAction Stop } catch { Set-ItemProperty -Path $reg -Name "Start" -Value 4 -Type DWord -Force -ErrorAction SilentlyContinue }
-                        WpfLog "[Telemetri] $($c.Label) ($($c.Name)) devre disi."
-                    }
-                    $global:MrCleanVendorTel = $null
-                ';
-                UndoCommand='
-                    $bk = "HKLM:\SOFTWARE\MrClean\VendorTelBackup"
-                    if (Test-Path $bk) {
-                        $p = Get-ItemProperty -Path $bk -ErrorAction SilentlyContinue
-                        foreach ($n in @($p.PSObject.Properties | Where-Object { $_.Name -notlike "PS*" })) {
-                            $reg = "HKLM:\SYSTEM\CurrentControlSet\Services\$($n.Name)"
-                            $v = 3; if ("$($n.Value)" -match "^\d+$") { $v = [int]$n.Value }
-                            if (Test-Path $reg) { Set-ItemProperty -Path $reg -Name "Start" -Value $v -Type DWord -Force -ErrorAction SilentlyContinue }
-                        }
-                        Remove-Item -Path $bk -Recurse -Force -ErrorAction SilentlyContinue
-                    }
-                    Get-ScheduledTask -TaskPath "\Lenovo\Vantage\Schedule\" -TaskName "DailyTelemetryTransmission" -ErrorAction SilentlyContinue | Enable-ScheduledTask -ErrorAction SilentlyContinue | Out-Null
-                    $global:MrCleanVendorTel = $null
-                '
-            },
-            @{
                 Name="Microsoft Office Telemetrisini Kapat";
                 SubCategory="Telemetri"; Since="2.0.0";
                 Risk="Low"; RestartExplorer=$false;
@@ -2706,29 +2644,6 @@ public class SpiFx {
                     @{ Key="HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\generativeAI"; ValueName="Value"; Type="String"; Data="Deny"; Undo="DELETE_VALUE" },
                     @{ Key="HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\systemAIModels"; ValueName="Value"; Type="String"; Data="Deny"; Undo="DELETE_VALUE" }
                 )
-            },
-            @{
-                Name="Windows AI Servisini Otomatik Başlatma (WSAIFabricSvc)";
-                SubCategory="Windows Özellikleri"; Since="2.0.0"; MinBuild=26100;
-                Risk="Low"; RestartExplorer=$false;
-                Description="'Windows AI Fabric Service' (WSAIFabricSvc) açılışta otomatik başlamak yerine 'El ile' başlar — sadece bir AI özelliği gerçekten istediğinde çalışır. Boşta RAM/CPU tasarrufu.`n`n💡 Servis sistemde yoksa (Copilot+ olmayan / eski cihaz) tweak zaten 'aktif' görünür, yapılacak iş yoktur.";
-                DetectScript='
-                    $s = Get-Service -Name "WSAIFabricSvc" -ErrorAction SilentlyContinue
-                    if (-not $s) { return $true }
-                    return ("$($s.StartType)" -eq "Manual" -or "$($s.StartType)" -eq "Disabled")
-                ';
-                Command='
-                    if (Get-Service -Name "WSAIFabricSvc" -ErrorAction SilentlyContinue) {
-                        try { Set-Service -Name "WSAIFabricSvc" -StartupType Manual -ErrorAction Stop }
-                        catch { Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\WSAIFabricSvc" -Name "Start" -Value 3 -Type DWord -Force -ErrorAction SilentlyContinue }
-                    } else { Write-Host "[WSAIFabricSvc] Servis bulunamadi — atlandi." }
-                ';
-                UndoCommand='
-                    if (Get-Service -Name "WSAIFabricSvc" -ErrorAction SilentlyContinue) {
-                        try { Set-Service -Name "WSAIFabricSvc" -StartupType Automatic -ErrorAction Stop }
-                        catch { Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\WSAIFabricSvc" -Name "Start" -Value 2 -Type DWord -Force -ErrorAction SilentlyContinue }
-                    }
-                '
             },
             @{
                 Name="Not Defteri (Notepad) AI Özelliklerini Kapat";
@@ -3318,82 +3233,12 @@ public class SpiMenu {
                 '
             },
             @{
-                Name="NDU Servisini Kapat (Network Polling)";
-                Description="Ağ Veri Kullanımı (NDU) izleme sürücüsünü kapatır. Bağlantı ve internet hızı etkilenmez; eski Killer / bazı ağ sürücülerindeki bellek sızıntısının bilinen çözümüdür. Kazanç küçüktür.`n`n⚠️ Görev Yöneticisi'nde uygulama başına ağ kullanımı ve Ayarlar > Veri kullanımı sayaçları çalışmaz.`n⚠️ Yeniden başlatma gerekir.";
-                Command="Set-Service -Name Ndu -StartupType Disabled -ErrorAction SilentlyContinue";
-                UndoCommand="Set-Service -Name Ndu -StartupType Automatic -ErrorAction SilentlyContinue";
-                RequiresReboot=$true;
-                # Detection: Get-Service ile StartType — Set-Service gecikmesinden bagimsiz, dil bagimsiz (servis name'e bakar)
-                DetectScript="(Get-Service -Name Ndu -ErrorAction SilentlyContinue).StartType -eq 'Disabled'";
-                Risk="Low"; RestartExplorer=$false
-            },
-            @{
                 Name="Bellek Sayfa Birleştirmeyi Kapat (Page Combining)"; Since="2.0.0";
                 Risk="Low"; RestartExplorer=$false;
                 Description="Windows'un RAM'deki aynı içerikli sayfaları periyodik olarak tarayıp birleştirmesini (page combining) kapatır — arka planda zaman zaman çalışan bu taramanın CPU maliyeti kalkar. 16 GB+ RAM'de bellek kazancı zaten önemsizdir.`n`nResmi cmdlet: Disable-MMAgent -PageCombining. Geri alınabilir.`nℹ️ Etkisi küçüktür (anlık mikro yük); kayıt defteri 'DisablePageCombining' tweak'inin resmi ve güvenli karşılığıdır.";
                 DetectScript="(Get-MMAgent -ErrorAction SilentlyContinue).PageCombining -eq `$false";
                 Command="Disable-MMAgent -PageCombining -ErrorAction SilentlyContinue";
                 UndoCommand="Enable-MMAgent -PageCombining -ErrorAction SilentlyContinue"
-            },
-            @{
-                Name="Gereksiz Arka Plan Servislerini El ile Başlat (Güvenli Liste)"; Since="2.0.0";
-                Risk="Low"; RestartExplorer=$false;
-                Description="Açılışta otomatik başlayan ama günlük kullanımda gerekmeyen servisleri 'El ile' yapar (gerektiğinde Windows yine başlatır):`n• MapsBroker — İndirilen Haritalar Yöneticisi`n• TrkWks — Dağıtılmış Bağlantı İzleme İstemcisi`n• PcaSvc — Program Uyumluluk Yardımcısı`n• dmwappushservice — WAP Push (telemetri / MDM)`n`n✅ Bluetooth, Xbox, ses, ağ, yazıcı, arama, bildirim, Windows Update, Defender ve Edge güncelleme servisine dokunulmaz. Hiçbiri devre dışı bırakılmaz; önceki başlangıç türleri yedeklenir, geri alma onlara döner.";
-                DetectScript='
-                    foreach ($n in @("MapsBroker","TrkWks","PcaSvc","dmwappushservice")) {
-                        $s = Get-Service -Name $n -ErrorAction SilentlyContinue
-                        if ($s -and "$($s.StartType)" -eq "Automatic") { return $false }
-                    }
-                    return $true
-                ';
-                Command='
-                    $bk = "HKLM:\SOFTWARE\MrClean\ServiceStartBackup"
-                    if (-not (Test-Path $bk)) { New-Item -Path $bk -Force | Out-Null }
-                    # Eski surum edgeupdate El Ile yaptiysa Edge yamasini geri ac
-                    $eu = (Get-ItemProperty -Path $bk -Name "edgeupdate" -ErrorAction SilentlyContinue).edgeupdate
-                    if ($eu) {
-                        $regEu = "HKLM:\SYSTEM\CurrentControlSet\Services\edgeupdate"
-                        if (Test-Path $regEu) {
-                            $partsEu = "$eu".Split("|")
-                            if ($partsEu[0]) { Set-ItemProperty -Path $regEu -Name "Start" -Value ([int]$partsEu[0]) -Type DWord -Force -ErrorAction SilentlyContinue }
-                            if ($partsEu.Count -gt 1 -and $partsEu[1] -ne "") { Set-ItemProperty -Path $regEu -Name "DelayedAutostart" -Value ([int]$partsEu[1]) -Type DWord -Force -ErrorAction SilentlyContinue }
-                        }
-                        Remove-ItemProperty -Path $bk -Name "edgeupdate" -Force -ErrorAction SilentlyContinue
-                    }
-                    foreach ($n in @("MapsBroker","TrkWks","PcaSvc","dmwappushservice")) {
-                        $reg = "HKLM:\SYSTEM\CurrentControlSet\Services\$n"
-                        if (-not (Test-Path $reg)) { continue }
-                        $start = (Get-ItemProperty -Path $reg -Name "Start" -ErrorAction SilentlyContinue).Start
-                        $delayed = (Get-ItemProperty -Path $reg -Name "DelayedAutostart" -ErrorAction SilentlyContinue).DelayedAutostart
-                        if ($null -eq (Get-ItemProperty -Path $bk -Name $n -ErrorAction SilentlyContinue)) {
-                            Set-ItemProperty -Path $bk -Name $n -Value "$start|$delayed" -Type String -Force
-                        }
-                        try { Set-Service -Name $n -StartupType Manual -ErrorAction Stop }
-                        catch { Set-ItemProperty -Path $reg -Name "Start" -Value 3 -Type DWord -Force -ErrorAction SilentlyContinue }
-                    }
-                ';
-                UndoCommand='
-                    $bk = "HKLM:\SOFTWARE\MrClean\ServiceStartBackup"
-                    $defaults = @{ MapsBroker="2|1"; TrkWks="2|"; PcaSvc="2|"; dmwappushservice="3|" }
-                    $names = @($defaults.Keys)
-                    if (Test-Path $bk) {
-                        foreach ($p in @((Get-Item $bk -ErrorAction SilentlyContinue).Property)) {
-                            if ($p -and $names -notcontains $p) { $names += $p }
-                        }
-                    }
-                    foreach ($n in $names) {
-                        $reg = "HKLM:\SYSTEM\CurrentControlSet\Services\$n"
-                        if (-not (Test-Path $reg)) { continue }
-                        $val = $null
-                        if (Test-Path $bk) { $val = (Get-ItemProperty -Path $bk -Name $n -ErrorAction SilentlyContinue).$n }
-                        if (-not $val) { $val = $defaults[$n] }
-                        if (-not $val) { continue }
-                        $parts = "$val".Split("|")
-                        if ($parts[0]) { Set-ItemProperty -Path $reg -Name "Start" -Value ([int]$parts[0]) -Type DWord -Force -ErrorAction SilentlyContinue }
-                        if ($parts.Count -gt 1 -and $parts[1] -ne "") { Set-ItemProperty -Path $reg -Name "DelayedAutostart" -Value ([int]$parts[1]) -Type DWord -Force -ErrorAction SilentlyContinue }
-                    }
-                    Remove-Item -Path $bk -Recurse -Force -ErrorAction SilentlyContinue
-                '
             },
             @{
                 Name="Arka Plan Uygulamalarını Kapat (UWP)";
@@ -3407,15 +3252,6 @@ public class SpiMenu {
                 Description="Microsoft Store AppInstaller'ın deneysel/telemetri özelliklerini kapatır. Az network ve CPU tasarrufu.";
                 Key="HKLM:\Software\Policies\Microsoft\Windows\AppInstaller";
                 ValueName="EnableExperimentalFeatures"; Type="DWord"; Data=0; Undo="DELETE_VALUE";
-                Risk="Low"; RestartExplorer=$false
-            },
-            @{
-                Name="DPS (Tanılama) Servisini Manuele Al";
-                Description="Tanılayıcı İlkesi Hizmeti'ni (Diagnostic Policy Service, DPS) 'Otomatik' yerine 'El ile' başlatmaya alır; açılışta çalışmaz, gerektiğinde başlar. Küçük bir RAM / CPU tasarrufu sağlar.`n`n⚠️ Windows'un sorun giderici araçları ve ağ tanılaması bu servise ihtiyaç duyduğunda yavaş açılabilir.";
-                Command="Set-Service -Name DPS -StartupType Manual -ErrorAction SilentlyContinue";
-                UndoCommand="Set-Service -Name DPS -StartupType Automatic -ErrorAction SilentlyContinue";
-                # Detection: Get-Service StartType — dil bagimsiz, registry erisimi gerekmez
-                DetectScript="(Get-Service -Name DPS -ErrorAction SilentlyContinue).StartType -eq 'Manual'";
                 Risk="Low"; RestartExplorer=$false
             },
 
@@ -3646,26 +3482,136 @@ public class SpiMenu {
                Command='if (-not (Confirm-DualCcdX3DPowerTweak "Yuksek Performans Guc Plani")) { return }; powercfg -setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'; UndoCommand='powercfg -setactive 381b4222-f694-41f0-9685-ff5bb260df2e 2>$null; if ($LASTEXITCODE -ne 0) { powercfg -duplicatescheme 381b4222-f694-41f0-9685-ff5bb260df2e 381b4222-f694-41f0-9685-ff5bb260df2e | Out-Null; powercfg -setactive 381b4222-f694-41f0-9685-ff5bb260df2e }'; RestartExplorer=$false }
         )
         
-        # --- 7. UYGULAMA KALDIRMA ---
-        "Uygulama Kaldırma" = @(
+        # --- 6b. DEBLOAT (v2.0.x, §135): servis kapatan tweak'ler tek yerde. Stix servisleri (güvenli / riskli) sonraki aşamalarda. ---
+        "🧹 Debloat" = @(
             @{
-                Name="OneDrive'ı Sistemden Tamamen Kaldır"; Risk="Medium";
-                Description="OneDrive'ı bilgisayardan kaldırır: önce OneDrive'ın kendi kaldırma komutu kullanılır, bulunamazsa Windows'taki kurulum dosyası denenir. Başlangıç kaydı, OneDrive güncelleme / raporlama görevleri ve Gezgin'deki boş OneDrive girişi de temizlenir.`n`n✅ OneDrive klasörünüzdeki dosyalar silinmez.`n⚠️ Geri alma yoktur — yeniden kullanmak için OneDrive'ı Microsoft'tan indirip kurun.";
+                Name="Gereksiz Arka Plan Servislerini El ile Başlat (Güvenli Liste)"; Since="2.0.0";
+                SubCategory="MrClean servis ayarları";
+                Risk="Low"; RestartExplorer=$false;
+                Description="Açılışta otomatik başlayan ama günlük kullanımda gerekmeyen servisleri 'El ile' yapar (gerektiğinde Windows yine başlatır):`n• MapsBroker — İndirilen Haritalar Yöneticisi`n• TrkWks — Dağıtılmış Bağlantı İzleme İstemcisi`n• PcaSvc — Program Uyumluluk Yardımcısı`n• dmwappushservice — WAP Push (telemetri / MDM)`n`n✅ Bluetooth, Xbox, ses, ağ, yazıcı, arama, bildirim, Windows Update, Defender ve Edge güncelleme servisine dokunulmaz. Hiçbiri devre dışı bırakılmaz; önceki başlangıç türleri yedeklenir, geri alma onlara döner.";
                 DetectScript='
-                    # v1.3.0: Program Files kurulumu ve Uninstall kaydi da kontrol edilir (eski sezgisel sadece AppData ya bakiyordu)
-                    if (Get-Process -Name "OneDrive" -ErrorAction SilentlyContinue) { return $false }
-                    foreach ($p in @("$env:LOCALAPPDATA\Microsoft\OneDrive\OneDrive.exe", "$env:ProgramFiles\Microsoft OneDrive\OneDrive.exe", "${env:ProgramFiles(x86)}\Microsoft OneDrive\OneDrive.exe")) { if (Test-Path $p) { return $false } }
-                    $u = Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\OneDriveSetup.exe","HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\OneDriveSetup.exe" -ErrorAction SilentlyContinue
-                    return (-not $u)
+                    foreach ($n in @("MapsBroker","TrkWks","PcaSvc","dmwappushservice")) {
+                        $s = Get-Service -Name $n -ErrorAction SilentlyContinue
+                        if ($s -and "$($s.StartType)" -eq "Automatic") { return $false }
+                    }
+                    return $true
                 ';
-                Command='taskkill /f /im OneDrive.exe 2>$null; $u = @(Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\OneDriveSetup.exe","HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\OneDriveSetup.exe","HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\OneDriveSetup.exe" -ErrorAction SilentlyContinue | Where-Object { $_.UninstallString }) | Select-Object -First 1; if ($u) { $us = "$($u.UninstallString)"; if ($us -match "^\s*`"([^`"]+)`"\s*(.*)$") { $exe = $Matches[1]; $args0 = $Matches[2] } else { $exe = ($us -split "\s+/")[0]; $args0 = $us.Substring($exe.Length) }; if ($args0 -notmatch "/silent") { $args0 = "$args0 /silent" }; Start-Process -FilePath $exe -ArgumentList $args0 -Wait -ErrorAction SilentlyContinue } elseif (Test-Path "$env:SystemRoot\SysWOW64\OneDriveSetup.exe") { Start-Process "$env:SystemRoot\SysWOW64\OneDriveSetup.exe" -ArgumentList "/uninstall" -Wait } elseif (Test-Path "$env:SystemRoot\System32\OneDriveSetup.exe") { Start-Process "$env:SystemRoot\System32\OneDriveSetup.exe" -ArgumentList "/uninstall" -Wait } else { Write-Host "OneDrive Setup bulunamadi" }; Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "OneDriveSetup" -Force -ErrorAction SilentlyContinue; Get-ScheduledTask -ErrorAction SilentlyContinue | Where-Object { $_.TaskName -like "OneDrive Standalone Update Task*" -or $_.TaskName -like "OneDrive Reporting Task*" } | Unregister-ScheduledTask -Confirm:$false -ErrorAction SilentlyContinue; $nav = "HKCU:\Software\Classes\CLSID\{018D5C66-4533-4307-9B53-224DE2ED1FE6}"; if (-not (Test-Path $nav)) { New-Item -Path $nav -Force | Out-Null }; Set-ItemProperty -Path $nav -Name "System.IsPinnedToNameSpaceTree" -Value 0 -Type DWord -Force';
-                UndoCommand="";
-                RestartExplorer=$false
+                Command='
+                    $bk = "HKLM:\SOFTWARE\MrClean\ServiceStartBackup"
+                    if (-not (Test-Path $bk)) { New-Item -Path $bk -Force | Out-Null }
+                    # Eski surum edgeupdate El Ile yaptiysa Edge yamasini geri ac
+                    $eu = (Get-ItemProperty -Path $bk -Name "edgeupdate" -ErrorAction SilentlyContinue).edgeupdate
+                    if ($eu) {
+                        $regEu = "HKLM:\SYSTEM\CurrentControlSet\Services\edgeupdate"
+                        if (Test-Path $regEu) {
+                            $partsEu = "$eu".Split("|")
+                            if ($partsEu[0]) { Set-ItemProperty -Path $regEu -Name "Start" -Value ([int]$partsEu[0]) -Type DWord -Force -ErrorAction SilentlyContinue }
+                            if ($partsEu.Count -gt 1 -and $partsEu[1] -ne "") { Set-ItemProperty -Path $regEu -Name "DelayedAutostart" -Value ([int]$partsEu[1]) -Type DWord -Force -ErrorAction SilentlyContinue }
+                        }
+                        Remove-ItemProperty -Path $bk -Name "edgeupdate" -Force -ErrorAction SilentlyContinue
+                    }
+                    foreach ($n in @("MapsBroker","TrkWks","PcaSvc","dmwappushservice")) {
+                        $reg = "HKLM:\SYSTEM\CurrentControlSet\Services\$n"
+                        if (-not (Test-Path $reg)) { continue }
+                        $start = (Get-ItemProperty -Path $reg -Name "Start" -ErrorAction SilentlyContinue).Start
+                        $delayed = (Get-ItemProperty -Path $reg -Name "DelayedAutostart" -ErrorAction SilentlyContinue).DelayedAutostart
+                        if ($null -eq (Get-ItemProperty -Path $bk -Name $n -ErrorAction SilentlyContinue)) {
+                            Set-ItemProperty -Path $bk -Name $n -Value "$start|$delayed" -Type String -Force
+                        }
+                        try { Set-Service -Name $n -StartupType Manual -ErrorAction Stop }
+                        catch { Set-ItemProperty -Path $reg -Name "Start" -Value 3 -Type DWord -Force -ErrorAction SilentlyContinue }
+                    }
+                ';
+                UndoCommand='
+                    $bk = "HKLM:\SOFTWARE\MrClean\ServiceStartBackup"
+                    $defaults = @{ MapsBroker="2|1"; TrkWks="2|"; PcaSvc="2|"; dmwappushservice="3|" }
+                    $names = @($defaults.Keys)
+                    if (Test-Path $bk) {
+                        foreach ($p in @((Get-Item $bk -ErrorAction SilentlyContinue).Property)) {
+                            if ($p -and $names -notcontains $p) { $names += $p }
+                        }
+                    }
+                    foreach ($n in $names) {
+                        $reg = "HKLM:\SYSTEM\CurrentControlSet\Services\$n"
+                        if (-not (Test-Path $reg)) { continue }
+                        $val = $null
+                        if (Test-Path $bk) { $val = (Get-ItemProperty -Path $bk -Name $n -ErrorAction SilentlyContinue).$n }
+                        if (-not $val) { $val = $defaults[$n] }
+                        if (-not $val) { continue }
+                        $parts = "$val".Split("|")
+                        if ($parts[0]) { Set-ItemProperty -Path $reg -Name "Start" -Value ([int]$parts[0]) -Type DWord -Force -ErrorAction SilentlyContinue }
+                        if ($parts.Count -gt 1 -and $parts[1] -ne "") { Set-ItemProperty -Path $reg -Name "DelayedAutostart" -Value ([int]$parts[1]) -Type DWord -Force -ErrorAction SilentlyContinue }
+                    }
+                    Remove-Item -Path $bk -Recurse -Force -ErrorAction SilentlyContinue
+                '
             },
-
-            # === FR33THY 13 Bloatware.ps1 birebir — 5 ek uygulama kaldirma ===
+            @{
+                Name="DPS (Tanılama) Servisini Manuele Al";
+                SubCategory="MrClean servis ayarları";
+                Description="Tanılayıcı İlkesi Hizmeti'ni (Diagnostic Policy Service, DPS) 'Otomatik' yerine 'El ile' başlatmaya alır; açılışta çalışmaz, gerektiğinde başlar. Küçük bir RAM / CPU tasarrufu sağlar.`n`n⚠️ Windows'un sorun giderici araçları ve ağ tanılaması bu servise ihtiyaç duyduğunda yavaş açılabilir.";
+                Command="Set-Service -Name DPS -StartupType Manual -ErrorAction SilentlyContinue";
+                UndoCommand="Set-Service -Name DPS -StartupType Automatic -ErrorAction SilentlyContinue";
+                # Detection: Get-Service StartType — dil bagimsiz, registry erisimi gerekmez
+                DetectScript="(Get-Service -Name DPS -ErrorAction SilentlyContinue).StartType -eq 'Manual'";
+                Risk="Low"; RestartExplorer=$false
+            },
+            @{
+                Name="NDU Servisini Kapat (Network Polling)";
+                SubCategory="MrClean servis ayarları";
+                Description="Ağ Veri Kullanımı (NDU) izleme sürücüsünü kapatır. Bağlantı ve internet hızı etkilenmez; eski Killer / bazı ağ sürücülerindeki bellek sızıntısının bilinen çözümüdür. Kazanç küçüktür.`n`n⚠️ Görev Yöneticisi'nde uygulama başına ağ kullanımı ve Ayarlar > Veri kullanımı sayaçları çalışmaz.`n⚠️ Yeniden başlatma gerekir.";
+                Command="Set-Service -Name Ndu -StartupType Disabled -ErrorAction SilentlyContinue";
+                UndoCommand="Set-Service -Name Ndu -StartupType Automatic -ErrorAction SilentlyContinue";
+                RequiresReboot=$true;
+                # Detection: Get-Service ile StartType — Set-Service gecikmesinden bagimsiz, dil bagimsiz (servis name'e bakar)
+                DetectScript="(Get-Service -Name Ndu -ErrorAction SilentlyContinue).StartType -eq 'Disabled'";
+                Risk="Low"; RestartExplorer=$false
+            },
+            @{
+                Name="Connected Devices Platform (CDP) Servisini El Ile Al";
+                Aliases=@("Connected Devices Platform (CDP) Servisini Kapat");
+                SubCategory="MrClean servis ayarları";
+                Risk="Low"; RestartExplorer=$false;
+                Description="Bağlı Cihazlar Platformu servisini (CDPSvc) durdurur ve 'El ile' başlatmaya alır — kapatmaz. Arka planda sürekli çalışmaz; Bluetooth Swift Pair veya Yakın Paylaşım gerektiğinde Windows yine başlatır.`n`n⚠️ Telefon Bağlantısı, PC'den sesli arama ve telefon-PC dosya paylaşımı gecikebilir ya da zayıflayabilir.`n↩️ Geri alma servisi yeniden otomatik başlatır.";
+                Command='
+                    try { Stop-Service "CDPSvc" -Force -ErrorAction SilentlyContinue } catch {}
+                    # v1.3.0: Devre Disi yerine El ile — Bluetooth Swift Pair eslestirme bildirimleri ve Yakin Paylasim gerektiginde calisabilir
+                    try { Set-Service "CDPSvc" -StartupType Manual -ErrorAction SilentlyContinue } catch {}
+                ';
+                UndoCommand='
+                    try { Set-Service "CDPSvc" -StartupType Automatic -ErrorAction SilentlyContinue } catch {}
+                    try { Start-Service "CDPSvc" -ErrorAction SilentlyContinue } catch {}
+                ';
+                DetectScript='
+                    $s = Get-Service -Name "CDPSvc" -ErrorAction SilentlyContinue
+                    return ($s -and ("$($s.StartType)" -eq "Disabled" -or "$($s.StartType)" -eq "Manual"))
+                '
+            },
+            @{
+                Name="Windows AI Servisini Otomatik Başlatma (WSAIFabricSvc)";
+                SubCategory="MrClean servis ayarları"; Since="2.0.0"; MinBuild=26100;
+                Risk="Low"; RestartExplorer=$false;
+                Description="'Windows AI Fabric Service' (WSAIFabricSvc) açılışta otomatik başlamak yerine 'El ile' başlar — sadece bir AI özelliği gerçekten istediğinde çalışır. Boşta RAM/CPU tasarrufu.`n`n💡 Servis sistemde yoksa (Copilot+ olmayan / eski cihaz) tweak zaten 'aktif' görünür, yapılacak iş yoktur.";
+                DetectScript='
+                    $s = Get-Service -Name "WSAIFabricSvc" -ErrorAction SilentlyContinue
+                    if (-not $s) { return $true }
+                    return ("$($s.StartType)" -eq "Manual" -or "$($s.StartType)" -eq "Disabled")
+                ';
+                Command='
+                    if (Get-Service -Name "WSAIFabricSvc" -ErrorAction SilentlyContinue) {
+                        try { Set-Service -Name "WSAIFabricSvc" -StartupType Manual -ErrorAction Stop }
+                        catch { Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\WSAIFabricSvc" -Name "Start" -Value 3 -Type DWord -Force -ErrorAction SilentlyContinue }
+                    } else { Write-Host "[WSAIFabricSvc] Servis bulunamadi — atlandi." }
+                ';
+                UndoCommand='
+                    if (Get-Service -Name "WSAIFabricSvc" -ErrorAction SilentlyContinue) {
+                        try { Set-Service -Name "WSAIFabricSvc" -StartupType Automatic -ErrorAction Stop }
+                        catch { Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\WSAIFabricSvc" -Name "Start" -Value 2 -Type DWord -Force -ErrorAction SilentlyContinue }
+                    }
+                '
+            },
             @{
                 Name="Microsoft GameInput Servisini El Ile Al";
+                SubCategory="MrClean servis ayarları";
                 Aliases=@("Microsoft GameInput Kaldır");
                 Description="Microsoft GameInput servislerini (varsa) durdurup 'El ile' başlatmaya alır; paket kaldırılmaz. Gerektiğinde (Xbox uygulaması, Game Pass oyunu, kumanda) Windows servisi yine başlatır.`n`n⚠️ Uygulamadan önce sorulur. Kumandayla oynayan ya da Game Pass kullanan biriyseniz 'Hayır' deyin.`n↩️ Geri alma önceki başlangıç türlerine döner.";
                 Risk="Low"; RestartExplorer=$false;
@@ -3713,6 +3659,469 @@ public class SpiMenu {
                     Write-Host "[GameInput] Servis geri alindi."
                 '
             },
+            @{
+                Name="Uzak Kayıt Defteri ve Mağaza Demo Servislerini Devre Dışı Bırak";
+                SubCategory="MrClean servis ayarları"; Since="2.0.0";
+                Risk="Low"; RestartExplorer=$false;
+                Description="Ağ üzerinden kayıt defterine erişim sağlayan Uzak Kayıt Defteri (RemoteRegistry) ve mağaza vitrin modu (RetailDemo) servislerini Devre Dışı yapar. Win11'de RemoteRegistry zaten varsayılan olarak kapalıdır — tweak çoğu sistemde 'Aktif' görünür.`n`n✅ Orijinal başlangıç türleri yedeklenir, geri alma onlara döner.`n📚 Kaynak: optimizer, optimizerNXT, GTweak.";
+                DetectScript='
+                    foreach ($n in @("RemoteRegistry","RetailDemo")) {
+                        $s = Get-Service -Name $n -ErrorAction SilentlyContinue
+                        if ($s -and "$($s.StartType)" -ne "Disabled") { return $false }
+                    }
+                    return $true
+                ';
+                Command='
+                    foreach ($n in @("RemoteRegistry","RetailDemo")) {
+                        $reg = "HKLM:\SYSTEM\CurrentControlSet\Services\$n"
+                        if (-not (Test-Path $reg)) { continue }
+                        Backup-TweakRegValue "SvcStart_$n" $reg "Start"
+                        try { Stop-Service -Name $n -Force -ErrorAction SilentlyContinue } catch {}
+                        Set-ItemProperty -Path $reg -Name "Start" -Value 4 -Type DWord -Force -ErrorAction SilentlyContinue
+                    }
+                ';
+                UndoCommand='
+                    foreach ($n in @("RemoteRegistry","RetailDemo")) {
+                        $reg = "HKLM:\SYSTEM\CurrentControlSet\Services\$n"
+                        if (Test-Path $reg) { Restore-TweakRegValue "SvcStart_$n" $reg "Start" 3 "DWord" }
+                    }
+                '
+            },
+            @{
+                Name="Donanım Üreticisi Telemetrisini Kapat (Intel / AMD / HP / Dell / Lenovo)";
+                SubCategory="MrClean servis ayarları"; Since="2.0.0"; Requires=@("VendorTel");
+                Risk="Low"; RestartExplorer=$false;
+                Description="Sadece kullanım verisi göndermek için kurulan, kapatılınca hiçbir donanım özelliğini bozmayan üretici bileşenlerini kapatır (yalnızca bu PC'de KURULU olanlar):`n`n• Intel Computing Improvement Program (SUR / ESRV servisleri) — Intel'in kendi tanımıyla isteğe bağlı program, hiçbir sürücü kullanmaz`n• AMD User Experience Program (AUEPLauncher) — Adrenalin'deki 'Kullanıcı Deneyimi Programı'`n• HP Insights / Touchpoint Analytics — saf telemetri (HP güncellemesi geri açabilir; MrClean açılış denetimi yakalar)`n• Dell Data Vault (SupportAssist telemetri toplayıcı)`n• Lenovo Vantage günlük telemetri görevi`n`n🛡️ BİLEREK DOKUNULMAYANLAR: Logitech G HUB (LGHUBUpdaterService — kapanırsa G HUB açılmaz), Razer Synapse / Game Manager, SteelSeries GG / Sonar, Corsair iCUE (AIO pompa / fan kontrolü), ASUS Armoury Crate, Realtek ve Dolby ses servisleri, AMD External Events (FreeSync), Dell Client Management, Lenovo ImController (kısayol / pil). Bunlarda salt-telemetri servis yok; telemetriyi uygulamanın kendi ayarından kapatın (G HUB: Ayarlar > Hesap > Analitik; Synapse / iCUE / GG: Ayarlar > Gizlilik).`n`n↩️ Geri al: servislerin ÖNCEKİ başlangıç türü yedekten geri yüklenir.";
+                DetectScript='
+                    $l = @(Get-MrCleanVendorTelemetry -Fresh)
+                    if ($l.Count -eq 0) { return $false }
+                    return (-not ($l | Where-Object { -not $_.Off }))
+                ';
+                Command='
+                    $bk = "HKLM:\SOFTWARE\MrClean\VendorTelBackup"
+                    if (-not (Test-Path $bk)) { New-Item -Path $bk -Force | Out-Null }
+                    foreach ($c in @(Get-MrCleanVendorTelemetry -Fresh)) {
+                        if ($c.Kind -eq "Task") {
+                            Get-ScheduledTask -TaskPath "\Lenovo\Vantage\Schedule\" -TaskName $c.Name -ErrorAction SilentlyContinue | Disable-ScheduledTask -ErrorAction SilentlyContinue | Out-Null
+                            continue
+                        }
+                        $reg = "HKLM:\SYSTEM\CurrentControlSet\Services\$($c.Name)"
+                        $st = (Get-ItemProperty -Path $reg -Name "Start" -ErrorAction SilentlyContinue).Start
+                        if ($null -eq (Get-ItemProperty -Path $bk -Name $c.Name -ErrorAction SilentlyContinue)) { Set-ItemProperty -Path $bk -Name $c.Name -Value "$st" -Type String -Force }
+                        try { Stop-Service -Name $c.Name -Force -ErrorAction SilentlyContinue } catch {}
+                        try { Set-Service -Name $c.Name -StartupType Disabled -ErrorAction Stop } catch { Set-ItemProperty -Path $reg -Name "Start" -Value 4 -Type DWord -Force -ErrorAction SilentlyContinue }
+                        WpfLog "[Telemetri] $($c.Label) ($($c.Name)) devre disi."
+                    }
+                    $global:MrCleanVendorTel = $null
+                ';
+                UndoCommand='
+                    $bk = "HKLM:\SOFTWARE\MrClean\VendorTelBackup"
+                    if (Test-Path $bk) {
+                        $p = Get-ItemProperty -Path $bk -ErrorAction SilentlyContinue
+                        foreach ($n in @($p.PSObject.Properties | Where-Object { $_.Name -notlike "PS*" })) {
+                            $reg = "HKLM:\SYSTEM\CurrentControlSet\Services\$($n.Name)"
+                            $v = 3; if ("$($n.Value)" -match "^\d+$") { $v = [int]$n.Value }
+                            if (Test-Path $reg) { Set-ItemProperty -Path $reg -Name "Start" -Value $v -Type DWord -Force -ErrorAction SilentlyContinue }
+                        }
+                        Remove-Item -Path $bk -Recurse -Force -ErrorAction SilentlyContinue
+                    }
+                    Get-ScheduledTask -TaskPath "\Lenovo\Vantage\Schedule\" -TaskName "DailyTelemetryTransmission" -ErrorAction SilentlyContinue | Enable-ScheduledTask -ErrorAction SilentlyContinue | Out-Null
+                    $global:MrCleanVendorTel = $null
+                '
+            },
+			@{
+				Name="NVIDIA Telemetri Kapat";
+				SubCategory="MrClean servis ayarları"; Vendor="NVIDIA"; Since="2.0.0";
+				Risk="Low"; RestartExplorer=$false;
+				Description="NVIDIA sürücüsünün ve Kontrol Paneli'nin kullanım verisi (telemetri) göndermesini kapatır: Kontrol Paneli 'veri paylaşımı' tercihi = Hayır, sürücü başlangıç telemetrisi = Kapalı.`n`nℹ️ Performansa etkisi yok denecek kadar azdır; gizlilik ayarıdır. NVIDIA App / GeForce Experience özellikleri (ShadowPlay, sürücü güncelleme, Reflex, DLSS) etkilenmez.`n📚 Kaynak: tweaqas paketi (Remove Telemetry.bat).";
+				Batch=@(
+					@{ Key="HKLM:\SOFTWARE\NVIDIA Corporation\NvControlPanel2\Client"; ValueName="OptInOrOutPreference"; Type="DWord"; Data=0; Undo="DELETE_VALUE" },
+					@{ Key="HKLM:\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup"; ValueName="SendTelemetryData"; Type="DWord"; Data=0; Undo="DELETE_VALUE" },
+					# v1.3.0: winscript (Basic preset) ve Chris Titus winutil ile ayni FTS telemetri bayraklari
+					@{ Key="HKLM:\SOFTWARE\NVIDIA Corporation\Global\FTS"; ValueName="EnableRID44231"; Type="DWord"; Data=0; Undo="DELETE_VALUE" },
+					@{ Key="HKLM:\SOFTWARE\NVIDIA Corporation\Global\FTS"; ValueName="EnableRID64640"; Type="DWord"; Data=0; Undo="DELETE_VALUE" },
+					@{ Key="HKLM:\SOFTWARE\NVIDIA Corporation\Global\FTS"; ValueName="EnableRID66610"; Type="DWord"; Data=0; Undo="DELETE_VALUE" },
+					# v1.3.0 (4. tur): eski surucu telemetri servisi ve gorevleri (varsa) — optimizer, optimizerNXT, GTweak
+					@{
+						Command='
+							$s = Get-Service -Name "NvTelemetryContainer" -ErrorAction SilentlyContinue
+							if ($s) { try { Stop-Service -Name "NvTelemetryContainer" -Force -ErrorAction SilentlyContinue } catch {}; Set-Service -Name "NvTelemetryContainer" -StartupType Disabled -ErrorAction SilentlyContinue }
+							Get-ScheduledTask -ErrorAction SilentlyContinue | Where-Object { $_.TaskName -like "NvTmRep*" -or $_.TaskName -like "NvTmMon*" } | Disable-ScheduledTask -ErrorAction SilentlyContinue | Out-Null
+						';
+						UndoCommand='
+							if (Get-Service -Name "NvTelemetryContainer" -ErrorAction SilentlyContinue) { Set-Service -Name "NvTelemetryContainer" -StartupType Automatic -ErrorAction SilentlyContinue }
+							Get-ScheduledTask -ErrorAction SilentlyContinue | Where-Object { $_.TaskName -like "NvTmRep*" -or $_.TaskName -like "NvTmMon*" } | Enable-ScheduledTask -ErrorAction SilentlyContinue | Out-Null
+						'
+					}
+				);
+				DetectScript='
+					$v = (Get-ItemProperty -Path "HKLM:\SOFTWARE\NVIDIA Corporation\NvControlPanel2\Client" -Name "OptInOrOutPreference" -ErrorAction SilentlyContinue).OptInOrOutPreference
+					$f = (Get-ItemProperty -Path "HKLM:\SOFTWARE\NVIDIA Corporation\Global\FTS" -Name "EnableRID66610" -ErrorAction SilentlyContinue).EnableRID66610
+					return ("$v" -eq "0" -and "$f" -eq "0")
+				' 
+			},
+            # --- §136: Stix servisleri, güvenli grup (RAPOR_STIX_servisler.md). Temiz 25H2'de hepsi zaten "El ile" ya da yok:
+            # açılışta çalışmazlar; Devre dışı yalnız tetiklenip başlamalarını engeller. RAM / süreç kazancı yazılmaz (ölçülmedi).
+            @{
+                Name="Windows Media Player Ağ Paylaşımını Kapat (WMPNetworkSvc)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.1";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:WMPNetworkSvc");
+                Description="Klasik Windows Media Player kitaplığını ağdaki diğer cihazlarla (UPnP / DLNA) paylaşan servisi Devre dışı yapar.`n`nTemiz Windows'ta zaten 'El ile' başlar, açılışta çalışmaz; Devre dışı yalnız bir uygulamanın onu başlatmasını engeller.`n`nKapatınca: eski Media Player ile ağdan medya paylaşımı çalışmaz. Geri Al, servisin önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("WMPNetworkSvc") 4';
+                Command='Set-MrCleanServicesStart @("WMPNetworkSvc") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("WMPNetworkSvc")'
+            },
+            @{
+                Name="Telefon Servisini Kapat (PhoneSvc)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.1";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:PhoneSvc"); HwWarn=@("Cellular");
+                Description="Cihazın telefon (hücresel / VoIP) durumunu yöneten servisi Devre dışı yapar.`n`nTemiz Windows'ta zaten 'El ile' başlar; hücresel modemi olmayan bilgisayarda kullanılmaz.`n`nKapatınca: hücresel modem ve bazı modern VoIP uygulamalarının telefon özellikleri çalışmaz. Bilgisayarda hücresel modem algılanırsa satır kırmızı uyarılıdır. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("PhoneSvc") 4';
+                Command='Set-MrCleanServicesStart @("PhoneSvc") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("PhoneSvc")'
+            },
+            @{
+                Name="Mesajlaşma Servisini Kapat (MessagingService)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.1";
+                Risk="Low"; RestartExplorer=$false; RequiresReboot=$true; Requires=@("Svc:MessagingService"); HwWarn=@("Cellular");
+                Description="Kısa mesaj (SMS / MMS) eşitlemesini sağlayan kullanıcı servisini Devre dışı yapar.`n`nTemiz Windows'ta zaten 'El ile' başlar; hücresel modemi olmayan bilgisayarda kullanılmaz. Kullanıcı başı servistir: değişiklik yeniden başlatmadan sonra tam geçerli olur.`n`nKapatınca: bilgisayarın kendi hücresel modemiyle SMS çalışmaz (Telefon Bağlantısı uygulaması bundan etkilenmez). Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("MessagingService") 4';
+                Command='Set-MrCleanServicesStart @("MessagingService") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("MessagingService")'
+            },
+            @{
+                Name="NFC ve Ödeme Yöneticisini Kapat (SEMgrSvc)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.1";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:SEMgrSvc"); HwWarn=@("NFC");
+                Description="NFC ile ödeme ve güvenli öğe (secure element) yönetimi servisini Devre dışı yapar.`n`nTemiz Windows'ta zaten 'El ile' başlar; NFC aygıtı olmayan bilgisayarda kullanılmaz.`n`nKapatınca: NFC ile ödeme ve NFC kart işlemleri çalışmaz. NFC aygıtı algılanırsa satır kırmızı uyarılıdır. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("SEMgrSvc") 4';
+                Command='Set-MrCleanServicesStart @("SEMgrSvc") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("SEMgrSvc")'
+            },
+            @{
+                Name="Şifreleme Sağlayıcı Konağını Kapat (WEPHOSTSVC)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.1";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:WEPHOSTSVC");
+                Description="Üçüncü taraf şifreleme sağlayıcılarını kurumsal e-posta (Exchange ActiveSync) şifreleme ilkelerine bağlayan servisi Devre dışı yapar.`n`nTemiz Windows'ta zaten 'El ile' başlar; ev bilgisayarında kullanılmaz.`n`nKapatınca: şirket e-postasının cihaz şifreleme ilkesi üçüncü taraf sağlayıcıyla denetlenemez. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("WEPHOSTSVC") 4';
+                Command='Set-MrCleanServicesStart @("WEPHOSTSVC") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("WEPHOSTSVC")'
+            },
+            @{
+                Name="Windows Insider Servisini Kapat (wisvc)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.1";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:wisvc"); HwWarn=@("Insider");
+                Description="Windows Insider (önizleme sürümleri) programının servisini Devre dışı yapar.`n`nTemiz Windows'ta zaten 'El ile' başlar; Insider'a kayıtlı olmayan bilgisayarda kullanılmaz.`n`nKapatınca: Insider programı çalışmaz. Bilgisayar Insider'a kayıtlıysa satır kırmızı uyarılıdır. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("wisvc") 4';
+                Command='Set-MrCleanServicesStart @("wisvc") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("wisvc")'
+            },
+            @{
+                Name="iSCSI Başlatıcıyı Kapat (MSiSCSI)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.1";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:MSiSCSI");
+                Description="Ağ üzerinden disk (iSCSI hedefi) bağlantılarını yöneten servisi Devre dışı yapar.`n`nTemiz Windows'ta zaten 'El ile' başlar; iSCSI diski kullanılmayan bilgisayarda çalışmaz.`n`nKapatınca: iSCSI ağ disklerine bağlanılamaz (NAS'a normal ağ paylaşımıyla erişim etkilenmez). Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("MSiSCSI") 4';
+                Command='Set-MrCleanServicesStart @("MSiSCSI") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("MSiSCSI")'
+            },
+            @{
+                Name="Etki Alanı Girişi Servisini Kapat (Netlogon)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.1";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:Netlogon"); HwWarn=@("Domain");
+                Description="Bilgisayarı şirket etki alanı denetleyicisine bağlayan servisi Devre dışı yapar.`n`nTemiz Windows'ta zaten 'El ile' başlar; etki alanına bağlı olmayan ev bilgisayarında kullanılmaz.`n`nKapatınca: etki alanı hesaplarıyla giriş yapılamaz. Bilgisayar bir etki alanına bağlıysa satır kırmızı uyarılıdır. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("Netlogon") 4';
+                Command='Set-MrCleanServicesStart @("Netlogon") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("Netlogon")'
+            },
+            @{
+                Name="Çevrimdışı Dosyalar Servisini Kapat (CscService)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.1";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:CscService");
+                Description="Ağ paylaşımlarındaki dosyaların çevrimdışı kopyalarını (Çevrimdışı Dosyalar) yöneten servisi Devre dışı yapar.`n`nTemiz Windows'ta zaten 'El ile' başlar; özellik açılmadıkça çalışmaz.`n`nKapatınca: Eşitleme Merkezi'ndeki çevrimdışı dosyalar kullanılamaz. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("CscService") 4';
+                Command='Set-MrCleanServicesStart @("CscService") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("CscService")'
+            },
+            @{
+                Name="İnternet Bağlantı Paylaşımı Yardımcısını Kapat (ALG)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.1";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:ALG");
+                Description="İnternet Bağlantı Paylaşımı (ICS) için üçüncü taraf protokol eklentilerini çalıştıran servisi Devre dışı yapar.`n`nTemiz Windows'ta zaten 'El ile' başlar.`n`nKapatınca: ICS ile paylaşılan bağlantıda eklenti gerektiren eski protokoller çalışmayabilir. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("ALG") 4';
+                Command='Set-MrCleanServicesStart @("ALG") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("ALG")'
+            },
+            @{
+                Name="IP Çeviri Yapılandırmasını Kapat (IpxlatCfgSvc)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.1";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:IpxlatCfgSvc"); HwWarn=@("Cellular");
+                Description="Hücresel ağlarda IPv4 / IPv6 çevirisini yapılandıran servisi Devre dışı yapar.`n`nTemiz Windows'ta zaten 'El ile' başlar; hücresel modemi olmayan bilgisayarda kullanılmaz.`n`nKapatınca: yalnız IPv6 sunan mobil ağlarda IPv4 uygulamaları çalışmayabilir. Hücresel modem algılanırsa satır kırmızı uyarılıdır. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("IpxlatCfgSvc") 4';
+                Command='Set-MrCleanServicesStart @("IpxlatCfgSvc") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("IpxlatCfgSvc")'
+            },
+            @{
+                Name="Hücresel Saat Servisini Kapat (autotimesvc)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.1";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:autotimesvc"); HwWarn=@("Cellular");
+                Description="Saati mobil ağdan (NITZ) alan servisi Devre dışı yapar.`n`nTemiz Windows'ta zaten 'El ile' başlar. Normal internet saat eşitlemesi (Windows Saati / W32Time) bundan etkilenmez.`n`nKapatınca: hücresel modemli cihazlarda mobil ağdan saat alınmaz. Hücresel modem algılanırsa satır kırmızı uyarılıdır. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("autotimesvc") 4';
+                Command='Set-MrCleanServicesStart @("autotimesvc") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("autotimesvc")'
+            },
+            @{
+                Name="Ağ Haritası Servisini Kapat (lltdsvc)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.1";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:lltdsvc");
+                Description="Denetim Masası'ndaki ağ haritasını (LLTD) oluşturan servisi Devre dışı yapar.`n`nTemiz Windows'ta zaten 'El ile' başlar.`n`nKapatınca: ağ haritası çizilemez. Dosya paylaşımı ve ağdaki bilgisayarları görme bundan etkilenmez. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("lltdsvc") 4';
+                Command='Set-MrCleanServicesStart @("lltdsvc") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("lltdsvc")'
+            },
+            @{
+                Name="Ses / Görüntü Akış Kalitesi Servisini Kapat (QWAVE)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.1";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:QWAVE");
+                Description="Ev ağında ses / görüntü akışı yapan uygulamalar için ağ kalitesi ölçen qWave servisini Devre dışı yapar.`n`nTemiz Windows'ta zaten 'El ile' başlar; onu kullanan bir uygulama açıldığında çalışır.`n`nKapatınca: qWave kullanan eski akış uygulamaları ağ kalitesi ölçümü olmadan çalışır. Oyunlar ve tarayıcı akışları bundan etkilenmez. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("QWAVE") 4';
+                Command='Set-MrCleanServicesStart @("QWAVE") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("QWAVE")'
+            },
+            @{
+                Name="Oyun Kaydı Kullanıcı Servisini Kapat (BcastDVRUserService)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.1";
+                Risk="Low"; RestartExplorer=$false; RequiresReboot=$true; Requires=@("Svc:BcastDVRUserService");
+                Description="Oyun Çubuğu'nun (Win+G) oyun kaydı ve canlı yayın kullanıcı servisini Devre dışı yapar.`n`nTemiz Windows'ta zaten 'El ile' başlar. Kullanıcı başı servistir: değişiklik yeniden başlatmadan sonra tam geçerli olur. 'Xbox Game DVR Kapat' tweak'i kaydı ayarla kapatır; bu satır servisin kendisini kapatır.`n`nKapatınca: Win+G ile oyun kaydı ve yayın çalışmaz. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("BcastDVRUserService") 4';
+                Command='Set-MrCleanServicesStart @("BcastDVRUserService") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("BcastDVRUserService")'
+            },
+            @{
+                Name="Sensör Servislerini Kapat (SensorService / SensrSvc / SensorDataService)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.1";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:SensorService|SensrSvc|SensorDataService"); HwWarn=@("Sensor");
+                Description="Ekran döndürme, ortam ışığı (otomatik parlaklık) ve kapak / hareket sensörlerini yöneten üç servisi Devre dışı yapar.`n`nTemiz Windows'ta üçü de zaten 'El ile' başlar; sensörü olmayan masaüstü bilgisayarda kullanılmaz.`n`nKapatınca: otomatik ekran döndürme ve otomatik parlaklık çalışmaz. Dizüstü bilgisayarda ya da sensör aygıtı algılanırsa satır kırmızı uyarılıdır. Geri Al, önceki başlangıç ayarlarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("SensorService","SensrSvc","SensorDataService") 4';
+                Command='Set-MrCleanServicesStart @("SensorService","SensrSvc","SensorDataService") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("SensorService","SensrSvc","SensorDataService")'
+            },
+            @{
+                Name="Görüntü Alma Servisini Kapat (StiSvc)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.1";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:StiSvc"); HwWarn=@("Scanner");
+                Description="Tarayıcılardan ve dijital fotoğraf makinelerinden görüntü alan Windows Görüntü Alma (WIA) servisini Devre dışı yapar.`n`nTemiz Windows'ta zaten 'El ile' başlar; bazı yazıcı / tarayıcı yazılımları onu 'Otomatik' yapar.`n`nKapatınca: tarayıcıdan tarama ve fotoğraf makinesinden WIA ile aktarım çalışmaz. Web kamerası bundan etkilenmez. Tarayıcı algılanırsa satır kırmızı uyarılıdır. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("StiSvc") 4';
+                Command='Set-MrCleanServicesStart @("StiSvc") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("StiSvc")'
+            },
+            @{
+                Name="Eşler Arası Ağ Servislerini Kapat (PNRPsvc / p2psvc / p2pimsvc)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.1";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:PNRPsvc|p2psvc|p2pimsvc");
+                Description="Eski eşler arası ağ (Peer Name Resolution, Peer Networking) servislerini Devre dışı yapar.`n`nWindows 11'de bu servisler yoktur; satır yalnız eski Windows 10 sürümlerinde etkindir.`n`nKapatınca: eşler arası ağı kullanan eski uygulamalar çalışmaz. Geri Al, önceki başlangıç ayarlarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("PNRPsvc","p2psvc","p2pimsvc") 4';
+                Command='Set-MrCleanServicesStart @("PNRPsvc","p2psvc","p2pimsvc") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("PNRPsvc","p2psvc","p2pimsvc")'
+            },
+            @{
+                Name="NFS İstemcisini Kapat (NfsClnt)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.1";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:NfsClnt");
+                Description="NFS ağ disklerine bağlanan istemci servisini Devre dışı yapar.`n`nServis yalnız 'NFS İstemcisi' isteğe bağlı özelliği kuruluysa bulunur.`n`nKapatınca: NFS paylaşımlarına bağlanılamaz (normal Windows / SMB paylaşımları etkilenmez). Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("NfsClnt") 4';
+                Command='Set-MrCleanServicesStart @("NfsClnt") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("NfsClnt")'
+            },
+            @{
+                Name="Karma Gerçeklik Servislerini Kapat (perceptionsimulation / MixedRealityOpenXRSvc)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.1";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:perceptionsimulation|MixedRealityOpenXRSvc");
+                Description="Karma gerçeklik (Mixed Reality) algı simülasyonu ve OpenXR servislerini Devre dışı yapar.`n`nTemiz Windows'ta zaten 'El ile' başlar ya da hiç yoktur.`n`nKapatınca: Windows Mixed Reality başlıkları ve algı simülasyonu çalışmaz. Geri Al, önceki başlangıç ayarlarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("perceptionsimulation","MixedRealityOpenXRSvc") 4';
+                Command='Set-MrCleanServicesStart @("perceptionsimulation","MixedRealityOpenXRSvc") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("perceptionsimulation","MixedRealityOpenXRSvc")'
+            },
+            # --- §137: Stix servisleri, riskli grup (RAPOR_STIX_servisler.md §4). Görünür bir özellik kapanır. Temiz 25H2'de "Otomatik"
+            # olan 4 serviste (Spooler, WSearch, cbdhsvc, CDPUserSvc) satırda "El ile | Devre dışı" seçimi (SvcMode); diğerleri zaten
+            # "El ile" olduğu için yalnız Devre dışı.
+            @{
+                Name="Yazdırma Servisini Kapat (Spooler)";
+                SubCategory="Servisler — Riskli"; Since="2.0.1";
+                Risk="Medium"; RestartExplorer=$false; Requires=@("Svc:Spooler"); HwWarn=@("Printer");
+                SvcMode="Spooler"; SvcModeDefault=4;
+                Description="Yazdırma Biriktiricisi (Print Spooler) servisini kapatır. Satırdaki seçimle 'El ile' ya da 'Devre dışı' yapılır.`n`nTemiz Windows'ta 'Otomatik' başlar ve sürekli çalışır. Yazıcısı olmayan bilgisayarda kapatmak, geçmişte PrintNightmare gibi açıklarla saldırıya uğrayan bir servisi devreden çıkarır (Microsoft'un o dönemki önerisi).`n`nKapatınca: hiçbir yazıcıya ve 'PDF olarak yazdır'a çıktı alınamaz, yazıcılar listelenmez. Yazıcı algılanırsa satır kırmızı uyarılıdır. Geri Al, önceki başlangıç ayarını aynen geri yazar ve servisi yeniden başlatır.";
+                DetectScript='Test-MrCleanServicesStart @("Spooler") (Get-MrCleanSvcMode "Spooler" 4)';
+                Command='Set-MrCleanServicesStart @("Spooler") (Get-MrCleanSvcMode "Spooler" 4)';
+                UndoCommand='Restore-MrCleanServicesStart @("Spooler")'
+            },
+            @{
+                Name="Windows Arama Dizinini Kapat (WSearch)";
+                SubCategory="Servisler — Riskli"; Since="2.0.1";
+                Risk="Medium"; RestartExplorer=$false; Requires=@("Svc:WSearch");
+                SvcMode="WSearch"; SvcModeDefault=3;
+                Description="Dosya ve e-posta içeriğini dizine ekleyen Windows Arama servisini kapatır. Satırdaki seçimle 'El ile' ya da 'Devre dışı' yapılır.`n`nTemiz Windows'ta 'Otomatik (gecikmeli)' başlar; arka planda dosyaları tarar ve disk kullanır.`n`nKapatınca: Başlat ve Gezgin araması dizinsiz çalışır, belirgin şekilde yavaşlar ve dosya içeriğinde arama yapılamaz; klasik Outlook kendi (daha yavaş) aramasına geçer. Geri Al, önceki başlangıç ayarını aynen geri yazar ve servisi yeniden başlatır.";
+                DetectScript='Test-MrCleanServicesStart @("WSearch") (Get-MrCleanSvcMode "WSearch" 3)';
+                Command='Set-MrCleanServicesStart @("WSearch") (Get-MrCleanSvcMode "WSearch" 3)';
+                UndoCommand='Restore-MrCleanServicesStart @("WSearch")'
+            },
+            @{
+                Name="Konum Servisini Kapat (lfsvc)";
+                SubCategory="Servisler — Riskli"; Since="2.0.1";
+                Risk="Medium"; RestartExplorer=$false; Requires=@("Svc:lfsvc"); HwWarn=@("Location");
+                Description="Bilgisayarın konumunu belirleyen ve coğrafi sınırları (geofence) yöneten Konum servisini Devre dışı yapar.`n`nTemiz Windows'ta 'El ile' başlar; bir uygulama konum isteyince çalışır. Konum Ayarlar'dan kapalıysa bu servisin bir işlevi kalmaz.`n`nKapatınca: konum, Cihazımı Bul, otomatik saat dilimi ve konuma göre hava durumu çalışmaz. Konum açıksa satır kırmızı uyarılıdır. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("lfsvc") 4';
+                Command='Set-MrCleanServicesStart @("lfsvc") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("lfsvc")'
+            },
+            @{
+                Name="Pano Geçmişi Servisini Kapat (cbdhsvc)";
+                SubCategory="Servisler — Riskli"; Since="2.0.1";
+                Risk="Medium"; RestartExplorer=$false; RequiresReboot=$true; Requires=@("Svc:cbdhsvc"); HwWarn=@("ClipHist");
+                SvcMode="cbdhsvc"; SvcModeDefault=3;
+                Description="Pano geçmişi (Win+V) ve cihazlar arası pano eşitlemesini sağlayan kullanıcı servisini kapatır. Satırdaki seçimle 'El ile' ya da 'Devre dışı' yapılır.`n`nTemiz Windows'ta 'Otomatik (gecikmeli)' başlar. Kullanıcı başı servistir: değişiklik yeniden başlatmadan sonra tam geçerli olur.`n`nKapatınca: Win+V pano geçmişi ve cihazlar arası pano çalışmaz. Normal kopyala / yapıştır (Ctrl+C / Ctrl+V) bu servise bağlı değildir. Pano geçmişi açıksa satır kırmızı uyarılıdır. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("cbdhsvc") (Get-MrCleanSvcMode "cbdhsvc" 3)';
+                Command='Set-MrCleanServicesStart @("cbdhsvc") (Get-MrCleanSvcMode "cbdhsvc" 3)';
+                UndoCommand='Restore-MrCleanServicesStart @("cbdhsvc")'
+            },
+            @{
+                Name="Bağlı Cihazlar Kullanıcı Servisini Kapat (CDPUserSvc)";
+                SubCategory="Servisler — Riskli"; Since="2.0.1";
+                Risk="Medium"; RestartExplorer=$false; RequiresReboot=$true; Requires=@("Svc:CDPUserSvc");
+                SvcMode="CDPUserSvc"; SvcModeDefault=3;
+                Description="Telefon, Xbox ve diğer bağlı cihazlarla iletişimi sağlayan Bağlı Cihazlar Platformu kullanıcı servisini kapatır. Satırdaki seçimle 'El ile' ya da 'Devre dışı' yapılır.`n`nTemiz Windows'ta 'Otomatik' başlar. Kullanıcı başı servistir: değişiklik yeniden başlatmadan sonra tam geçerli olur. Debloat'taki 'CDP Servisini El Ile Al' sistem servisini, bu satır kullanıcı servisini ayarlar.`n`nKapatınca: Telefon Bağlantısı, Yakın Paylaşım ve bazı Bluetooth / Xbox özellikleri çalışmayabilir. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("CDPUserSvc") (Get-MrCleanSvcMode "CDPUserSvc" 3)';
+                Command='Set-MrCleanServicesStart @("CDPUserSvc") (Get-MrCleanSvcMode "CDPUserSvc" 3)';
+                UndoCommand='Restore-MrCleanServicesStart @("CDPUserSvc")'
+            },
+            @{
+                Name="Posta / Takvim Eşitleme Servisini Kapat (OneSyncSvc)";
+                SubCategory="Servisler — Riskli"; Since="2.0.1";
+                Risk="Medium"; RestartExplorer=$false; RequiresReboot=$true; Requires=@("Svc:OneSyncSvc");
+                Description="Posta, takvim ve kişileri eşitleyen kullanıcı servisini (Eşitleme Ana Bilgisayarı) Devre dışı yapar.`n`nTemiz Windows'ta 'El ile' başlar. Kullanıcı başı servistir: değişiklik yeniden başlatmadan sonra tam geçerli olur.`n`nKapatınca: Windows'un Posta / Takvim / Kişiler uygulamaları ve onlara bağlı özellikler eşitlenmez (Microsoft: 'Posta ve buna bağlı uygulamalar düzgün çalışmaz'). Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("OneSyncSvc") 4';
+                Command='Set-MrCleanServicesStart @("OneSyncSvc") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("OneSyncSvc")'
+            },
+            @{
+                Name="Kişiler ve Takvim Verisi Servislerini Kapat (UnistoreSvc / UserDataSvc / PimIndexMaintenanceSvc)";
+                SubCategory="Servisler — Riskli"; Since="2.0.1";
+                Risk="Medium"; RestartExplorer=$false; RequiresReboot=$true; Requires=@("Svc:UnistoreSvc|UserDataSvc|PimIndexMaintenanceSvc");
+                Description="Kişi, takvim ve mesaj verisini saklayan ve uygulamalara sunan üç kullanıcı servisini Devre dışı yapar.`n`nTemiz Windows'ta üçü de 'El ile' başlar. Kullanıcı başı servislerdir: değişiklik yeniden başlatmadan sonra tam geçerli olur.`n`nKapatınca: bu veriyi kullanan uygulamalar (yeni Outlook, Takvim, Kişiler) boş görünebilir ya da düzgün çalışmaz; aramada kişiler çıkmaz. Geri Al, önceki başlangıç ayarlarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("UnistoreSvc","UserDataSvc","PimIndexMaintenanceSvc") 4';
+                Command='Set-MrCleanServicesStart @("UnistoreSvc","UserDataSvc","PimIndexMaintenanceSvc") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("UnistoreSvc","UserDataSvc","PimIndexMaintenanceSvc")'
+            },
+            @{
+                Name="Ekran Yakalama Servisini Kapat (CaptureService)";
+                SubCategory="Servisler — Riskli"; Since="2.0.1";
+                Risk="Medium"; RestartExplorer=$false; RequiresReboot=$true; Requires=@("Svc:CaptureService");
+                Description="Uygulamaların Windows ekran yakalama arabirimini (Windows.Graphics.Capture) kullanmasını sağlayan kullanıcı servisini Devre dışı yapar.`n`nTemiz Windows'ta 'El ile' başlar. Kullanıcı başı servistir: değişiklik yeniden başlatmadan sonra tam geçerli olur.`n`nKapatınca: Ekran Alıntısı Aracı'nın ekran kaydı ve OBS / Discord gibi programların bu arabirimi kullanan pencere / ekran yakalama modu çalışmayabilir. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("CaptureService") 4';
+                Command='Set-MrCleanServicesStart @("CaptureService") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("CaptureService")'
+            },
+            @{
+                Name="Uygulama İzin İstemleri Servisini Kapat (ConsentUxUserSvc)";
+                SubCategory="Servisler — Riskli"; Since="2.0.1";
+                Risk="Medium"; RestartExplorer=$false; RequiresReboot=$true; Requires=@("Svc:ConsentUxUserSvc");
+                Description="Uygulamaların konum gibi hassas kaynaklar için kullanıcıdan izin istemesini sağlayan kullanıcı servisini Devre dışı yapar.`n`nTemiz Windows'ta 'El ile' başlar. Kullanıcı başı servistir: değişiklik yeniden başlatmadan sonra tam geçerli olur.`n`nKapatınca: izin isteme pencereleri çıkmaz; izin isteyen uygulamalar o kaynağa erişemeyebilir. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("ConsentUxUserSvc") 4';
+                Command='Set-MrCleanServicesStart @("ConsentUxUserSvc") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("ConsentUxUserSvc")'
+            },
+            @{
+                Name="Kablosuz Ekran ve Eşleme Pencerelerini Kapat (DevicePickerUserSvc / DevicesFlowUserSvc)";
+                SubCategory="Servisler — Riskli"; Since="2.0.1";
+                Risk="Medium"; RestartExplorer=$false; RequiresReboot=$true; Requires=@("Svc:DevicePickerUserSvc|DevicesFlowUserSvc"); HwWarn=@("Bluetooth");
+                Description="Miracast / DLNA aygıt seçicisini ve Ayarlar'daki 'Bağlan' / eşleme akışını sağlayan iki kullanıcı servisini Devre dışı yapar.`n`nTemiz Windows'ta ikisi de 'El ile' başlar. Kullanıcı başı servislerdir: değişiklik yeniden başlatmadan sonra tam geçerli olur.`n`nKapatınca: kablosuz ekrana yansıtma (Win+K) ve Ayarlar üzerinden Bluetooth / kablosuz ekran eşleme pencereleri çalışmayabilir. Bluetooth algılanırsa satır kırmızı uyarılıdır. Geri Al, önceki başlangıç ayarlarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("DevicePickerUserSvc","DevicesFlowUserSvc") 4';
+                Command='Set-MrCleanServicesStart @("DevicePickerUserSvc","DevicesFlowUserSvc") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("DevicePickerUserSvc","DevicesFlowUserSvc")'
+            },
+            @{
+                Name="Kamera Çerçeve Sunucusunu Kapat (FrameServer)";
+                SubCategory="Servisler — Riskli"; Since="2.0.1";
+                Risk="Medium"; RestartExplorer=$false; Requires=@("Svc:FrameServer"); HwWarn=@("Camera");
+                Description="Birden çok uygulamanın aynı anda kameradan görüntü almasını sağlayan Windows Kamera Çerçeve Sunucusu servisini Devre dışı yapar.`n`nTemiz Windows'ta 'El ile' başlar; kamera açılınca çalışır.`n`nKapatınca: bazı uygulamalarda (Kamera, Teams, tarayıcı) kamera hiç açılmayabilir (kullanıcı raporu: servis kapatılınca kamera tamamen çalışmadı). Kamera algılanırsa satır kırmızı uyarılıdır. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("FrameServer") 4';
+                Command='Set-MrCleanServicesStart @("FrameServer") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("FrameServer")'
+            },
+            @{
+                Name="Mobil Etkin Nokta Servisini Kapat (icssvc)";
+                SubCategory="Servisler — Riskli"; Since="2.0.1";
+                Risk="Medium"; RestartExplorer=$false; Requires=@("Svc:icssvc"); HwWarn=@("WiFi");
+                Description="Bilgisayarın internet bağlantısını Wi-Fi üzerinden paylaşmasını (Mobil etkin nokta) sağlayan servisi Devre dışı yapar.`n`nTemiz Windows'ta 'El ile' başlar; etkin nokta açılınca çalışır.`n`nKapatınca: Ayarlar > Ağ > Mobil etkin nokta çalışmaz. Wi-Fi kartı algılanırsa satır kırmızı uyarılıdır. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("icssvc") 4';
+                Command='Set-MrCleanServicesStart @("icssvc") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("icssvc")'
+            },
+            @{
+                Name="Mağaza Kurulum Servisini Kapat (InstallService)";
+                SubCategory="Servisler — Riskli"; Since="2.0.1";
+                Risk="Medium"; RestartExplorer=$false; Requires=@("Svc:InstallService");
+                Description="Microsoft Store uygulamalarını kuran ve güncelleyen servisi Devre dışı yapar.`n`nTemiz Windows'ta 'El ile' başlar; Mağaza'dan kurulum ya da güncelleme olunca çalışır.`n`nKapatınca: Microsoft Store'dan ve winget'in 'msstore' kaynağından kurulum / güncelleme yapılamaz (MrClean Winget sayfasındaki Mağaza kaynaklı uygulamalar dahil). Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("InstallService") 4';
+                Command='Set-MrCleanServicesStart @("InstallService") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("InstallService")'
+            },
+            @{
+                Name="Ebeveyn Denetimi Servisini Kapat (WpcMonSvc)";
+                SubCategory="Servisler — Riskli"; Since="2.0.1";
+                Risk="Medium"; RestartExplorer=$false; Requires=@("Svc:WpcMonSvc");
+                Description="Microsoft aile hesabındaki çocuk hesapları için ebeveyn denetimini uygulayan servisi Devre dışı yapar.`n`nTemiz Windows'ta 'El ile' başlar.`n`nKapatınca: bu bilgisayardaki çocuk hesaplarında ekran süresi, uygulama ve web sınırları uygulanmaz. Aile hesabı kullanıyorsanız kapatmayın. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("WpcMonSvc") 4';
+                Command='Set-MrCleanServicesStart @("WpcMonSvc") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("WpcMonSvc")'
+            },
+            @{
+                Name="Tanılama Hizmet Konağını Kapat (WdiServiceHost)";
+                SubCategory="Servisler — Riskli"; Since="2.0.1";
+                Risk="Medium"; RestartExplorer=$false; Requires=@("Svc:WdiServiceHost");
+                Description="Tanılayıcı İlkesi Hizmeti'nin (DPS) yerel hizmet bağlamında çalışan tanılamalarını barındıran servisi Devre dışı yapar.`n`nTemiz Windows'ta 'El ile' başlar. Microsoft bu servis için öneri vermez; kardeş servisi Tanılama Sistem Konağı için 'kapatmayın' der (o servis bu listede yoktur).`n`nKapatınca: Windows'un sorun algılama ve sorun giderici önerilerinin bir kısmı çalışmaz. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("WdiServiceHost") 4';
+                Command='Set-MrCleanServicesStart @("WdiServiceHost") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("WdiServiceHost")'
+            },
+            @{
+                Name="Önerilen Sorun Giderme Servisini Kapat (TroubleshootingSvc)";
+                SubCategory="Servisler — Riskli"; Since="2.0.1";
+                Risk="Medium"; RestartExplorer=$false; Requires=@("Svc:TroubleshootingSvc");
+                Description="Bilinen sorunlar için Windows'un önerdiği sorun gidermeleri otomatik uygulayan servisi Devre dışı yapar.`n`nTemiz Windows'ta 'El ile' başlar. Microsoft'un etkisini değerlendirmediği servislerdendir.`n`nKapatınca: Ayarlar > Sistem > Sorun gider > 'Önerilen sorun giderme' çalışmaz. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("TroubleshootingSvc") 4';
+                Command='Set-MrCleanServicesStart @("TroubleshootingSvc") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("TroubleshootingSvc")'
+            },
+            @{
+                Name="Hyper-V Konuk Servislerini Kapat (vmic*)";
+                SubCategory="Servisler — Riskli"; Since="2.0.1";
+                Risk="Medium"; RestartExplorer=$false; Requires=@("VM", "Svc:vmicheartbeat"); HwWarn=@("VM");
+                Description="Bilgisayar bir Hyper-V sanal makinesiyse ana bilgisayarla iletişimi sağlayan 8 konuk servisini (kalp atışı, kapatma, saat eşitleme, yedekleme, veri değişimi, PowerShell Direct, Uzak Masaüstü, konuk arabirimi) Devre dışı yapar.`n`nBu servisler yalnız sanal makinenin içinde çalışır; fiziksel bilgisayarda hiç başlamaz, satır soluk görünür.`n`nKapatınca (sanal makinede): ana bilgisayardan kapatma, saat eşitleme, yedekleme ve PowerShell Direct çalışmaz. Geri Al, önceki başlangıç ayarlarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("vmicguestinterface","vmicheartbeat","vmickvpexchange","vmicrdv","vmicshutdown","vmictimesync","vmicvmsession","vmicvss") 4';
+                Command='Set-MrCleanServicesStart @("vmicguestinterface","vmicheartbeat","vmickvpexchange","vmicrdv","vmicshutdown","vmictimesync","vmicvmsession","vmicvss") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("vmicguestinterface","vmicheartbeat","vmickvpexchange","vmicrdv","vmicshutdown","vmictimesync","vmicvmsession","vmicvss")'
+            }
+        )
+        
+        # --- 7. UYGULAMA KALDIRMA ---
+        "Uygulama Kaldırma" = @(
+            @{
+                Name="OneDrive'ı Sistemden Tamamen Kaldır"; Risk="Medium";
+                Description="OneDrive'ı bilgisayardan kaldırır: önce OneDrive'ın kendi kaldırma komutu kullanılır, bulunamazsa Windows'taki kurulum dosyası denenir. Başlangıç kaydı, OneDrive güncelleme / raporlama görevleri ve Gezgin'deki boş OneDrive girişi de temizlenir.`n`n✅ OneDrive klasörünüzdeki dosyalar silinmez.`n⚠️ Geri alma yoktur — yeniden kullanmak için OneDrive'ı Microsoft'tan indirip kurun.";
+                DetectScript='
+                    # v1.3.0: Program Files kurulumu ve Uninstall kaydi da kontrol edilir (eski sezgisel sadece AppData ya bakiyordu)
+                    if (Get-Process -Name "OneDrive" -ErrorAction SilentlyContinue) { return $false }
+                    foreach ($p in @("$env:LOCALAPPDATA\Microsoft\OneDrive\OneDrive.exe", "$env:ProgramFiles\Microsoft OneDrive\OneDrive.exe", "${env:ProgramFiles(x86)}\Microsoft OneDrive\OneDrive.exe")) { if (Test-Path $p) { return $false } }
+                    $u = Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\OneDriveSetup.exe","HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\OneDriveSetup.exe" -ErrorAction SilentlyContinue
+                    return (-not $u)
+                ';
+                Command='taskkill /f /im OneDrive.exe 2>$null; $u = @(Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\OneDriveSetup.exe","HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\OneDriveSetup.exe","HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\OneDriveSetup.exe" -ErrorAction SilentlyContinue | Where-Object { $_.UninstallString }) | Select-Object -First 1; if ($u) { $us = "$($u.UninstallString)"; if ($us -match "^\s*`"([^`"]+)`"\s*(.*)$") { $exe = $Matches[1]; $args0 = $Matches[2] } else { $exe = ($us -split "\s+/")[0]; $args0 = $us.Substring($exe.Length) }; if ($args0 -notmatch "/silent") { $args0 = "$args0 /silent" }; Start-Process -FilePath $exe -ArgumentList $args0 -Wait -ErrorAction SilentlyContinue } elseif (Test-Path "$env:SystemRoot\SysWOW64\OneDriveSetup.exe") { Start-Process "$env:SystemRoot\SysWOW64\OneDriveSetup.exe" -ArgumentList "/uninstall" -Wait } elseif (Test-Path "$env:SystemRoot\System32\OneDriveSetup.exe") { Start-Process "$env:SystemRoot\System32\OneDriveSetup.exe" -ArgumentList "/uninstall" -Wait } else { Write-Host "OneDrive Setup bulunamadi" }; Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "OneDriveSetup" -Force -ErrorAction SilentlyContinue; Get-ScheduledTask -ErrorAction SilentlyContinue | Where-Object { $_.TaskName -like "OneDrive Standalone Update Task*" -or $_.TaskName -like "OneDrive Reporting Task*" } | Unregister-ScheduledTask -Confirm:$false -ErrorAction SilentlyContinue; $nav = "HKCU:\Software\Classes\CLSID\{018D5C66-4533-4307-9B53-224DE2ED1FE6}"; if (-not (Test-Path $nav)) { New-Item -Path $nav -Force | Out-Null }; Set-ItemProperty -Path $nav -Name "System.IsPinnedToNameSpaceTree" -Value 0 -Type DWord -Force';
+                UndoCommand="";
+                RestartExplorer=$false
+            },
+
+            # === FR33THY 13 Bloatware.ps1 birebir — 5 ek uygulama kaldirma ===
 
 
 
@@ -4161,34 +4570,6 @@ public class SpiMenu {
                 Risk="Low"; RestartExplorer=$false;
                 Description="Bilgisayarın başka cihazlardan kablosuz görüntü ALMASINI (Bu bilgisayara yansıtma / Miracast alıcısı) kapatır; açık bir ağ hizmeti kapanır.`n`n✅ Bilgisayardan TV'ye/monitöre yansıtma (Win+K), Chromecast ve Spotify Connect ETKİLENMEZ.`n📚 Kaynak: optimizer, optimizerNXT; Microsoft ADMX (AllowProjectionToPC).";
                 Key="HKLM:\SOFTWARE\Policies\Microsoft\Windows\Connect"; ValueName="AllowProjectionToPC"; Type="DWord"; Data=0; Undo="DELETE_VALUE"
-            },
-            @{
-                Name="Uzak Kayıt Defteri ve Mağaza Demo Servislerini Devre Dışı Bırak";
-                SubCategory="Güvenlik Sıkılaştırma"; Since="2.0.0";
-                Risk="Low"; RestartExplorer=$false;
-                Description="Ağ üzerinden kayıt defterine erişim sağlayan Uzak Kayıt Defteri (RemoteRegistry) ve mağaza vitrin modu (RetailDemo) servislerini Devre Dışı yapar. Win11'de RemoteRegistry zaten varsayılan olarak kapalıdır — tweak çoğu sistemde 'Aktif' görünür.`n`n✅ Orijinal başlangıç türleri yedeklenir, geri alma onlara döner.`n📚 Kaynak: optimizer, optimizerNXT, GTweak.";
-                DetectScript='
-                    foreach ($n in @("RemoteRegistry","RetailDemo")) {
-                        $s = Get-Service -Name $n -ErrorAction SilentlyContinue
-                        if ($s -and "$($s.StartType)" -ne "Disabled") { return $false }
-                    }
-                    return $true
-                ';
-                Command='
-                    foreach ($n in @("RemoteRegistry","RetailDemo")) {
-                        $reg = "HKLM:\SYSTEM\CurrentControlSet\Services\$n"
-                        if (-not (Test-Path $reg)) { continue }
-                        Backup-TweakRegValue "SvcStart_$n" $reg "Start"
-                        try { Stop-Service -Name $n -Force -ErrorAction SilentlyContinue } catch {}
-                        Set-ItemProperty -Path $reg -Name "Start" -Value 4 -Type DWord -Force -ErrorAction SilentlyContinue
-                    }
-                ';
-                UndoCommand='
-                    foreach ($n in @("RemoteRegistry","RetailDemo")) {
-                        $reg = "HKLM:\SYSTEM\CurrentControlSet\Services\$n"
-                        if (Test-Path $reg) { Restore-TweakRegValue "SvcStart_$n" $reg "Start" 3 "DWord" }
-                    }
-                '
             },
             @{
                 Name="Uzak Yardım (Remote Assistance) Kapat";
@@ -5544,38 +5925,6 @@ public class SpiMenu {
 
 					Open-NvidiaSettingsApp
 				'
-			},
-
-			@{
-				Name="NVIDIA Telemetri Kapat";
-				SubCategory="NVIDIA"; Vendor="NVIDIA"; Since="2.0.0";
-				Risk="Low"; RestartExplorer=$false;
-				Description="NVIDIA sürücüsünün ve Kontrol Paneli'nin kullanım verisi (telemetri) göndermesini kapatır: Kontrol Paneli 'veri paylaşımı' tercihi = Hayır, sürücü başlangıç telemetrisi = Kapalı.`n`nℹ️ Performansa etkisi yok denecek kadar azdır; gizlilik ayarıdır. NVIDIA App / GeForce Experience özellikleri (ShadowPlay, sürücü güncelleme, Reflex, DLSS) etkilenmez.`n📚 Kaynak: tweaqas paketi (Remove Telemetry.bat).";
-				Batch=@(
-					@{ Key="HKLM:\SOFTWARE\NVIDIA Corporation\NvControlPanel2\Client"; ValueName="OptInOrOutPreference"; Type="DWord"; Data=0; Undo="DELETE_VALUE" },
-					@{ Key="HKLM:\SYSTEM\CurrentControlSet\Services\nvlddmkm\Global\Startup"; ValueName="SendTelemetryData"; Type="DWord"; Data=0; Undo="DELETE_VALUE" },
-					# v1.3.0: winscript (Basic preset) ve Chris Titus winutil ile ayni FTS telemetri bayraklari
-					@{ Key="HKLM:\SOFTWARE\NVIDIA Corporation\Global\FTS"; ValueName="EnableRID44231"; Type="DWord"; Data=0; Undo="DELETE_VALUE" },
-					@{ Key="HKLM:\SOFTWARE\NVIDIA Corporation\Global\FTS"; ValueName="EnableRID64640"; Type="DWord"; Data=0; Undo="DELETE_VALUE" },
-					@{ Key="HKLM:\SOFTWARE\NVIDIA Corporation\Global\FTS"; ValueName="EnableRID66610"; Type="DWord"; Data=0; Undo="DELETE_VALUE" },
-					# v1.3.0 (4. tur): eski surucu telemetri servisi ve gorevleri (varsa) — optimizer, optimizerNXT, GTweak
-					@{
-						Command='
-							$s = Get-Service -Name "NvTelemetryContainer" -ErrorAction SilentlyContinue
-							if ($s) { try { Stop-Service -Name "NvTelemetryContainer" -Force -ErrorAction SilentlyContinue } catch {}; Set-Service -Name "NvTelemetryContainer" -StartupType Disabled -ErrorAction SilentlyContinue }
-							Get-ScheduledTask -ErrorAction SilentlyContinue | Where-Object { $_.TaskName -like "NvTmRep*" -or $_.TaskName -like "NvTmMon*" } | Disable-ScheduledTask -ErrorAction SilentlyContinue | Out-Null
-						';
-						UndoCommand='
-							if (Get-Service -Name "NvTelemetryContainer" -ErrorAction SilentlyContinue) { Set-Service -Name "NvTelemetryContainer" -StartupType Automatic -ErrorAction SilentlyContinue }
-							Get-ScheduledTask -ErrorAction SilentlyContinue | Where-Object { $_.TaskName -like "NvTmRep*" -or $_.TaskName -like "NvTmMon*" } | Enable-ScheduledTask -ErrorAction SilentlyContinue | Out-Null
-						'
-					}
-				);
-				DetectScript='
-					$v = (Get-ItemProperty -Path "HKLM:\SOFTWARE\NVIDIA Corporation\NvControlPanel2\Client" -Name "OptInOrOutPreference" -ErrorAction SilentlyContinue).OptInOrOutPreference
-					$f = (Get-ItemProperty -Path "HKLM:\SOFTWARE\NVIDIA Corporation\Global\FTS" -Name "EnableRID66610" -ErrorAction SilentlyContinue).EnableRID66610
-					return ("$v" -eq "0" -and "$f" -eq "0")
-				' 
 			}
 		)
     }
@@ -10982,7 +11331,12 @@ function Load-All-Settings {
                 $global:TweakList[$catName] = $defaults[$catName]
             }
         }
-    } else { 
+        # v2.0.x (§135): kategori sırası koddaki sıra (yeni kategori, ör. Debloat, listenin sonuna düşmesin); kullanıcının kendi kategorileri sonda
+        $sortedList = [ordered]@{}
+        foreach ($catName in $defaults.Keys) { if ($global:TweakList.Contains($catName)) { $sortedList[$catName] = $global:TweakList[$catName] } }
+        foreach ($catName in @($global:TweakList.Keys)) { if (-not $sortedList.Contains($catName)) { $sortedList[$catName] = $global:TweakList[$catName] } }
+        $global:TweakList = $sortedList
+    } else {
         $global:TweakList = $defaults 
     }
 
@@ -11223,6 +11577,147 @@ function Restore-TweakRegValue([string]$Id, [string]$Path, [string]$Name, $Fallb
         Remove-ItemProperty -Path $Path -Name $Name -Force -ErrorAction SilentlyContinue
     }
     if ($rec) { Remove-ItemProperty -Path $root -Name $Id -Force -ErrorAction SilentlyContinue }
+}
+
+# v2.0.x (§136): Debloat servisleri. Uygulamadan once Start + DelayedAutostart yedeklenir (Backup-TweakRegValue, ilk yedek ezilmez);
+# geri alma yedegi aynen yazar. Yedek yoksa temiz Windows 11 Pro 25H2 (26200.9457, MrClean-Test VM dokumu) varsayilani, o da yoksa El ile (3).
+# Kullanici basi servislerde (Ad_xxxx) sablonun Start degeri degisir (Microsoft "Per-user services"); yeni oturumda gecerli olur.
+$script:MrCleanSvcDefaults = @{
+    WMPNetworkSvc='3|'; PhoneSvc='3|'; MessagingService='3|'; SEMgrSvc='3|'; WEPHOSTSVC='3|'; wisvc='3|'; MSiSCSI='3|'; Netlogon='3|'; CscService='3|'
+    ALG='3|'; IpxlatCfgSvc='3|'; autotimesvc='3|'; lltdsvc='3|'; QWAVE='3|'; BcastDVRUserService='3|'; SensorService='3|'; SensrSvc='3|'; SensorDataService='3|'
+    StiSvc='3|'; perceptionsimulation='3|'; Spooler='2|'; WSearch='2|1'; lfsvc='3|'; cbdhsvc='2|1'; CDPUserSvc='2|'; OneSyncSvc='3|'; UnistoreSvc='3|'
+    UserDataSvc='3|'; PimIndexMaintenanceSvc='3|'; CaptureService='3|'; ConsentUxUserSvc='3|'; DevicePickerUserSvc='3|'; DevicesFlowUserSvc='3|'
+    FrameServer='3|'; icssvc='3|'; InstallService='3|'; WpcMonSvc='3|'; WdiServiceHost='3|'; TroubleshootingSvc='3|'
+    vmicguestinterface='3|'; vmicheartbeat='3|'; vmickvpexchange='3|'; vmicrdv='3|'; vmicshutdown='3|'; vmictimesync='3|'; vmicvmsession='3|'; vmicvss='3|'
+}
+function Test-MrCleanServicesExist([string[]]$Names) {
+    foreach ($n in $Names) { if (Test-Path -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services\$n") { return $true } }
+    return $false
+}
+# Bu Windows'ta bulunan servislerin hepsi istenen Start degerindeyse $true; hicbiri yoksa $false.
+function Test-MrCleanServicesStart([string[]]$Names, [int]$Start) {
+    $any = $false
+    foreach ($n in $Names) {
+        $p = "HKLM:\SYSTEM\CurrentControlSet\Services\$n"
+        if (-not (Test-Path -LiteralPath $p)) { continue }
+        $any = $true
+        $v = (Get-ItemProperty -LiteralPath $p -Name Start -ErrorAction SilentlyContinue).Start
+        if ($null -eq $v -or [int]$v -ne $Start) { return $false }
+    }
+    return $any
+}
+function Set-MrCleanServicesStart([string[]]$Names, [int]$Start) {
+    $fail = @()
+    foreach ($n in $Names) {
+        $p = "HKLM:\SYSTEM\CurrentControlSet\Services\$n"
+        if (-not (Test-Path -LiteralPath $p)) { Write-Host "[Servis] $n bu Windows'ta yok, atlandı."; continue }
+        Backup-TweakRegValue "SvcStart_$n" $p "Start"
+        Backup-TweakRegValue "SvcDelay_$n" $p "DelayedAutostart"
+        if ($Start -eq 4) {
+            try { Stop-Service -Name $n -Force -ErrorAction SilentlyContinue } catch {}
+            foreach ($s in @(Get-Service -Name "$($n)_*" -ErrorAction SilentlyContinue)) { try { Stop-Service -Name $s.Name -Force -ErrorAction SilentlyContinue } catch {} }
+        }
+        try {
+            Set-ItemProperty -LiteralPath $p -Name Start -Value $Start -Type DWord -Force -ErrorAction Stop
+            Write-Host "[Servis] $n → $(if ($Start -eq 4) { 'Devre dışı' } else { 'El ile' })"
+        } catch { $fail += $n; Write-Host "[Servis] $n değiştirilemedi: $($_.Exception.Message)" }
+    }
+    if ($fail.Count) { throw "Servis değiştirilemedi: $($fail -join ', ')" }
+}
+function Restore-MrCleanServicesStart([string[]]$Names) {
+    foreach ($n in $Names) {
+        $p = "HKLM:\SYSTEM\CurrentControlSet\Services\$n"
+        if (-not (Test-Path -LiteralPath $p)) { continue }
+        $def = "$($script:MrCleanSvcDefaults[$n])"; if (-not $def) { $def = '3|' }
+        $parts = $def.Split('|')
+        $delay = $null; if ($parts.Count -gt 1 -and $parts[1] -ne '') { $delay = [int]$parts[1] }
+        Restore-TweakRegValue "SvcStart_$n" $p "Start" ([int]$parts[0]) "DWord"
+        Restore-TweakRegValue "SvcDelay_$n" $p "DelayedAutostart" $delay "DWord"
+        $now = (Get-ItemProperty -LiteralPath $p -Name Start -ErrorAction SilentlyContinue).Start
+        if ("$now" -eq '2') { try { Start-Service -Name $n -ErrorAction SilentlyContinue } catch {} }
+        Write-Host "[Servis] $n eski ayarına döndü (Start=$now)."
+    }
+}
+# v2.0.x (§137): riskli servislerde satirdaki "El ile | Devre dışı" secimi (3 / 4). Kullanici tercihi; sisteme Uygula'da yazilir.
+function Get-MrCleanSvcMode([string]$Key, [int]$Default = 4) {
+    $v = (Get-ItemProperty -LiteralPath 'HKCU:\Software\MrClean\SvcMode' -Name $Key -ErrorAction SilentlyContinue).$Key
+    if ("$v" -eq '3' -or "$v" -eq '4') { return [int]$v }
+    return $Default
+}
+function Set-MrCleanSvcMode([string]$Key, [int]$Mode) {
+    $root = 'HKCU:\Software\MrClean\SvcMode'
+    if (-not (Test-Path -LiteralPath $root)) { New-Item -Path $root -Force | Out-Null }
+    Set-ItemProperty -LiteralPath $root -Name $Key -Value "$Mode" -Type String -Force
+}
+
+# v2.0.x (§136): Debloat satirlarindaki donanim uyarisi (HwWarn). Aygit bu bilgisayarda varsa satir kirmizi + acarken onay.
+# Algilama tembel ve oturumda bir kez (WMI sorgulari yalniz HwWarn'li satir ciziliyorsa).
+function Get-MrCleanHwWarnings {
+    if ($global:MrCleanHwWarn) { return $global:MrCleanHwWarn }
+    $w = @{}
+    # Kayit defterinden (WMI Win32_Printer 312 ms / Win32_PnPEntity 115 ms yerine ~50 ms). Aygit sinifinda surucusu kurulu aygit sayilir.
+    try {
+        # Sanal yazicilar (PDF / XPS / OneNote / Faks / HP Smart Printing) sayilmaz: gercek port USB / WSD / IP / TCP / LPT / COM ya da ag yazicisi (\\sunucu)
+        foreach ($k in @(Get-ChildItem -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Control\Print\Printers' -ErrorAction SilentlyContinue)) {
+            $port = "$((Get-ItemProperty -LiteralPath $k.PSPath -Name Port -ErrorAction SilentlyContinue).Port)"
+            if ($port -match '^(USB|WSD|IP_|TCP|LPT|COM|DOT4|\\\\)') { $w.Printer = "$($k.PSChildName)"; break }
+        }
+        foreach ($k in @(Get-ChildItem -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Control\Print\Connections' -ErrorAction SilentlyContinue)) { if (-not $w.Printer) { $w.Printer = "$($k.PSChildName)" } }
+    } catch {}
+    $cls = [ordered]@{ Image = '{6bdd1fc6-810f-11d0-bec7-08002be2092f}'; Camera = '{ca3e7ab9-b4c3-4ae6-8251-579ef933890f}'; Sensor = '{5175d334-c371-4806-b3ba-71fd53c9258d}'; Proximity = '{5630831c-06c9-4856-b327-f5d32586e060}'; Bluetooth = '{e0cbf06c-cd8b-4647-bb8a-263b43f0f974}' }
+    foreach ($c in $cls.Keys) {
+        try {
+            foreach ($k in @(Get-ChildItem -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Control\Class\$($cls[$c])" -ErrorAction SilentlyContinue)) {
+                if ($k.PSChildName -notmatch '^\d{4}$') { continue }
+                $dd = "$((Get-ItemProperty -LiteralPath $k.PSPath -Name DriverDesc -ErrorAction SilentlyContinue).DriverDesc)"
+                # genel Microsoft sinif surucusu yerine aygita ozgu ad tercih edilir ("WSD Tarama Aygıtı", "HP ...")
+                if ($dd -and (-not $w[$c] -or "$($w[$c])" -like 'Microsoft*')) { $w[$c] = $dd }
+            }
+        } catch {}
+    }
+    try {
+        $cell = @(Get-ChildItem -LiteralPath 'HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e972-e325-11ce-bfc1-08002be10318}' -ErrorAction SilentlyContinue | ForEach-Object { Get-ItemProperty -LiteralPath $_.PSPath -ErrorAction SilentlyContinue } | Where-Object { $_.'*IfType' -in @(243, 244) })
+        if ($cell.Count) { $w.Cellular = "$($cell[0].DriverDesc)" }
+    } catch {}
+    try { $cs = Get-CimInstance Win32_ComputerSystem -Property PartOfDomain, Domain -ErrorAction Stop; if ($cs.PartOfDomain) { $w.Domain = "$($cs.Domain)" } } catch {}
+    try {
+        $ap = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\WindowsSelfHost\Applicability' -ErrorAction SilentlyContinue
+        if ($ap -and ("$($ap.BranchName)" -or "$($ap.EnablePreviewBuilds)" -eq '1')) { $w.Insider = "$($ap.BranchName)" }
+    } catch {}
+    try { if ((Get-MrCleanHwProfile).IsLaptop) { $w.Laptop = $true } } catch {}
+    # v2.0.x (§137): riskli servislerin kosullari
+    try { if ((Get-MrCleanHwProfile).HasWiFi) { $w.WiFi = $true } } catch {}
+    try { if ("$((Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location' -Name Value -ErrorAction SilentlyContinue).Value)" -eq 'Allow') { $w.Location = $true } } catch {}
+    try { if ("$((Get-ItemProperty -LiteralPath 'HKCU:\Software\Microsoft\Clipboard' -Name EnableClipboardHistory -ErrorAction SilentlyContinue).EnableClipboardHistory)" -eq '1') { $w.ClipHist = $true } } catch {}
+    try {
+        $bios = Get-ItemProperty -LiteralPath 'HKLM:\HARDWARE\DESCRIPTION\System\BIOS' -ErrorAction SilentlyContinue
+        if ("$($bios.SystemProductName) $($bios.SystemManufacturer)" -match '(?i)Virtual Machine|VMware|VirtualBox|KVM|QEMU|Xen|Parallels') { $w.VM = "$($bios.SystemProductName)".Trim() }
+    } catch {}
+    $global:MrCleanHwWarn = $w
+    return $w
+}
+# Tweak'in HwWarn listesindeki ilk algilanan aygitin metni ("Yazici algilandi: HP ENVY 6000 series"); yoksa "".
+function Get-TweakHwWarning($tweak) {
+    if (-not $tweak -or -not $tweak.HwWarn) { return "" }
+    $w = Get-MrCleanHwWarnings
+    foreach ($k in @($tweak.HwWarn)) {
+        switch ("$k") {
+            'Printer'  { if ($w.Printer)   { return ((T 'tw_hwwarn_printer') -f $w.Printer) } }
+            'Scanner'  { if ($w.Image)     { return ((T 'tw_hwwarn_scanner') -f $w.Image) } }
+            'Camera'   { if ($w.Camera)    { return ((T 'tw_hwwarn_camera') -f $w.Camera) } }
+            'Sensor'   { if ($w.Sensor)    { return ((T 'tw_hwwarn_sensor') -f $w.Sensor) } elseif ($w.Laptop) { return (T 'tw_hwwarn_laptop') } }
+            'Cellular' { if ($w.Cellular)  { return ((T 'tw_hwwarn_cellular') -f $w.Cellular) } }
+            'NFC'      { if ($w.Proximity) { return ((T 'tw_hwwarn_nfc') -f $w.Proximity) } }
+            'Domain'   { if ($w.Domain)    { return ((T 'tw_hwwarn_domain') -f $w.Domain) } }
+            'Insider'  { if ($w.ContainsKey('Insider')) { return (T 'tw_hwwarn_insider') } }
+            'Bluetooth' { if ($w.Bluetooth) { return ((T 'tw_hwwarn_bluetooth') -f $w.Bluetooth) } }
+            'WiFi'     { if ($w.WiFi)      { return (T 'tw_hwwarn_wifi') } }
+            'Location' { if ($w.Location)  { return (T 'tw_hwwarn_location') } }
+            'ClipHist' { if ($w.ClipHist)  { return (T 'tw_hwwarn_cliphist') } }
+            'VM'       { if ($w.VM)        { return ((T 'tw_hwwarn_vm') -f $w.VM) } }
+        }
+    }
+    return ""
 }
 
 # Etkin guc planindaki bir ayarin AC/DC dizinini okur (dil bagimsiz: son iki "0x..." satiri). Yoksa $null.
@@ -13562,6 +14057,8 @@ function Load-Tweak-Tree {
                                 if ("$($child.Visibility)" -ne 'Visible' -or -not $chk.IsEnabled) { continue }
                                 # v1.3.0 (5. tur): toplu ISARETLEMEDE birbirini dislayan (Group) ve yuksek riskli tweakler atlanir
                                 if ($isChecked -and ($child.Tag.Group -or "$($child.Tag.Risk)" -eq "High")) { continue }
+                                # v2.0.x (§136): aygiti algilanan Debloat servisi toplu secilmez (tek tek, onayla acilir)
+                                if ($isChecked -and $child.Tag.HwWarn -and (Get-TweakHwWarning $child.Tag)) { continue }
                                 $chk.IsChecked = $isChecked
                                 $chk.RaiseEvent((New-Object System.Windows.RoutedEventArgs([System.Windows.Controls.CheckBox]::ClickEvent)))
                             }
@@ -13874,6 +14371,9 @@ function Get-TweakHardwareReason($tweak) {
             "CABC"     { if (-not $hw.HasCabc) { return (T 'tw_hw_cabc') } }
             "AmdAdrenalin" { if (-not $hw.HasAdrenalin) { return (T 'tw_hw_adrenalin') } }
             "UEFI"     { if (-not $hw.IsUefi) { return (T 'tw_hw_uefi') } }
+            "VM"       { if (-not (Get-MrCleanHwWarnings).VM) { return (T 'tw_hw_novm') } }   # v2.0.x (§137): Hyper-V konuk servisleri
+            # v2.0.x (§136): "Svc:Ad1|Ad2" — servislerden hicbiri bu Windows'ta yoksa satir soluk ("Bu Windows'ta yok")
+            default    { if ("$r" -like "Svc:*" -and -not (Test-MrCleanServicesExist ("$r".Substring(4).Split('|')))) { return (T 'tw_hw_nosvc') } }
         }
     }
     if ($tweak.Vendor -and @($hw.Gpu).Count -gt 0 -and -not (@($hw.Gpu) -contains "$($tweak.Vendor)")) { return ((T 'tw_hw_gpu') -f $tweak.Vendor) }
@@ -14323,6 +14823,67 @@ function Update-TweakPendingMark($chk) {
     Set-TweakPendingState $chk $name $pending
 }
 
+# v2.0.x (§137): riskli servis satirinda "El ile | Devre dışı" secimi (Onizleme19). Tiklama satirin anahtarina gecmez
+# (MouseLeftButtonDown Handled). Secim HKCU'ya yazilir; durum yeni secime gore yeniden hesaplanir → farkliysa BEKLIYOR.
+function Set-TweakModePill($pill) {
+    $st = $pill.Tag; $bc = [System.Windows.Media.BrushConverter]::new()
+    foreach ($b in $st.Segs) {
+        if ([int]$b.Tag -eq [int]$st.Value) {
+            $b.Background = $bc.ConvertFromString($(if ([int]$b.Tag -eq 4) { '#3A2226' } else { '#1C2B45' }))
+            $b.Child.Foreground = $bc.ConvertFromString($(if ([int]$b.Tag -eq 4) { '#F08A8A' } else { '#7FB0FF' }))
+            $b.Child.FontWeight = 'SemiBold'
+        } else {
+            $b.Background = [System.Windows.Media.Brushes]::Transparent
+            $b.Child.Foreground = $script:TweakSubBrush
+            $b.Child.FontWeight = 'Normal'
+        }
+    }
+}
+function Invoke-TweakModePillClick($seg) {
+    $pill = $seg.Parent.Parent; $st = $pill.Tag
+    $m = [int]$seg.Tag
+    if ($m -eq [int]$st.Value) { return }
+    $st.Value = $m
+    try { Set-MrCleanSvcMode ([string]$st.Tweak.SvcMode) $m } catch {}
+    Set-TweakModePill $pill
+    $name = [string]$st.Tweak.Name
+    if ($global:TweakStatusCache -and $global:TweakStatusCache.ContainsKey($name)) { try { $global:TweakStatusCache[$name] = [bool](Test-TweakApplied $st.Tweak) } catch {} }
+    Update-TweakPendingMark $st.Chk
+}
+function New-TweakModePill($tweak, $chk) {
+    $bc = [System.Windows.Media.BrushConverter]::new()
+    $pill = New-Object System.Windows.Controls.Border
+    $pill.CornerRadius = New-Object System.Windows.CornerRadius(6)
+    $pill.BorderThickness = New-Object System.Windows.Thickness(1)
+    $pill.BorderBrush = $bc.ConvertFromString('#2A2F39')
+    $pill.Background = $bc.ConvertFromString('#11141A')
+    $pill.Padding = New-Object System.Windows.Thickness(2)
+    $pill.Margin = New-Object System.Windows.Thickness(12, 0, 0, 0)
+    $pill.VerticalAlignment = 'Center'
+    $pill.ToolTip = (T 'tw_mode_tip')
+    $sp = New-Object System.Windows.Controls.StackPanel; $sp.Orientation = 'Horizontal'
+    $segs = @()
+    foreach ($m in 3, 4) {
+        $b = New-Object System.Windows.Controls.Border
+        $b.CornerRadius = New-Object System.Windows.CornerRadius(4)
+        $b.Padding = New-Object System.Windows.Thickness(10, 3, 10, 3)
+        $b.Cursor = [System.Windows.Input.Cursors]::Hand
+        $b.Tag = $m
+        $tb = New-Object System.Windows.Controls.TextBlock
+        $tb.Text = $(if ($m -eq 3) { T 'tw_mode_manual' } else { T 'tw_mode_disabled' })
+        $tb.FontSize = 12
+        $b.Child = $tb
+        $b.Add_MouseLeftButtonDown({ param($s, $e) $e.Handled = $true })
+        $b.Add_MouseLeftButtonUp({ param($s, $e) $e.Handled = $true; Invoke-TweakModePillClick $s })
+        [void]$sp.Children.Add($b); $segs += $b
+    }
+    $pill.Child = $sp
+    $def = 4; if ($tweak.SvcModeDefault) { $def = [int]$tweak.SvcModeDefault }
+    $pill.Tag = @{ Segs = $segs; Value = (Get-MrCleanSvcMode ([string]$tweak.SvcMode) $def); Tweak = $tweak; Chk = $chk }
+    Set-TweakModePill $pill
+    return $pill
+}
+
 function Create-Tweak-Item($tweak, [bool]$nested = $false, [string]$caption = "") {
     $item = New-Object System.Windows.Controls.TreeViewItem
     # Header = StackPanel { CheckBox } — Get-CheckFromItem Children[0]'i, tiklama isleyicisi $me.Parent.Parent'i kullanir
@@ -14371,6 +14932,9 @@ function Create-Tweak-Item($tweak, [bool]$nested = $false, [string]$caption = ""
         $rb.ToolTip = (T 'tw_badge_reboot_tip')
         [void]$contentPanel.Children.Add($rb)
     }
+    # v2.0.x (§136): Debloat — bu bilgisayarda aygiti olan servis satiri kirmizi uyarili (acarken ayrica onay istenir)
+    $hwWarn = ""; try { $hwWarn = Get-TweakHwWarning $tweak } catch {}
+    if ($hwWarn) { [void]$contentPanel.Children.Add((New-TweakBadge (T 'tw_hwwarn_badge') "#3A2226" "#F08A8E")) }
 
     # Alt satir: aciklamanin ilk cumlesi (kullanici ozel aciklamasi varsa o)
     $descSrc = if ($global:ItemDescriptions.ContainsKey($tweak.Name)) { $global:ItemDescriptions[$tweak.Name] } else { "$($tweak.Description)" }
@@ -14394,13 +14958,30 @@ function Create-Tweak-Item($tweak, [bool]$nested = $false, [string]$caption = ""
         $cap.TextTrimming = 'CharacterEllipsis'
         [void]$contentOuter.Children.Add($cap)
     }
+    if ($hwWarn) {
+        $hwt = New-Object System.Windows.Controls.TextBlock
+        $hwt.Text = "⚠  $hwWarn — $(T 'tw_hwwarn_tail')"
+        $hwt.FontSize = 12.5
+        $hwt.FontWeight = 'SemiBold'
+        $hwt.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#F08A8E')
+        $hwt.Margin = New-Object System.Windows.Thickness(0, 4, 0, 0)
+        $hwt.TextTrimming = 'CharacterEllipsis'
+        [void]$contentOuter.Children.Add($hwt)
+    }
 
     # Content = Grid { [metin bloklari] [BEKLİYOR rozeti — anahtarin hemen solunda] }
     $rowGrid = New-Object System.Windows.Controls.Grid
     $gc0 = New-Object System.Windows.Controls.ColumnDefinition; $gc0.Width = New-Object System.Windows.GridLength(1, 'Star')
     $gc1 = New-Object System.Windows.Controls.ColumnDefinition; $gc1.Width = [System.Windows.GridLength]::Auto
-    $rowGrid.ColumnDefinitions.Add($gc0); $rowGrid.ColumnDefinitions.Add($gc1)
+    $gc2 = New-Object System.Windows.Controls.ColumnDefinition; $gc2.Width = [System.Windows.GridLength]::Auto
+    $rowGrid.ColumnDefinitions.Add($gc0); $rowGrid.ColumnDefinitions.Add($gc1); $rowGrid.ColumnDefinitions.Add($gc2)
     [void]$rowGrid.Children.Add($contentOuter)
+    # v2.0.x (§137): riskli servis — "El ile | Devre dışı" secimi (BEKLİYOR rozetinin solunda)
+    if ($tweak.SvcMode) {
+        $pill = New-TweakModePill $tweak $chk
+        [System.Windows.Controls.Grid]::SetColumn($pill, 1)
+        [void]$rowGrid.Children.Add($pill)
+    }
     $pend = New-TweakBadge (T 'tw_badge_pending') "#4C8DFF" "#FFFFFF"
     $pend.Child.FontWeight = 'Bold'
     $pend.Child.FontSize = 11
@@ -14409,7 +14990,7 @@ function Create-Tweak-Item($tweak, [bool]$nested = $false, [string]$caption = ""
     $pend.Tag = "TweakPending"
     $pend.ToolTip = (T 'tw_badge_pending_tip')
     $pend.Visibility = 'Collapsed'
-    [System.Windows.Controls.Grid]::SetColumn($pend, 1)
+    [System.Windows.Controls.Grid]::SetColumn($pend, 2)
     [void]$rowGrid.Children.Add($pend)
 
     $chk.Content = $rowGrid
@@ -14429,6 +15010,14 @@ function Create-Tweak-Item($tweak, [bool]$nested = $false, [string]$caption = ""
 
     $chk.Add_Click({
         $me = $this; $treeItem = $me.Parent.Parent; $tweakObj = $treeItem.Tag
+        # v2.0.x (§136): aygiti olan servisi acarken onay; Hayir → anahtar geri kapanir
+        if ($me.IsChecked -and $tweakObj.HwWarn) {
+            $hw = ""; try { $hw = Get-TweakHwWarning $tweakObj } catch {}
+            if ($hw) {
+                $ans = Show-MrCleanMessage -Text ("$hw — $(T 'tw_hwwarn_tail')`n`n$(T 'tw_hwwarn_q')") -Title ((T 'tw_hwwarn_title') -f $tweakObj.Name) -Buttons YesNo -Icon Warning -Danger
+                if ($ans -ne 'Yes') { $me.IsChecked = $false; return }
+            }
+        }
         if ($me.IsChecked -and $tweakObj.Group) {
             $parentFolder = $treeItem.Parent 
             foreach ($sibling in $parentFolder.Items) {
@@ -14577,6 +15166,12 @@ function Show-ApplyConfirm($Enable, $Disable, [string]$Title = "", [string]$Sub 
             $bp = New-Object System.Windows.Controls.StackPanel; $bp.Orientation = 'Horizontal'
             if ("$($t.Risk)" -eq "High" -and $icon -eq '+') { [void]$bp.Children.Add((& $badge (T 'apc_b_risk') '#3A1D20' '#F08A8E')) }
             if ($t.Vendor -and $icon -eq '+' -and ($sysV -notcontains $t.Vendor)) { [void]$bp.Children.Add((& $badge ((T 'apc_b_gpu') -f $t.Vendor) '#3A2C16' '#F0C27A')) }
+            # v2.0.x (§137): riskli servisin secimi ("El ile" / "Devre dışı") kartta da gorunur
+            if ($t.SvcMode -and $icon -eq '+') {
+                $smd = 4; if ($t.SvcModeDefault) { $smd = [int]$t.SvcModeDefault }
+                $sm = Get-MrCleanSvcMode ([string]$t.SvcMode) $smd
+                if ($sm -eq 4) { [void]$bp.Children.Add((& $badge (T 'tw_mode_disabled') '#3A2226' '#F08A8A')) } else { [void]$bp.Children.Add((& $badge (T 'tw_mode_manual') '#1C2B45' '#7FB0FF')) }
+            }
             if (Test-TweakNeedsRebootFlag $t) { [void]$bp.Children.Add((& $badge (T 'apc_b_reboot') '#23262D' '#A9B0BB')) }
             [System.Windows.Controls.Grid]::SetColumn($nm, 1); [System.Windows.Controls.Grid]::SetColumn($bp, 2)
             [void]$gr.Children.Add($ic); [void]$gr.Children.Add($nm); [void]$gr.Children.Add($bp)
