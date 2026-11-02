@@ -5790,7 +5790,8 @@ public class SpiMenu {
 					# v1.2.x ile uygulayanlarda isaret yok → PASIF gorunur → yeniden uygulayinca G-SYNC/AF/MSAA duzelir.
 					$v = (Get-ItemProperty -Path "HKCU:\Software\NVIDIA Corporation\NvTray" -Name "StartOnLogin" -ErrorAction SilentlyContinue).StartOnLogin
 					$m = (Get-ItemProperty -Path "HKCU:\Software\MrClean\AppliedMarkers" -Name "NvidiaProfileVer" -ErrorAction SilentlyContinue).NvidiaProfileVer
-					return ("$v" -eq "0" -and [int]"0$m" -ge 130)
+					# v2.0.1 (§139): surucu uygulamadan sonra degistiyse ayarlar bir kez dogrulanir
+					return ("$v" -eq "0" -and [int]"0$m" -ge 130 -and (Test-NvidiaTweakCurrent "NVIDIA Optimizasyonu (Kontrol Paneli + Registry)"))
 				';
 				Command='
 					# === BOLUM 1: REGISTRY ===
@@ -5865,6 +5866,10 @@ public class SpiMenu {
 					if ($ok) {
 						if (-not (Test-Path "HKCU:\Software\MrClean\AppliedMarkers")) { New-Item -Path "HKCU:\Software\MrClean\AppliedMarkers" -Force | Out-Null }
 						Set-ItemProperty -Path "HKCU:\Software\MrClean\AppliedMarkers" -Name "NvidiaProfileVer" -Value 130 -Type DWord -Force
+						# v2.0.1 (§139): hangi surucuyle uygulandi — surum degisince algilama ayarlari bir kez dogrular
+						$drv = Get-NvidiaDriverVersion
+						if ($drv) { Set-ItemProperty -Path "HKCU:\Software\MrClean\AppliedMarkers" -Name "NvidiaDriverVer" -Value $drv -Type String -Force }
+						$global:NvidiaTweakCheck = $null
 					}
 
 					# 2c. Gorsel dogrulama: NVIDIA App (NVCP Mayis 2026 da emekliye ayrildi), yoksa klasik Kontrol Paneli
@@ -5922,6 +5927,8 @@ public class SpiMenu {
 						}
 					}
 					Remove-ItemProperty -Path "HKCU:\Software\MrClean\AppliedMarkers" -Name "NvidiaProfileVer" -Force -ErrorAction SilentlyContinue
+					Remove-ItemProperty -Path "HKCU:\Software\MrClean\AppliedMarkers" -Name "NvidiaDriverVer" -Force -ErrorAction SilentlyContinue
+					$global:NvidiaTweakCheck = $null
 
 					Open-NvidiaSettingsApp
 				'
@@ -12699,6 +12706,122 @@ function Test-NvidiaProfileApplied([string]$Exe, [string]$ExpectedNip) {
     } finally {
         Remove-Item $tmp -Force -ErrorAction SilentlyContinue
     }
+}
+
+# v2.0.1 (§139): NVIDIA ekran surucusunun surumu (Class anahtari, ~35 ms). Bulunamazsa "".
+function Get-NvidiaDriverVersion {
+    $cls = "HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}"
+    foreach ($k in (Get-ChildItem -Path $cls -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^\d{4}$' })) {
+        $p = Get-ItemProperty -Path $k.PSPath -ErrorAction SilentlyContinue
+        if ("$($p.ProviderName)" -like "NVIDIA*" -and $p.DriverVersion) { return "$($p.DriverVersion)" }
+    }
+    return ""
+}
+
+# v2.0.1 (§139): NVIDIA tweak'i uygulandiktan sonra surucu degistiyse ayarlar hala yerinde mi?
+# Surucu "Temiz kurulum" / DDU profili sifirlar; normal guncelleme genelde tasir ama keskinlestirme
+# degerinin bir kopyasini 1'e dondurebiliyor (olculdu: 32.0.16.2101). Surucu surumu kayitliyla ayniysa hic bakilmaz.
+# Farkliysa: kayit defteri hemen denetlenir; Inspector profili ARKA PLANDA disa aktarilir (olculdu ~7,2 sn —
+# denetimi dondurmamak icin beklenmez) ve bitince Complete-NvidiaTweakCheck satiri gunceller.
+# Sonuc gelene kadar / Inspector yoksa $true (bilinmiyor = eski davranis). Dogrulama gecerse yeni surum kaydedilir.
+function Test-NvidiaTweakCurrent([string]$TweakName = "") {
+    $cur = Get-NvidiaDriverVersion
+    if (-not $cur) {
+        if (-not $global:NvidiaTweakNoVerLogged) { $global:NvidiaTweakNoVerLogged = $true; WpfLog "[NVIDIA] Surucu surumu okunamadi — profil dogrulamasi atlandi." }
+        return $true
+    }
+    $mk = "HKCU:\Software\MrClean\AppliedMarkers"
+    if ("$((Get-ItemProperty -Path $mk -Name 'NvidiaDriverVer' -ErrorAction SilentlyContinue).NvidiaDriverVer)" -eq $cur) { return $true }
+    if ($global:NvidiaTweakCheck -and $global:NvidiaTweakCheck.Ver -eq $cur) { return $global:NvidiaTweakCheck.Ok }
+
+    $lost = @()
+    foreach ($fts in @("HKLM:\SYSTEM\CurrentControlSet\Services\nvlddmkm\FTS", "HKLM:\SYSTEM\CurrentControlSet\Services\nvlddmkm\Parameters\FTS")) {
+        $v = (Get-ItemProperty -Path $fts -Name "EnableGR535" -ErrorAction SilentlyContinue).EnableGR535
+        if ($null -ne $v -and $v -ne 0) { $lost += "EnableGR535 ($($fts.Split('\')[-2..-1] -join '\'))" }
+    }
+    if ($lost.Count -gt 0) {
+        WpfLog "[NVIDIA] Surucu degisti ($cur): tweak ayarlarindan farkli olan — $($lost -join ', '). Yeniden uygulayin."
+        $global:NvidiaTweakCheck = @{ Ver = $cur; Ok = $false }
+        return $false
+    }
+    $global:NvidiaTweakCheck = @{ Ver = $cur; Ok = $true }
+    $exe = Join-Path $AppDataPath "nvidiaProfileInspector\nvidiaProfileInspector.exe"
+    if (-not (Test-Path $exe)) { WpfLog "[NVIDIA] Surucu degisti ($cur): Inspector indirilmemis — profil dogrulanamadi."; return $true }
+    try {
+        $t0 = (Get-Date).AddSeconds(-2)
+        $p = Start-Process -FilePath $exe -ArgumentList "-exportCustomized" -WorkingDirectory (Split-Path $exe -Parent) -WindowStyle Hidden -PassThru -ErrorAction Stop
+        $global:NvidiaTweakCheck.Proc = $p; $global:NvidiaTweakCheck.T0 = $t0; $global:NvidiaTweakCheck.Exe = $exe
+        $global:NvidiaTweakCheck.Name = $TweakName; $global:NvidiaTweakCheck.Start = Get-Date
+        WpfLog "[NVIDIA] Surucu degisti ($cur): profil arka planda dogrulaniyor..."
+        # Zamanlayici global degiskende: olay isleyicisinde $this'e guvenilmez, Stop hatasi sessizce yutulurdu
+        if ($global:NvidiaTweakTimer) { try { $global:NvidiaTweakTimer.Stop() } catch {} }
+        $global:NvidiaTweakTimer = New-Object System.Windows.Threading.DispatcherTimer
+        $global:NvidiaTweakTimer.Interval = [TimeSpan]::FromMilliseconds(500)
+        $global:NvidiaTweakTimer.Add_Tick({
+            try {
+                $c = $global:NvidiaTweakCheck
+                if (-not $c -or -not $c.Proc) { $global:NvidiaTweakTimer.Stop(); return }
+                if (-not $c.Proc.HasExited) {
+                    if (((Get-Date) - $c.Start).TotalSeconds -lt 60) { return }
+                    try { $c.Proc.Kill() } catch {}
+                    WpfLog "[NVIDIA] Inspector 60 sn icinde bitmedi — sonlandirildi."
+                }
+                $global:NvidiaTweakTimer.Stop()
+                Complete-NvidiaTweakCheck
+            } catch {
+                try { $global:NvidiaTweakTimer.Stop() } catch {}
+                WpfLog "[NVIDIA] Profil dogrulamasi tamamlanamadi: $($_.Exception.Message)"
+            }
+        })
+        $global:NvidiaTweakTimer.Start()
+    } catch {
+        WpfLog "[NVIDIA] Inspector baslatilamadi: $($_.Exception.Message)"
+    }
+    return $true
+}
+
+# v2.0.1 (§139): arka plandaki disa aktarim bitince profil karsilastirilir. Ayar kaybolmussa NVIDIA satiri
+# "uygulanmamis" olur (durum onbellegi + anahtar + ozet); hepsi yerindeyse surucu surumu kaydedilir.
+function Complete-NvidiaTweakCheck {
+    $c = $global:NvidiaTweakCheck
+    $exp = Get-ChildItem -Path (Split-Path $c.Exe -Parent) -Filter "CustomProfiles_*.nip" -ErrorAction SilentlyContinue |
+           Where-Object { $_.LastWriteTime -ge $c.T0 } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    $code = try { $c.Proc.ExitCode } catch { "?" }
+    $c.Proc = $null
+    if (-not $exp) { WpfLog "[NVIDIA] Inspector profil dosyasi uretmedi (cikis kodu $code) — dogrulama atlandi."; return }
+    $xpath = '//Profile[ProfileName="Base Profile"]/Settings/ProfileSetting'
+    $actual = @{}
+    try {
+        foreach ($st in ([xml](Get-Content -Path $exp.FullName -Raw)).SelectNodes($xpath)) { $actual[[string]$st.SettingID] = [string]$st.SettingValue }
+    } finally {
+        Remove-Item $exp.FullName -Force -ErrorAction SilentlyContinue
+    }
+    # Disa aktarim surucu varsayilanina esit degerleri yazmaz. Bu uc ayarda bizim degerimiz varsayilan
+    # (olculdu: OpenGL GDI, CUDA P2, G-SYNC gostergesi); digerleri listede yoksa ayar kaybolmus demektir.
+    $defaultIds = @("544392611", "1343646814", "268604728")
+    $lost = @()
+    foreach ($st in ([xml]$global:NvidiaInspectorOptimizedNip).SelectNodes($xpath)) {
+        $id = [string]$st.SettingID
+        if ($actual.ContainsKey($id)) { if ($actual[$id] -ne [string]$st.SettingValue) { $lost += [string]$st.SettingNameInfo } }
+        elseif ($defaultIds -notcontains $id) { $lost += [string]$st.SettingNameInfo }
+    }
+    if ($lost.Count -eq 0) {
+        Set-ItemProperty -Path "HKCU:\Software\MrClean\AppliedMarkers" -Name "NvidiaDriverVer" -Value $c.Ver -Type String -Force -ErrorAction SilentlyContinue
+        WpfLog "[NVIDIA] Surucu degisti ($($c.Ver)): tweak ayarlari yerinde."
+        return
+    }
+    $c.Ok = $false
+    WpfLog "[NVIDIA] Surucu degisti ($($c.Ver)): profil ayarlarindan $($lost.Count) tanesi sifirlanmis — $($lost -join ', '). Yeniden uygulayin."
+    if (-not $c.Name -or -not $global:TweakStatusCache -or -not $global:TweakStatusCache.ContainsKey($c.Name)) { return }
+    $global:TweakStatusCache[$c.Name] = $false
+    try { Save-TweakStatusCache $global:TweakStatusCache } catch {}
+    try {
+        foreach ($item in (Get-AllTweakItems)) {
+            if ([string]$item.Tag.Name -eq $c.Name) { Set-TweakItemUI -item $item -isApplied $false -fromCache $false }
+        }
+        Update-Parent-Headers-Recursive $tvTweaks.Items
+        Update-TweakSummary $global:TweakStatusCache
+    } catch {}
 }
 
 # v1.3.0: NVIDIA ayar uygulamasini acar (gorsel dogrulama). NVIDIA Kontrol Paneli, GeForce suruculeri
