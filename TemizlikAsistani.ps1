@@ -3347,6 +3347,59 @@ public class SpiMenu {
                 Key="HKLM:\SYSTEM\CurrentControlSet\Control\BitLocker"; ValueName="PreventDeviceEncryption"; Type="DWord"; Data=1; Undo="DELETE_VALUE"
             },
             @{
+                Name="Servis İşlemlerini Birleştir (svchost Sayısını Azalt)"; Since="2.0.2";
+                Risk="Medium"; RestartExplorer=$false; RequiresReboot=$true;
+                Description="Windows, 3,5 GB'tan fazla RAM'de her servisi ayrı bir svchost.exe işleminde çalıştırır (Görev Yöneticisi'nde onlarca 'Hizmet Ana Bilgisayarı'). Bu ayar eşiği bilgisayarın takılı RAM miktarına çeker; servisler 3,5 GB altı bilgisayarlardaki gibi gruplar halinde birleşir.`n`n📊 Ölçüm (32 GB, açılışın 10. dakikası): svchost 72 → 40, toplam işlem 192 → 158, kullanılan RAM 7 405 → 7 036 MB (yaklaşık 370 MB az). Ping ve ortalama FPS'te fark yok; CPU ağırlıklı test sahnesinde 1% low iki ölçümde %1-2 düşük çıktı (609 → 596 / 599), GPU ağırlıklı sahnede değişmedi.`n`n⚠️ Karşılığı: aynı gruptaki bir servis çökerse gruptaki diğerleri de yeniden başlar; Görev Yöneticisi'nde hangi servisin ne kadar kaynak kullandığını görmek zorlaşır.`nℹ️ Geri alma Windows varsayılanına (3,5 GB) döner. Fark yeniden başlatmadan sonra görülür.`n📚 Kaynak: Stix Tweaks; Microsoft 'Windows 10 1703 svchost değişiklikleri' belgesi.";
+                DetectScript='
+                    $v = (Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control" -Name "SvcHostSplitThresholdInKB" -ErrorAction SilentlyContinue).SvcHostSplitThresholdInKB
+                    # takili RAM (Win32_PhysicalMemory); gorunen RAM esigi gecmiyor, servisler birlesmiyordu (olculdu)
+                    if (-not $global:MrCleanRamKb) { $global:MrCleanRamKb = [int64]((Get-CimInstance Win32_PhysicalMemory -ErrorAction SilentlyContinue | Measure-Object -Property Capacity -Sum).Sum / 1KB) }
+                    $ramKb = $global:MrCleanRamKb
+                    return ($null -ne $v -and $ramKb -gt 0 -and [int64]([uint32]$v) -ge $ramKb)
+                ';
+                Command='
+                    $ramKb = [int64]((Get-CimInstance Win32_PhysicalMemory -ErrorAction SilentlyContinue | Measure-Object -Property Capacity -Sum).Sum / 1KB)
+                    if ($ramKb -gt 0) { Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control" -Name "SvcHostSplitThresholdInKB" -Value ([int]$ramKb) -Type DWord -Force }
+                ';
+                UndoCommand='
+                    Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control" -Name "SvcHostSplitThresholdInKB" -Value 3670016 -Type DWord -Force   # Windows varsayilani 0x380000
+                '
+            },
+            @{
+                Name="Hata Toleranslı Yığını (FTH) Kapat"; Since="2.0.2";
+                Risk="Low"; RestartExplorer=$false; RequiresReboot=$true;
+                Description="Windows, sık çöken bir programı fark edince ona otomatik olarak 'Hata Toleranslı Yığın' (Fault Tolerant Heap) önlemi uygular; program o önlemle biraz daha yavaş ama daha az çökerek çalışır. Bu ayar bu otomatik önlemi kapatır.`n`nℹ️ Etkisi küçüktür: yalnız daha önce çökmüş ve önlem uygulanmış programları ilgilendirir.`n⚠️ Karşılığı: sık çöken bir program bundan sonra daha çok çökebilir.`n📚 Kaynak: Stix Tweaks (Stix'te adı yanlışlıkla 'Write Cache Buffer'); Microsoft Fault Tolerant Heap belgesi.";
+                Key="HKLM:\SOFTWARE\Microsoft\FTH"; ValueName="Enabled"; Type="DWord"; Data=0; Undo=1
+            },
+            @{
+                Name="Uyku İzleme Günlüğünü (SleepStudy) Kapat"; Since="2.0.2";
+                Risk="Low"; RestartExplorer=$false; RequiresReboot=$true;
+                Description="Windows'un uyku / modern bekleme sırasında aygıt ve pil kullanımını kaydeden 'Sleep Study' günlüğünü kapatır (arka planda sürekli küçük yazma ve izleme kalkar).`n`nℹ️ Masaüstünde etkisi yok denecek kadar azdır.`n⚠️ Dizüstünde 'powercfg /sleepstudy' pil raporu artık oluşmaz; pil sorunu araştırıyorsanız açık bırakın.`n📚 Kaynak: Stix Tweaks (Disable Sleep Study).";
+                Batch=@(
+                    @{ Key="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power"; ValueName="SleepStudyDisabled"; Type="DWord"; Data=1; Undo="DELETE_VALUE" },
+                    @{ Key="HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Power"; ValueName="SleepStudyDeviceAccountingLevel"; Type="DWord"; Data=0; Undo=4 },
+                    @{ Key="HKLM:\SYSTEM\CurrentControlSet\Control\Power"; ValueName="SleepstudyAccountingEnabled"; Type="DWord"; Data=0; Undo="DELETE_VALUE" }
+                )
+            },
+            @{
+                Name="Depolama Algısı'nı Kapat (Otomatik Disk Temizliği)"; Since="2.0.2";
+                Risk="Low"; RestartExplorer=$false;
+                Description="Windows'un disk dolunca ya da zamanlanmış olarak geçici dosyaları, Geri Dönüşüm Kutusu'nu ve bazı indirilenleri kendiliğinden silmesini (Ayarlar > Depolama > Depolama Algısı) kapatır. Dosyalarınız habersiz silinmez, arka planda temizlik çalışmaz.`n`n⚠️ Karşılığı: geçici dosyalar ve Geri Dönüşüm Kutusu kendiliğinden boşalmaz; temizliği MrClean ile ya da elle yaparsınız.`nℹ️ Geri alma önceki değere döner.`n📚 Kaynak: Stix Tweaks (General Windows Settings).";
+                DetectScript='
+                    $v = (Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy" -Name "01" -ErrorAction SilentlyContinue)."01"
+                    return ("$v" -eq "0")
+                ';
+                Command='
+                    $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy"
+                    Backup-TweakRegValue "StorageSense01" $path "01"
+                    if (-not (Test-Path $path)) { New-Item -Path $path -Force | Out-Null }
+                    Set-ItemProperty -Path $path -Name "01" -Value 0 -Type DWord -Force
+                ';
+                UndoCommand='
+                    Restore-TweakRegValue "StorageSense01" "HKCU:\Software\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy" "01"
+                '
+            },
+            @{
                 Name="Bellek Bütünlüğü (HVCI / Çekirdek Yalıtımı) Kapat - Oyun FPS";
                 Aliases=@("VBS / Bellek Butunlugu Kapat");
                 Since="2.0.0";
@@ -4329,6 +4382,16 @@ public class SpiMenu {
                     @{ Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Search"; ValueName="CortanaConsent"; Type="DWord"; Data=0; Undo=1 }
                 )
             },
+            @{
+                Name="Windows Arama'nın Konum ve Web Kullanımını Kapat"; Since="2.0.2";
+                Risk="Low"; RestartExplorer=$false;
+                Description="Group Policy ile Windows Arama'nın konumunuzu kullanmasını ve web sonuçları getirmesini kapatır (ölçülü bağlantılar dahil). Yerel dosya ve uygulama araması aynen çalışır.`n`nℹ️ Performans için değil, gizlilik için. Başlat'taki Bing araması için 'Başlat Menüsü: Tertemiz Paket' ayarı da ayrıca vardır.`n📚 Kaynak: Stix Tweaks; Microsoft ADMX (Search).";
+                Batch=@(
+                    @{ Key="HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search"; ValueName="AllowSearchToUseLocation"; Type="DWord"; Data=0; Undo="DELETE_VALUE" },
+                    @{ Key="HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search"; ValueName="ConnectedSearchUseWeb"; Type="DWord"; Data=0; Undo="DELETE_VALUE" },
+                    @{ Key="HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search"; ValueName="ConnectedSearchUseWebOverMeteredConnections"; Type="DWord"; Data=0; Undo="DELETE_VALUE" }
+                )
+            },
 
             # === COPILOT TAMAMEN KAPAT (FR33THY 9 Copilot.ps1 birebir) ===
             @{
@@ -4999,6 +5062,41 @@ public class SpiMenu {
                 '
             },
             @{
+                Name="Ethernet Gönderim Arabelleğini Artır (Transmit Buffers ≥ 1024)"; Requires=@("Ethernet");
+                SubCategory="Ağ ve Ping"; Since="2.0.2";
+                UndoMayStayActive=$true; UndoStayActiveNote="kartın kendi değeri zaten 1024 ve üstünde (sürücü varsayılanı); geri alma önceki değere döndü, koşul hâlâ sağlandığı için 'Aktif' görünmeye devam eder.";
+                Risk="Low"; RestartExplorer=$false; SkipRebootDialog=$true;
+                Description="Ethernet kartının gönderim arabelleği 1024'ün altındaysa (bazı kartlarda varsayılan 128-512) sürücünün izin verdiği en fazla 2048'e çıkarır. Yoğun yükleme anında kartın gönderim kuyruğu daha geç dolar.`n`nℹ️ Dürüst not: oyun trafiği küçüktür, arabelleği doldurmaz; fark ancak yoğun yüklemede beklenir ve bu durum henüz ölçülmedi.`n⚠️ Çok küçük ek bellek kullanır.`nℹ️ Uygulayınca kablolu bağlantı birkaç saniye kopar (kart yeniden başlar). Geri alma kartın önceki değerine döner.`n📚 Kaynak: Stix Tweaks (Network); Microsoft NDIS '*TransmitBuffers' standart anahtarı.";
+                DetectScript='
+                    $seen = 0
+                    foreach ($a in (Get-MrCleanNicFast | Where-Object { $_.InterfaceType -eq 6 })) {
+                        $ps = Get-MrCleanNicParamsFast $a.RegPath
+                        $p = if ($null -eq $ps) { Get-NetAdapterAdvancedProperty -Name $a.Name -RegistryKeyword "*TransmitBuffers" -ErrorAction SilentlyContinue } else { @($ps | Where-Object { $_.RegistryKeyword -eq "*TransmitBuffers" })[0] }
+                        if (-not $p) { continue }
+                        $seen++
+                        $max = if ($p.NumericParameterMaxValue) { [int]$p.NumericParameterMaxValue } else { 1024 }
+                        if ([int]"0$(@($p.RegistryValue)[0])" -lt [Math]::Min(1024, $max)) { return $false }
+                    }
+                    return ($seen -gt 0)
+                ';
+                Command='
+                    $n = Set-MrCleanEthProperty "TxBuf" "*TransmitBuffers" {
+                        param($p)
+                        $cur = [int]"0$(@($p.RegistryValue)[0])"
+                        if ($cur -ge 1024) { return $null }
+                        $max = if ($p.NumericParameterMaxValue) { [int]$p.NumericParameterMaxValue } else { 2048 }
+                        $t = [Math]::Min(2048, $max)
+                        if ($p.NumericParameterStepValue -and [int]$p.NumericParameterStepValue -gt 1) { $st = [int]$p.NumericParameterStepValue; $t = [int]([Math]::Floor($t / $st) * $st) }
+                        if ($t -le $cur) { return $null }
+                        return "$t"
+                    }
+                    if ($n -gt 0) { Restart-MrCleanEthernet }
+                ';
+                UndoCommand='
+                    if ((Restore-MrCleanWifiProperties "TxBuf") -gt 0) { Restart-MrCleanEthernet }
+                '
+            },
+            @{
                 Name="NetBIOS Ad Yayınlarını Kapat (Eski Ağ Protokolü)";
                 SubCategory="Ağ ve Ping"; Since="2.0.0";
                 Risk="Low"; RestartExplorer=$false; SkipRebootDialog=$true;
@@ -5435,6 +5533,13 @@ public class SpiMenu {
 
             # --- H: GPU / DISPLAY ---
             @{
+                Name="Masaüstü Vsync Boşta Zaman Aşımını Kapat (VsyncIdleTimeout)";
+                SubCategory="GPU / Display"; Since="2.0.2";
+                Risk="Low"; RestartExplorer=$false; RequiresReboot=$true;
+                Description="Ekranda bir süre yeni kare çizilmeyince Windows'un ekran kartı zamanlayıcısı vsync kesmelerini boşta moduna alır; ilk yeni karede kısa bir uyanma gecikmesi olabilir. Bu ayar zaman aşımını kapatır, vsync kesmeleri hep açık kalır (pencereli oyun ve masaüstünde kare zamanlaması için).`n`n⚠️ Karşılığı: boştayken çok küçük ek güç tüketimi (dizüstünde pil). Bu bilgisayarda ölçülmedi.`n⚠️ Yeniden başlatma gerekir.`n📚 Kaynak: Stix Tweaks (Disable Vsync Idle Timeout).";
+                Key="HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers\Scheduler"; ValueName="VsyncIdleTimeout"; Type="DWord"; Data=0; Undo="DELETE_VALUE"
+            },
+            @{
                 Name="Algılanan Oyunlara Yüksek Performans GPU Ata";
                 SubCategory="GPU / Display"; Since="2.0.0";
                 Risk="Low"; RestartExplorer=$false;
@@ -5502,6 +5607,13 @@ public class SpiMenu {
             },
 
             # --- G: AUDIO (MMCSS Pro Audio Task Boost) ---
+            @{
+                Name="MMCSS Arka Plan Payını En Aza İndir (SystemResponsiveness 10)";
+                SubCategory="Ses (Audio)"; Since="2.0.2";
+                Risk="Low"; RestartExplorer=$false; RequiresReboot=$true;
+                Description="Multimedya Sınıf Zamanlayıcısı (MMCSS) oyun / ses gibi kayıtlı görevler çalışırken işlemcinin bir kısmını arka plan işlerine ayırır. Windows varsayılanı %20; bu ayar %10 yapar (Microsoft'a göre en düşük geçerli değer — 0 yazmak da 10 sayılır).`n`nℹ️ Arka plandaki işler (indirme, yayın yazılımı) oyun sırasında biraz daha az işlemci alır. Bu bilgisayarda ölçülmedi.`nℹ️ Ağ ve Ping > '[SIFIRLA] Windows Varsayılanları' bu değeri 20'ye döndürür.`n⚠️ Yeniden başlatma gerekir.`n📚 Kaynak: Stix Tweaks; Microsoft MMCSS belgesi.";
+                Key="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"; ValueName="SystemResponsiveness"; Type="DWord"; Data=10; Undo=20
+            },
             @{
                 Name="MMCSS Pro Audio Task Priority Boost";
                 SubCategory="Ses (Audio)";
