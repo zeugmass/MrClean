@@ -13425,7 +13425,7 @@ function Cleanup-OldUpdateFiles {
 # Async update check — Add_Loaded'da cagrilir. Runspace'de calisir, UI bloklamaz.
 # Sonuc: $global:UpdateAvailable doldurulur (yeni surum varsa) veya $null (guncel/erisilemiyor).
 # UI thread'i status bar'i guncellemek icin DispatcherTimer ile beklenmelidir.
-# v2.0.2 (§152): Winapp2.ini'nin ilk satirindaki surum ("; Version: 251102" -> "Version: 251102"); Show-UpdateWindow ile ayni okuma.
+# v2.0.2 (§152): Winapp2.ini'nin ilk satirindaki surum ("; Version: 251102" -> "Version: 251102"); eski veritabani penceresiyle ayni okuma.
 function Get-Winapp2LocalVersion {
     if (-not $Winapp2Path -or -not (Test-Path -LiteralPath $Winapp2Path)) { return "Yok" }
     try {
@@ -13434,6 +13434,52 @@ function Get-Winapp2LocalVersion {
         if ($line -match "Version") { return $line.Replace(";", "").Trim() }
         return "Bilinmiyor"
     } catch { return "Okunamadı" }
+}
+
+# v2.0.2 (§153): sunucudaki Winapp2.ini surumu (yalniz ilk satir indirilir). Hata olursa $null.
+function Get-Winapp2OnlineVersion {
+    try {
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+        $req = [System.Net.WebRequest]::Create($Winapp2Sources[0]); $req.Timeout = 8000; $req.UserAgent = "Mozilla/5.0"
+        $resp = $req.GetResponse()
+        try { $sr = New-Object System.IO.StreamReader($resp.GetResponseStream()); $line = $sr.ReadLine(); $sr.Close() } finally { $resp.Close() }
+        if ($line) { return $line.Replace(";", "").Trim() }
+    } catch {}
+    return $null
+}
+
+# v2.0.2 (§153): Winapp2.ini'yi indirir (eski dosya yedeklenir, bozuk inerse geri konur), fark raporunu acar, listeyi yeniden tarar.
+# Ayarlar > Temizlik Veritabani kartindaki dugme kullanir (eskiden ayri pencere aciliyordu). $OnStatus: durum metni geri cagirimi.
+function Invoke-Winapp2Download([string]$OnlineVer, [scriptblock]$OnStatus) {
+    $localFile = $Winapp2Path; $backupFile = "$localFile.old"
+    & $OnStatus "Dosya indiriliyor, lütfen bekleyin..." '#8A919C'; Do-Events
+    try {
+        if (Test-Path $localFile) { if (Test-Path $backupFile) { Remove-Item $backupFile -Force }; Move-Item $localFile $backupFile -Force }
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
+        $wc = New-Object System.Net.WebClient
+        try { $wc.DownloadFile($Winapp2Sources[0], $localFile) } finally { $wc.Dispose() }
+        if (-not ((Test-Path $localFile) -and (Get-Item $localFile).Length -gt 1024)) { throw "İndirilen dosya bozuk veya çok küçük." }
+        $msg = "✔ Veritabanı güncellendi."
+        if (Test-Path $backupFile) {
+            try {
+                $rep = New-Winapp2DiffReport -OldPath $backupFile -NewPath $localFile -OnlineVer $OnlineVer
+                $msg = "✔ Güncellendi: +$($rep.Added) yeni · ~$($rep.Changed) değişen · -$($rep.Removed) çıkan. Temizlik listesi yeniden taranıyor."
+                Copy-Item $backupFile (Join-Path $DatabaseDir "Winapp2.prev.ini") -Force -ErrorAction SilentlyContinue
+                if ($rep.Path -and (Test-Path $rep.Path)) { Invoke-Item $rep.Path }
+            } catch { WpfLog "[UYARI] Winapp2 fark raporu uretilemedi: $($_.Exception.Message)" }
+            Remove-Item $backupFile -Force -ErrorAction SilentlyContinue
+        }
+        WpfLog "[SİSTEM] Winapp2 veritabanı güncellendi ($OnlineVer)."
+        & $OnStatus $msg '#3FB97A'
+        if ($CachePath -and (Test-Path $CachePath)) { Remove-Item $CachePath -Force -ErrorAction SilentlyContinue }
+        Start-Winapp2-Process
+        return $true
+    } catch {
+        WpfLog "[HATA] Veritabanı güncellemesi başarısız: $($_.Exception.Message)"
+        if (Test-Path $backupFile) { if (Test-Path $localFile) { Remove-Item $localFile -Force }; Move-Item $backupFile $localFile -Force }
+        & $OnStatus "❌ Güncellenemedi, eski veritabanı geri kondu: $($_.Exception.Message)" '#E5484D'
+        return $false
+    }
 }
 
 # v2.0.2 (§152, Onizleme20 onayli): sol menudeki "Program Guncelle" dugmesi. Durumlar: normal / checking / new.
@@ -22272,7 +22318,7 @@ function Show-FeedbackWindow {
     }
 }
 
-# ---- Show-AppUpdateWindow (Otomatik program guncellemesi, Show-UpdateWindow Winapp2 icin) ----
+# ---- Show-AppUpdateWindow (Otomatik program guncellemesi; Winapp2 icin Invoke-Winapp2Download) ----
 function Show-AppUpdateWindow {
     if (-not $global:UpdateAvailable) {
         [void](Show-MrCleanMessage -Text "Su an icin yeni bir surum yok veya kontrol henuz tamamlanmadi." -Title "Guncelleme Yok" -Icon Info)
@@ -22460,7 +22506,7 @@ $($global:SubTheme)
     }
 }
 
-# ---- Show-UpdateWindow (Winapp2.ini icin — eski isim, korunmasi gereken Winapp2 update mantigi) ----
+# ---- Winapp2.ini fark raporu (v2.0.2 §153: guncelleme Ayarlar > Temizlik Veritabani kartinda, Invoke-Winapp2Download) ----
 function Get-Winapp2Diff {
     # Iki Winapp2.ini dosyasini [Section] bloklarina ayirip fark cikarir.
     # Doner: @{ Added=@(ad); Removed=@(ad); Changed=@(ad); OldCount; NewCount }
@@ -22521,272 +22567,6 @@ function New-Winapp2DiffReport {
     if ($d.Removed.Count -eq 0) { [void]$sb.AppendLine("  (yok)") } else { foreach ($n in ($d.Removed | Sort-Object)) { [void]$sb.AppendLine("  - $n") } }
     try { [System.IO.File]::WriteAllText($reportPath, $sb.ToString(), (New-Object System.Text.UTF8Encoding($true))) } catch {}
     return @{ Path = $reportPath; Added = $d.Added.Count; Changed = $d.Changed.Count; Removed = $d.Removed.Count }
-}
-
-function Show-UpdateWindow {
-    # --- XAML ARAYÜZÜ ---
-    $xamlUpdate = @"
-    <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-            xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-            Title="@@uw_title@@" Height="250" Width="500" 
-            Background="#0F1115" Foreground="#E6E8EB" FontFamily="{DynamicResource UiFont}" FontSize="14" WindowStartupLocation="CenterScreen" WindowStyle="ToolWindow" ResizeMode="NoResize">
-    <Window.Resources>
-$($global:SubTheme)
-    </Window.Resources>
-        <Grid Margin="20">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="Auto"/>
-            </Grid.RowDefinitions>
-
-            <TextBlock Text="@@uw_header@@" Foreground="#8CB4FF" FontSize="17" FontWeight="Bold" HorizontalAlignment="Center"/>
-
-            <!-- SÜRÜM BİLGİLERİ -->
-            <Grid Grid.Row="1" VerticalAlignment="Center">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                
-                <StackPanel Grid.Column="0" HorizontalAlignment="Center">
-                    <TextBlock Text="@@set_curver@@" Foreground="#8A919C" FontSize="12" HorizontalAlignment="Center"/>
-                    <TextBlock x:Name="txtLocalVer" Text="..." Foreground="#E6E8EB" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center" Margin="0,5,0,0"/>
-                </StackPanel>
-
-                <TextBlock Grid.Column="1" Text="➔" Foreground="#6B7280" FontSize="22" VerticalAlignment="Center" Margin="10,0"/>
-
-                <StackPanel Grid.Column="2" HorizontalAlignment="Center">
-                    <TextBlock Text="@@uw_server@@" Foreground="#8A919C" FontSize="12" HorizontalAlignment="Center"/>
-                    <TextBlock x:Name="txtOnlineVer" Text="@@uw_checking@@" Foreground="#E0A23B" FontWeight="Bold" FontSize="14" HorizontalAlignment="Center" Margin="0,5,0,0"/>
-                </StackPanel>
-            </Grid>
-
-            <!-- DURUM VE BUTONLAR -->
-            <StackPanel Grid.Row="2">
-                <TextBlock x:Name="txtStatus" Text="@@uw_wait@@" Foreground="#A9B0BB" HorizontalAlignment="Center" Margin="0,0,0,15"/>
-                
-                <!-- 3 SÜTUNLU BUTON YAPISI -->
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="5"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="5"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-                    
-                    <Button x:Name="btnOpenFolder" Grid.Column="0" Content="@@uw_openfolder@@" Height="35" ToolTip="@@uw_foldertip@@"/>
-                    <Button x:Name="btnRescan" Grid.Column="2" Content="@@uw_rescan@@" Height="35" FontWeight="SemiBold" ToolTip="@@uw_rescantip@@"/>
-                    <Button Style="{StaticResource SwBtnPrimary}" x:Name="btnDoUpdate" Grid.Column="4" Content="@@uw_do@@" Height="35" FontWeight="Bold" IsEnabled="False" ToolTip="@@uw_dotip@@"/>
-                </Grid>
-            </StackPanel>
-        </Grid>
-    </Window>
-"@
-
-    # --- PENCEREYİ YÜKLE ---
-    $reader = New-Object System.Xml.XmlNodeReader ([xml](Localize-Xaml $xamlUpdate))
-    $winUpd = [Windows.Markup.XamlReader]::Load($reader)
-    Initialize-SubWindow $winUpd
-
-    # Kontroller
-    $txtLocal = $winUpd.FindName('txtLocalVer')
-    $txtOnline = $winUpd.FindName('txtOnlineVer')
-    $txtStat = $winUpd.FindName('txtStatus')
-    $btnUpd = $winUpd.FindName('btnDoUpdate')
-    $btnFol = $winUpd.FindName('btnOpenFolder')
-    $btnRescan = $winUpd.FindName('btnRescan')
-
-    # Yollar
-    $localFile = $global:Winapp2Path 
-    $url = $global:Winapp2Sources[0]
-
-    # --- 1. MEVCUT SÜRÜMÜ OKU (TEMİZLİK EKLENDİ) ---
-    $localVer = "Yok"
-    if (Test-Path $localFile) {
-        try {
-            $reader = New-Object System.IO.StreamReader($localFile)
-            $line = $reader.ReadLine()
-            $reader.Close()
-            if ($line -match "Version") { 
-                # DÜZELTME: Noktalı virgülü sil ve boşlukları temizle
-                $localVer = $line.Replace(";", "").Trim() 
-            } else { 
-                $localVer = "Bilinmiyor" 
-            }
-        } catch { $localVer = "Okunamadı" }
-    }
-    $txtLocal.Text = $localVer
-
-    $script:UpdTimer = $null
-    $script:CloseTimer = $null
-
-    # --- 2. ONLINE KONTROL (ARKA PLAN + TEMİZLİK) ---
-    $winUpd.Add_Loaded({
-        $script:UpdRunspace = [powershell]::Create()
-        $script:UpdRunspace.AddScript({
-            param($u)
-            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
-            $wc = New-Object System.Net.WebClient
-			$wc.Headers.Add("User-Agent", "Mozilla/5.0")
-			try {
-				$stream = $wc.OpenRead($u)
-				$r = New-Object System.IO.StreamReader($stream)
-				$ver = $r.ReadLine()
-				$r.Close(); $stream.Close()
-				if ($ver) { return $ver.Replace(";", "").Trim() }
-				return "HATA"
-			} catch { return "HATA" } finally { $wc.Dispose() }
-        })
-        $script:UpdRunspace.AddArgument($url)
-        $script:UpdAsync = $script:UpdRunspace.BeginInvoke()
-
-        $script:UpdTimer = New-Object System.Windows.Threading.DispatcherTimer
-        $script:UpdTimer.Interval = [TimeSpan]::FromMilliseconds(200)
-        
-        $script:UpdTimer.Add_Tick({
-            if (-not $winUpd.IsLoaded) { 
-                $script:UpdTimer.Stop()
-                return 
-            }
-
-            if ($script:UpdAsync.IsCompleted) {
-			# 1. Döngüyü hemen durdur
-			$script:UpdTimer.Stop()
-
-			try {
-				# 2. Sonucu al
-				$onlineVer = $script:UpdRunspace.EndInvoke($script:UpdAsync)
-				$txtOnline.Text = $onlineVer
-				
-				# 3. Sonuca göre arayüzü güncelle
-				if ($onlineVer -eq "HATA" -or [string]::IsNullOrWhiteSpace($onlineVer)) {
-					$txtStat.Text = "Sunucuya bağlanılamadı veya yanıt boş."
-					$txtOnline.Foreground = (New-Object System.Windows.Media.BrushConverter).ConvertFromString('#E5484D')
-					$txtOnline.Text = "Hata"
-				}
-				elseif ($onlineVer -ne $txtLocal.Text) {
-					$txtStat.Text = "✨ Yeni sürüm mevcut!"
-					$txtStat.Foreground = (New-Object System.Windows.Media.BrushConverter).ConvertFromString('#3FB97A')
-					$btnUpd.IsEnabled = $true
-					$btnUpd.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#4C8DFF')
-				} 
-				else {
-					$txtStat.Text = "✅ Veritabanı güncel."
-					$btnUpd.Content = "Yine de İndir"
-					$btnUpd.IsEnabled = $true
-					$btnUpd.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString('#1D2129')
-				}
-			} 
-			catch {
-				# 4. Hata olursa kullanıcıya bilgi ver
-				$txtStat.Text = "Sürüm kontrolü sırasında bir hata oluştu."
-				$txtOnline.Text = "Hata"
-				$txtOnline.Foreground = (New-Object System.Windows.Media.BrushConverter).ConvertFromString('#E5484D')
-				WpfLog "Update Check Hatası: $($_.Exception.Message)"
-			} 
-			finally {
-				# 5. KRİTİK: Hata olsa da olmasa da Runspace'i RAM'den temizle
-				if ($script:UpdRunspace) {
-					$script:UpdRunspace.Dispose()
-					$script:UpdRunspace = $null
-				}
-			}
-		}
-        })
-        $script:UpdTimer.Start()
-    })
-
-    # --- PENCERE KAPANINCA TEMİZLİK ---
-    $winUpd.Add_Closed({
-        if ($script:UpdTimer) { $script:UpdTimer.Stop() }
-        if ($script:CloseTimer) { $script:CloseTimer.Stop() }
-        if ($script:UpdRunspace) { $script:UpdRunspace.Dispose() }
-    })
-
-    # --- 3. BUTON OLAYLARI ---
-    
-    # KLASÖRÜ AÇ
-    $btnFol.Add_Click({
-        Invoke-Item (Split-Path $localFile)
-    })
-
-    # LİSTEYİ YENİLE
-    $btnRescan.Add_Click({
-        if (Test-Path $global:CachePath) { Remove-Item $global:CachePath -Force }
-        Start-Winapp2-Process 
-        $winUpd.Close()
-    })
-
-    # GÜNCELLEME İŞLEMİ
-    $btnUpd.Add_Click({
-        $btnUpd.IsEnabled = $false
-        $btnUpd.Content = "İndiriliyor..."
-        $txtStat.Text = "Dosya indiriliyor, lütfen bekleyin..."
-        Do-Events
-
-        try {
-            $backupFile = "$localFile.old"
-            
-            if (Test-Path $localFile) {
-                if (Test-Path $backupFile) { Remove-Item $backupFile -Force }
-                Move-Item $localFile $backupFile -Force
-            }
-
-            [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12
-            $wc = New-Object System.Net.WebClient
-			try { $wc.DownloadFile($url, $localFile) } finally { $wc.Dispose() }
-
-            if ((Test-Path $localFile) -and (Get-Item $localFile).Length -gt 1024) {
-                $txtStat.Text = "✔ Başarıyla güncellendi!"
-                $txtStat.Foreground = (New-Object System.Windows.Media.BrushConverter).ConvertFromString('#3FB97A')
-                $btnUpd.Content = "TAMAMLANDI"
-
-                # v1.2.29: Eski <-> yeni Winapp2 fark raporu (txt) uret + ac, eski surumu kalici sakla
-                if (Test-Path $backupFile) {
-                    try {
-                        $rep = New-Winapp2DiffReport -OldPath $backupFile -NewPath $localFile -OnlineVer $txtOnline.Text
-                        $txtStat.Text = "✔ Güncellendi!  +$($rep.Added) yeni · ~$($rep.Changed) değişen · -$($rep.Removed) çıkan"
-                        $prev = Join-Path $DatabaseDir "Winapp2.prev.ini"
-                        Copy-Item $backupFile $prev -Force -ErrorAction SilentlyContinue
-                        if ($rep.Path -and (Test-Path $rep.Path)) { Invoke-Item $rep.Path }
-                    } catch { WpfLog "[UYARI] Winapp2 fark raporu uretilemedi: $($_.Exception.Message)" }
-                }
-                
-				if (Test-Path $backupFile) { Remove-Item $backupFile -Force -ErrorAction SilentlyContinue }
-				
-                if (Test-Path $global:CachePath) { Remove-Item $global:CachePath -Force }
-                Start-Winapp2-Process 
-                
-                $script:CloseTimer = New-Object System.Windows.Threading.DispatcherTimer
-                $script:CloseTimer.Interval = [TimeSpan]::FromSeconds(2)
-                $script:CloseTimer.Add_Tick({ 
-                    $script:CloseTimer.Stop()
-                    if ($winUpd.IsLoaded) { $winUpd.Close() }
-                })
-                $script:CloseTimer.Start()
-
-            } else {
-                throw "İndirilen dosya bozuk veya çok küçük."
-            }
-
-        } catch {
-            $txtStat.Text = "❌ HATA: Eski sürüme dönülüyor..."
-            $txtStat.Foreground = (New-Object System.Windows.Media.BrushConverter).ConvertFromString('#E5484D')
-            WpfLog "[HATA] Güncelleme başarısız: $($_.Exception.Message)"
-            
-            if (Test-Path $localFile) { Remove-Item $localFile -Force }
-            if (Test-Path $backupFile) { Move-Item $backupFile $localFile -Force }
-            
-            $btnUpd.Content = "HATA"
-            $btnUpd.Background = "#A00"
-            $btnUpd.IsEnabled = $true
-        }
-    })
-
-    $winUpd.ShowDialog() | Out-Null
 }
 
 # ---- Show-RestartDialog ----
@@ -32060,8 +31840,28 @@ $btnSettings.Add_Click({
             $txtDbOnline.Text = "—"
             $txtDbStatus.Text = "Sunucu sürümü henüz alınamadı (açılış kontrolü bitmedi ya da bağlantı yok). 'Veritabanını Güncelle' yeniden kontrol eder."
         }
-        # Indirme, fark raporu ve yeniden tarama mevcut veritabani penceresinde (Show-UpdateWindow) yapilir
-        $btnDbUpdate.Add_Click({ $winSet.Close(); Show-UpdateWindow })
+        # §153: indirme kartin icinde (ayri pencere acilmaz). Sunucu surumu bilinmiyorsa once kontrol edilir; zaten guncelse indirmez.
+        $script:DbSetStatus = { param($m, $c) $txtDbStatus.Text = $m; $txtDbStatus.Foreground = (New-Object System.Windows.Media.BrushConverter).ConvertFromString($c) }
+        $btnDbUpdate.Add_Click({
+            $btnDbUpdate.IsEnabled = $false
+            & $script:DbSetStatus "Sunucu kontrol ediliyor..." '#8A919C'; Do-Events
+            $on = Get-Winapp2OnlineVersion
+            if (-not $on) { & $script:DbSetStatus "Sunucuya bağlanılamadı; daha sonra tekrar deneyin." '#E5484D'; $btnDbUpdate.IsEnabled = $true; return }
+            $txtDbOnline.Text = $on
+            if ($on -eq (Get-Winapp2LocalVersion)) {
+                $global:Winapp2State = @{ Local = $on; Online = $on; New = $false }
+                $bdDbNew.Visibility = 'Collapsed'
+                & $script:DbSetStatus "✔ Veritabanı zaten güncel ($on)." '#3FB97A'; $btnDbUpdate.IsEnabled = $true; return
+            }
+            if (Invoke-Winapp2Download $on $script:DbSetStatus) {
+                $txtDbLocal.Text = Get-Winapp2LocalVersion
+                $global:Winapp2State = @{ Local = $txtDbLocal.Text; Online = $on; New = $false }
+                $bdDbNew.Visibility = 'Collapsed'
+                $txtDbOnline.ClearValue([System.Windows.Controls.TextBlock]::ForegroundProperty)
+                $btnDbUpdate.ClearValue([System.Windows.Controls.Control]::BackgroundProperty); $btnDbUpdate.ClearValue([System.Windows.Controls.Control]::BorderBrushProperty); $btnDbUpdate.ClearValue([System.Windows.Controls.Control]::ForegroundProperty)
+            }
+            $btnDbUpdate.IsEnabled = $true
+        })
         $btnDbRescan.Add_Click({
             if ($CachePath -and (Test-Path $CachePath)) { Remove-Item $CachePath -Force -ErrorAction SilentlyContinue }
             $winSet.Close(); Start-Winapp2-Process
