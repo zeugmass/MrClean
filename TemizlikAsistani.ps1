@@ -866,8 +866,9 @@ $global:Strings = @{
         set_adminlauncher_tip = 'Masaüstü / Başlat menüsündeki MrClean kısayolu UAC sormadan açılır. Yetkili kopya C:\Program Files\MrClean içinde tutulur (yalnızca yönetici değiştirebilir).'
         lang_restart_title = 'Dil Değişikliği'
         lang_restart_msg   = 'Dil değişikliği için program yeniden başlatılacak. Devam edilsin mi?'
-        btn_update      = '♻ Güncelle'
-        btn_update_new  = '🔔 Güncelle (Yeni!)'
+        btn_update      = '⬆ Program Güncelle'
+        btn_update_new  = '🔔 Yeni sürüm: {0}'
+        btn_update_chk  = '⏳ Kontrol ediliyor...'
         btn_shutdown    = '🌙 Shutdown'
         btn_settings    = '⚙ Ayarlar'
         btn_opendata    = '📂 Veri Klasörü'
@@ -896,6 +897,15 @@ $global:Strings = @{
         set_ghrepo         = 'GitHub Repo'
         set_checkupdate    = '🔄 Şimdi Kontrol Et'
         set_releases       = '🌐 Releases Sayfası'
+        set_db_title       = 'Temizlik Veritabanı (Winapp2.ini)'
+        set_db_desc        = 'Temizlik sekmesindeki uygulama listesinin kuralları. Program açılışında sunucudaki sürümle karşılaştırılır.'
+        set_db_local       = 'Yüklü sürüm'
+        set_db_server      = 'Sunucu sürümü'
+        set_db_appver      = 'Program sürümü'
+        set_db_new         = 'YENİ'
+        set_db_update      = '♻ Veritabanını Güncelle'
+        set_db_rescan      = '🔄 Listeyi Yenile'
+        set_db_folder      = '📂 Klasörü Aç'
         set_feedback_title = 'Geri Bildirim & İletişim'
         set_feedback_desc  = 'Hata bildir, öneri yap, ya da soru sor — Discord kanalına anonim olarak ulaşır.'
         set_feedback_btn   = '💬 Geri Bildirim Gönder'
@@ -983,8 +993,9 @@ $global:Strings = @{
         set_adminlauncher_tip = 'The MrClean shortcut on Desktop / Start opens without a UAC prompt. The elevated copy lives in C:\Program Files\MrClean (admin-only writable).'
         lang_restart_title = 'Language Change'
         lang_restart_msg   = 'The program will restart to apply the language change. Continue?'
-        btn_update      = '♻ Update'
-        btn_update_new  = '🔔 Update (New!)'
+        btn_update      = '⬆ Update Program'
+        btn_update_new  = '🔔 New version: {0}'
+        btn_update_chk  = '⏳ Checking...'
         btn_shutdown    = '🌙 Shutdown'
         btn_settings    = '⚙ Settings'
         btn_opendata    = '📂 Data Folder'
@@ -1013,6 +1024,15 @@ $global:Strings = @{
         set_ghrepo         = 'GitHub Repo'
         set_checkupdate    = '🔄 Check Now'
         set_releases       = '🌐 Releases Page'
+        set_db_title       = 'Cleaning Database (Winapp2.ini)'
+        set_db_desc        = 'Rules for the app list on the Clean tab. Compared with the server version when the program starts.'
+        set_db_local       = 'Installed version'
+        set_db_server      = 'Server version'
+        set_db_appver      = 'Program version'
+        set_db_new         = 'NEW'
+        set_db_update      = '♻ Update Database'
+        set_db_rescan      = '🔄 Rescan List'
+        set_db_folder      = '📂 Open Folder'
         set_feedback_title = 'Feedback & Contact'
         set_feedback_desc  = 'Report a bug, suggest, or ask — reaches the Discord channel anonymously.'
         set_feedback_btn   = '💬 Send Feedback'
@@ -1100,8 +1120,9 @@ $global:Strings = @{
         set_adminlauncher_tip = 'Le raccourci MrClean (Bureau / Démarrer) s''ouvre sans invite UAC. La copie élevée est dans C:\Program Files\MrClean (modifiable uniquement par un administrateur).'
         lang_restart_title = 'Changement de langue'
         lang_restart_msg   = 'Le programme va redémarrer pour appliquer le changement de langue. Continuer ?'
-        btn_update      = '♻ Mettre à jour'
-        btn_update_new  = '🔔 Mettre à jour (Nouveau!)'
+        btn_update      = '⬆ Mettre à jour le programme'
+        btn_update_new  = '🔔 Nouvelle version : {0}'
+        btn_update_chk  = '⏳ Vérification...'
         btn_shutdown    = '🌙 Arrêt'
         btn_settings    = '⚙ Paramètres'
         btn_opendata    = '📂 Dossier'
@@ -1130,6 +1151,15 @@ $global:Strings = @{
         set_ghrepo         = 'Dépôt GitHub'
         set_checkupdate    = '🔄 Vérifier maintenant'
         set_releases       = '🌐 Page des versions'
+        set_db_title       = 'Base de nettoyage (Winapp2.ini)'
+        set_db_desc        = 'Règles de la liste d''applications de l''onglet Nettoyage. Comparée à la version du serveur au démarrage du programme.'
+        set_db_local       = 'Version installée'
+        set_db_server      = 'Version du serveur'
+        set_db_appver      = 'Version du programme'
+        set_db_new         = 'NOUVEAU'
+        set_db_update      = '♻ Mettre à jour la base'
+        set_db_rescan      = '🔄 Actualiser la liste'
+        set_db_folder      = '📂 Ouvrir le dossier'
         set_feedback_title = 'Retour & Contact'
         set_feedback_desc  = 'Signalez un bug, suggérez ou posez une question — envoyé anonymement au canal Discord.'
         set_feedback_btn   = '💬 Envoyer un retour'
@@ -8949,28 +8979,40 @@ $($global:SubTheme)
             </StackPanel>
         </Border>
 
-        <!-- 5. PROGRAM GÜNCELLEMESİ -->
+        <!-- 5. TEMİZLİK VERİTABANI (v2.0.2, §152, Onizleme20 onaylı): program güncellemesi sol menüye taşındı -->
         <Border Grid.Row="4" Style="{StaticResource SwCard}" Margin="0,0,0,12">
             <StackPanel>
-                <TextBlock Text="@@set_update_title@@" Style="{StaticResource SwSection}" Margin="0,0,0,8"/>
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,4">
+                    <TextBlock Text="@@set_db_title@@" Style="{StaticResource SwSection}"/>
+                    <Border x:Name="bdDbNew" Visibility="Collapsed" Background="#16233A" BorderBrush="#2A4A7F" BorderThickness="1" CornerRadius="9" Padding="8,1" Margin="10,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="@@set_db_new@@" Foreground="#8CB4FF" FontSize="11" FontWeight="SemiBold"/>
+                    </Border>
+                </StackPanel>
+                <TextBlock Text="@@set_db_desc@@" Foreground="#8A919C" FontSize="13" TextWrapping="Wrap" Margin="0,0,0,10"/>
                 <Grid Margin="0,0,0,8">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="@@set_curver@@" Foreground="#8A919C" FontSize="12"/>
-                        <TextBlock x:Name="txtCurrentVersion" Text="v?.?.?" FontWeight="SemiBold" FontSize="15" Margin="0,2,0,0"/>
+                        <TextBlock Text="@@set_db_local@@" Foreground="#8A919C" FontSize="12"/>
+                        <TextBlock x:Name="txtDbLocal" Text="…" FontWeight="SemiBold" FontSize="15" Margin="0,2,0,0"/>
                     </StackPanel>
                     <StackPanel Grid.Column="1">
-                        <TextBlock Text="@@set_ghrepo@@" Foreground="#8A919C" FontSize="12"/>
-                        <TextBlock x:Name="txtAppRepo" Text="" Foreground="#8CB4FF" FontSize="13" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="@@set_db_server@@" Foreground="#8A919C" FontSize="12"/>
+                        <TextBlock x:Name="txtDbOnline" Text="…" FontWeight="SemiBold" FontSize="15" Margin="0,2,0,0"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="@@set_db_appver@@" Foreground="#8A919C" FontSize="12"/>
+                        <TextBlock x:Name="txtDbAppVer" Text="v?.?.?" FontWeight="SemiBold" FontSize="15" Margin="0,2,0,0"/>
                     </StackPanel>
                 </Grid>
-                <TextBlock x:Name="txtUpdateStatus" Text="Sürüm kontrolü için 'Şimdi Kontrol Et'e basın." Foreground="#8A919C" FontSize="12" Margin="0,4,0,8" TextWrapping="Wrap"/>
+                <TextBlock x:Name="txtDbStatus" Text="" Foreground="#8A919C" FontSize="12" Margin="0,2,0,10" TextWrapping="Wrap"/>
                 <StackPanel Orientation="Horizontal">
-                    <Button x:Name="btnCheckUpdate" Content="@@set_checkupdate@@" MinWidth="170" Margin="0,0,10,0"/>
-                    <Button x:Name="btnOpenReleases" Content="@@set_releases@@" MinWidth="170"/>
+                    <Button x:Name="btnDbUpdate" Content="@@set_db_update@@" MinWidth="190" Margin="0,0,10,0"/>
+                    <Button x:Name="btnDbRescan" Content="@@set_db_rescan@@" MinWidth="150" Margin="0,0,10,0" ToolTip="@@uw_rescantip@@"/>
+                    <Button x:Name="btnDbFolder" Content="@@set_db_folder@@" MinWidth="130" ToolTip="@@uw_foldertip@@"/>
                 </StackPanel>
             </StackPanel>
         </Border>
@@ -13383,6 +13425,58 @@ function Cleanup-OldUpdateFiles {
 # Async update check — Add_Loaded'da cagrilir. Runspace'de calisir, UI bloklamaz.
 # Sonuc: $global:UpdateAvailable doldurulur (yeni surum varsa) veya $null (guncel/erisilemiyor).
 # UI thread'i status bar'i guncellemek icin DispatcherTimer ile beklenmelidir.
+# v2.0.2 (§152): Winapp2.ini'nin ilk satirindaki surum ("; Version: 251102" -> "Version: 251102"); Show-UpdateWindow ile ayni okuma.
+function Get-Winapp2LocalVersion {
+    if (-not $Winapp2Path -or -not (Test-Path -LiteralPath $Winapp2Path)) { return "Yok" }
+    try {
+        $r = New-Object System.IO.StreamReader($Winapp2Path)
+        try { $line = $r.ReadLine() } finally { $r.Close() }
+        if ($line -match "Version") { return $line.Replace(";", "").Trim() }
+        return "Bilinmiyor"
+    } catch { return "Okunamadı" }
+}
+
+# v2.0.2 (§152, Onizleme20 onayli): sol menudeki "Program Guncelle" dugmesi. Durumlar: normal / checking / new.
+function Set-MrCleanAppUpdateButton([string]$State) {
+    if (-not $btnRefreshApp) { return }
+    $bc = New-Object System.Windows.Media.BrushConverter
+    switch ($State) {
+        'checking' { $btnRefreshApp.Content = (T 'btn_update_chk'); $btnRefreshApp.IsEnabled = $false }
+        'new' {
+            $btnRefreshApp.IsEnabled = $true
+            $btnRefreshApp.Content = (T 'btn_update_new') -f "$($global:UpdateAvailable.Tag)"
+            $btnRefreshApp.Foreground = $bc.ConvertFromString('#8CB4FF'); $btnRefreshApp.Background = $bc.ConvertFromString('#16233A')
+            $btnRefreshApp.BorderBrush = $bc.ConvertFromString('#2A4A7F'); $btnRefreshApp.BorderThickness = 1
+        }
+        default {
+            $btnRefreshApp.IsEnabled = $true; $btnRefreshApp.Content = (T 'btn_update')
+            $btnRefreshApp.ClearValue([System.Windows.Controls.Control]::ForegroundProperty); $btnRefreshApp.ClearValue([System.Windows.Controls.Control]::BackgroundProperty)
+            $btnRefreshApp.ClearValue([System.Windows.Controls.Control]::BorderBrushProperty); $btnRefreshApp.ClearValue([System.Windows.Controls.Control]::BorderThicknessProperty)
+        }
+    }
+}
+
+# Tiklama: yeni surum biliniyorsa guncelleme penceresi; bilinmiyorsa GitHub kontrolu, bitince sonuc dugmede + durum cubugunda.
+function Invoke-MrCleanAppUpdateButton {
+    if ($global:UpdateAvailable) { Show-AppUpdateWindow; return }
+    Set-MrCleanAppUpdateButton 'checking'
+    $global:AppUpdateCheckDone = $false
+    Test-AppUpdate
+    $script:AppUpdBtnTimer = New-Object System.Windows.Threading.DispatcherTimer
+    $script:AppUpdBtnTimer.Interval = [TimeSpan]::FromMilliseconds(300)
+    $script:AppUpdBtnSw = [Diagnostics.Stopwatch]::StartNew()
+    $script:AppUpdBtnTimer.Add_Tick({
+        if (-not $global:AppUpdateCheckDone -and $script:AppUpdBtnSw.ElapsedMilliseconds -lt 15000) { return }
+        $script:AppUpdBtnTimer.Stop()
+        if ($global:UpdateAvailable) { Set-MrCleanAppUpdateButton 'new'; Show-AppUpdateWindow; return }
+        Set-MrCleanAppUpdateButton 'normal'
+        $m = if ($global:AppUpdateCheckDone) { "Güncelsiniz (v$($global:AppVersion))." } else { "Sürüm kontrol edilemedi (bağlantı yok ya da GitHub yanıt vermedi)." }
+        if ($lblStatus) { $lblStatus.Text = $m }
+        WpfLog "[Güncelleme] $m"
+    })
+    $script:AppUpdBtnTimer.Start()
+}
+
 function Test-AppUpdate {
     if (-not $global:AppRepo -or $global:AppRepo -match "KULLANICI_ADIN|KULLANICI/REPO") {
         return  # Repo placeholder ise check yapma (kullanici kendi repo'sunu yazmamis)
@@ -13424,6 +13518,7 @@ function Test-AppUpdate {
             $release = $rawJson | ConvertFrom-Json
             $remoteTag = $release.tag_name
             if (-not $remoteTag) { return }
+            $global:AppUpdateCheckDone = $true   # §152: GitHub yanit verdi (sol menu dugmesi "Guncelsiniz" diyebilir)
 
             # SemVer karsilastirma
             $cmp = Compare-Version -Lhs $remoteTag -Rhs $global:AppVersion
@@ -13459,10 +13554,11 @@ function Test-AppUpdate {
                 Ps1Size    = if ($ps1Asset)  { $ps1Asset.size }  else { 0 }
             }
 
-            # UI bildirim — status bar'i guncelle (tiklaninca Show-AppUpdateWindow; Ayarlar > Simdi Kontrol Et de acar)
+            # UI bildirim — status bar + sol menudeki "Program Guncelle" dugmesi (ikisi de Show-AppUpdateWindow acar)
             if ($lblStatus) {
-                $lblStatus.Text = "🔔 Yeni sürüm: $remoteTag — güncellemek için buraya tıklayın (ya da Ayarlar > Şimdi Kontrol Et)"
+                $lblStatus.Text = "🔔 Yeni sürüm: $remoteTag — güncellemek için buraya ya da sol menüdeki düğmeye tıklayın"
             }
+            try { Set-MrCleanAppUpdateButton 'new' } catch {}
             WpfLog "🔔 Yeni sürüm bulundu: $remoteTag (mevcut: $global:AppVersion)"
 
         } catch {
@@ -19253,7 +19349,7 @@ $nodeSB.Items.Add((New-TreeItem 'ShellNoRoam (Eski Sistem Artıkları)' 'REGISTR
 $nodeSB.IsExpanded = $true; $tvShellBags.Items.Add($nodeSB) | Out-Null
 
 function Start-Winapp2-Process {
-    $btnRefreshApp.IsEnabled = $false; $global:AppsBuffer = @{}; $global:BrowserBuffer = @{}
+    $global:AppsBuffer = @{}; $global:BrowserBuffer = @{}
     
     # Ayarları Yükle
     Load-All-Settings
@@ -19265,7 +19361,6 @@ function Start-Winapp2-Process {
         $winapp2Src = $Winapp2Sources[0]
         $winapp2Path = $Winapp2Path
         $uiCtrl = $txtWinappStatus
-        $btnRef = $btnRefreshApp
 
         $updRS = [powershell]::Create()
         $updRS.AddScript({
@@ -19303,25 +19398,18 @@ function Start-Winapp2-Process {
                     $r = $updRS.EndInvoke($updAsync)
                     $updRS.Dispose()
                     if ($r.Success) {
-                        if ($r.Local -ne $r.Online) {
+                        # v2.0.2 (§152): sonuc Ayarlar > Temizlik Veritabani kartinda gosterilir (sol menudeki dugme artik program guncellemesi)
+                        $isNew = ($r.Local -ne $r.Online)
+                        $global:Winapp2State = @{ Local = "$($r.Local)".Replace(";", "").Trim(); Online = "$($r.Online)".Replace(";", "").Trim(); New = $isNew }
+                        if ($isNew) {
                             WpfLog "---------------------------------------------------"
                             WpfLog "[BİLGİ] 📢 Yeni Winapp2 güncellemesi bulundu!"
-                            WpfLog "[BİLGİ] İndirmek için Güncelle butonuna basın!"
+                            WpfLog "[BİLGİ] İndirmek için: Ayarlar > Temizlik Veritabanı > Veritabanını Güncelle"
                             WpfLog "---------------------------------------------------"
                             $uiCtrl.Text = "Yeni Sürüm Mevcut!"
-                            if ($btnRef) {
-                                $btnRef.Content = (T 'btn_update_new')
-                                $btnRef.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#137333")
-                                $btnRef.ToolTip = "Yeni winapp2 temizlik veritabanı sürümü mevcut - tıklayıp güncelleyin."
-                            }
                         } else {
                             WpfLog "[SİSTEM] Veritabanı güncel."
                             $uiCtrl.Text = "Sürüm Güncel."
-                            if ($btnRef) {
-                                $btnRef.Content = (T 'btn_update')
-                                $btnRef.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#4f0707")
-                                $btnRef.ToolTip = "Winapp2 veritabanını ve program listesini kontrol et."
-                            }
                         }
                     }
                     # Hata durumunda sessiz kal — kullanıcıyı rahatsız etme
@@ -19348,7 +19436,7 @@ function Start-Winapp2-Process {
                     $global:Winapp2Rules[$item.Name] = $item.Rules
                     if ($global:Blacklist -notcontains $item.Name) { Add-To-Buffer $item.Name $item.Tag $item.IsBrowser }
                 }
-                Flush-Buffers-To-Tree; $btnRefreshApp.IsEnabled = $true
+                Flush-Buffers-To-Tree
                 WpfLog "[SİSTEM] Önbellek yüklendi."
                 
                 # Kontrolü Çalıştır
@@ -19362,7 +19450,6 @@ function Start-Winapp2-Process {
     if (Test-Path $Winapp2Path) {
         WpfLog "[BİLGİ] Winapp2.ini diskte mevcut, işleniyor..."
         Parse-Winapp2
-        $btnRefreshApp.IsEnabled = $true
         
         # DÜZELTME: Kontrolü burada da çalıştır (Eskiden yoktu)
         & $CheckUpdateBlock
@@ -19390,7 +19477,6 @@ function Start-Winapp2-Process {
         $txtWinappStatus.Text = "Hata."
         WpfLog "[HATA] Winapp2.ini indirilemedi!" 
     }
-    $btnRefreshApp.IsEnabled = $true
 }
 
 function Parse-Winapp2 {
@@ -22315,6 +22401,7 @@ $($global:SubTheme)
             WpfLog "[Update] $($upd.Tag) atlandi — bu surum icin tekrar uyari gosterilmeyecek."
             $global:UpdateAvailable = $null
             if ($lblStatus) { $lblStatus.Text = "Sistem Hazır" }
+            try { Set-MrCleanAppUpdateButton 'normal' } catch {}
             $winAU.Close()
         })
 
@@ -31179,10 +31266,9 @@ if ($btnSysSecDetail) { $btnSysSecDetail.Add_Click({ Show-SystemSecurityDetail }
 # Diğer Butonlar
 if ($btnOpenData) { $btnOpenData.Add_Click({ Invoke-Item $AppDataPath }) }
 
-if ($btnRefreshApp) { # GÜNCELLE BUTONU (YENİ POPUP İLE)
-$btnRefreshApp.Add_Click({ 
-    Show-UpdateWindow 
-}) }
+if ($btnRefreshApp) { # v2.0.2 (§152): PROGRAM GÜNCELLE (veritabanı güncellemesi Ayarlar > Temizlik Veritabanı'nda)
+$btnRefreshApp.ToolTip = "MrClean'in yeni sürümünü kontrol eder"
+$btnRefreshApp.Add_Click({ Invoke-MrCleanAppUpdateButton }) }
 
 # Log Butonları
 if ($btnCopyLog) { $btnCopyLog.Add_Click({ if ($txtLog.Text) { [System.Windows.Clipboard]::SetText($txtLog.Text) } }) }
@@ -31937,12 +32023,15 @@ $btnSettings.Add_Click({
         $btnRPManualCreate = $winSet.FindName('btnRPManualCreate')
         $btnRPWindowsPanel = $winSet.FindName('btnRPWindowsPanel')
 
-        # === PROGRAM GÜNCELLEMESİ — yeni v1.0.9 ===
-        $txtCurrentVersion = $winSet.FindName('txtCurrentVersion')
-        $txtAppRepo        = $winSet.FindName('txtAppRepo')
-        $txtUpdateStatus   = $winSet.FindName('txtUpdateStatus')
-        $btnCheckUpdate    = $winSet.FindName('btnCheckUpdate')
-        $btnOpenReleases   = $winSet.FindName('btnOpenReleases')
+        # === TEMİZLİK VERİTABANI (v2.0.2, §152) — program güncellemesi sol menüdeki "Program Güncelle" düğmesinde ===
+        $bdDbNew     = $winSet.FindName('bdDbNew')
+        $txtDbLocal  = $winSet.FindName('txtDbLocal')
+        $txtDbOnline = $winSet.FindName('txtDbOnline')
+        $txtDbAppVer = $winSet.FindName('txtDbAppVer')
+        $txtDbStatus = $winSet.FindName('txtDbStatus')
+        $btnDbUpdate = $winSet.FindName('btnDbUpdate')
+        $btnDbRescan = $winSet.FindName('btnDbRescan')
+        $btnDbFolder = $winSet.FindName('btnDbFolder')
 
         # === GERİ BİLDİRİM — yeni v1.2.3 ===
         $btnOpenFeedback   = $winSet.FindName('btnOpenFeedback')
@@ -31950,51 +32039,34 @@ $btnSettings.Add_Click({
             $btnOpenFeedback.Add_Click({ Show-FeedbackWindow })
         }
 
-        # Versiyonlari doldur
-        $txtCurrentVersion.Text = "v$($global:AppVersion)"
-        $txtAppRepo.Text = $global:AppRepo
-
-        # Hazir update varsa hemen bildir
-        if ($global:UpdateAvailable) {
-            $txtUpdateStatus.Text = "🔔 Yeni sürüm mevcut: $($global:UpdateAvailable.Tag) — 'Şimdi Kontrol Et'e basarak güncelleme penceresini açın."
-            $txtUpdateStatus.Foreground = (New-Object System.Windows.Media.BrushConverter).ConvertFromString('#3FB97A')
-        } else {
-            $txtUpdateStatus.Text = "Sürüm kontrolü için 'Şimdi Kontrol Et'e basın. Program açılışında otomatik kontrol yapılır."
-        }
-
-        $btnCheckUpdate.Add_Click({
-            $btnCheckUpdate.IsEnabled = $false
-            $txtUpdateStatus.Text = "GitHub Releases sorgulanıyor..."
-            $txtUpdateStatus.Foreground = (New-Object System.Windows.Media.BrushConverter).ConvertFromString('#8A919C')
-
-            if ($global:UpdateAvailable) {
-                # Zaten yeni sürüm biliyoruz → Modal aç, settings kapat
-                $winSet.Close()
-                Show-AppUpdateWindow
-                return
+        # Surumleri doldur: yerel = dosyanin ilk satiri, sunucu = acilistaki kontrolun sonucu ($global:Winapp2State)
+        $txtDbAppVer.Text = "v$($global:AppVersion)"
+        $txtDbLocal.Text = Get-Winapp2LocalVersion
+        $db = $global:Winapp2State
+        $bc = New-Object System.Windows.Media.BrushConverter
+        if ($db -and $db.Online) {
+            $txtDbOnline.Text = $db.Online
+            if ($db.New) {
+                $bdDbNew.Visibility = 'Visible'
+                $txtDbOnline.Foreground = $bc.ConvertFromString('#8CB4FF')
+                $txtDbStatus.Text = "Yeni veritabanı sürümü var. Güncelleyince Temizlik listesi yeniden taranır."
+                $txtDbStatus.Foreground = $bc.ConvertFromString('#8CB4FF')
+                $btnDbUpdate.Background = $bc.ConvertFromString('#3B6FD9'); $btnDbUpdate.BorderBrush = $bc.ConvertFromString('#4C8DFF'); $btnDbUpdate.Foreground = $bc.ConvertFromString('#FFFFFF')
+            } else {
+                $txtDbStatus.Text = "✔ Veritabanı güncel."
+                $txtDbStatus.Foreground = $bc.ConvertFromString('#3FB97A')
             }
-
-            # Manuel kontrol — async runspace tetikle, 6 sn bekle
-            Test-AppUpdate
-            $script:SetUpdManTimer = New-Object System.Windows.Threading.DispatcherTimer
-            $script:SetUpdManTimer.Interval = [TimeSpan]::FromSeconds(6)
-            $script:SetUpdManTimer.Add_Tick({
-                $script:SetUpdManTimer.Stop()
-                if ($global:UpdateAvailable) {
-                    $winSet.Close()
-                    Show-AppUpdateWindow
-                } else {
-                    $txtUpdateStatus.Text = "Güncel — yeni sürüm yok. Mevcut: v$($global:AppVersion)"
-                    $txtUpdateStatus.Foreground = (New-Object System.Windows.Media.BrushConverter).ConvertFromString('#C9CED6')
-                    $btnCheckUpdate.IsEnabled = $true
-                }
-            })
-            $script:SetUpdManTimer.Start()
+        } else {
+            $txtDbOnline.Text = "—"
+            $txtDbStatus.Text = "Sunucu sürümü henüz alınamadı (açılış kontrolü bitmedi ya da bağlantı yok). 'Veritabanını Güncelle' yeniden kontrol eder."
+        }
+        # Indirme, fark raporu ve yeniden tarama mevcut veritabani penceresinde (Show-UpdateWindow) yapilir
+        $btnDbUpdate.Add_Click({ $winSet.Close(); Show-UpdateWindow })
+        $btnDbRescan.Add_Click({
+            if ($CachePath -and (Test-Path $CachePath)) { Remove-Item $CachePath -Force -ErrorAction SilentlyContinue }
+            $winSet.Close(); Start-Winapp2-Process
         })
-
-        $btnOpenReleases.Add_Click({
-            try { Start-Process "https://github.com/$($global:AppRepo)/releases" } catch {}
-        })
+        $btnDbFolder.Add_Click({ try { Invoke-Item (Split-Path $Winapp2Path) } catch {} })
 
         # Mevcut modu yükle (default Ask)
         switch ($global:RestorePointMode) {
