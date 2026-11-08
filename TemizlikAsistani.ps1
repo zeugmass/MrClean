@@ -18502,12 +18502,17 @@ function Start-MrCleanDriftCheck {
             WpfLog "[Denetim] $($rev.Count) ayar varsayilana donmus: $($rev -join " | ")"
             $list = ($rev | Select-Object -First 15 | ForEach-Object { "  • $_" }) -join "`n"
             if ($rev.Count -gt 15) { $list += "`n  … +$($rev.Count - 15)" }
-            $msg = "$($script:DriftChanges -join ", ") algilandi. Uyguladiginiz $($rev.Count) ayar su an uygulanmis gorunmuyor (sebep guncelleme, sizin degisikliginiz ya da MrClean'in yeni surumundeki daha siki kontrol olabilir):`n`n$list`n`nTweaks sekmesinde isaretlensin mi? (Kontrol edip UYGULA ya basarak geri getirirsiniz.)"
-            $r = Show-MrCleanMessage -Text $msg -Title "Güncelleme Sonrası Denetim" -Buttons YesNo -Icon Question
+            # v2.0.2 (§151): metin sebebi degisiklige baglamiyor (ornek: surucu guncellemesinde DNS / guc plani soruluyordu);
+            # "Hayir" denen ayarlar uygulanan listeden cikarilir, bir sonraki denetimde ayni soru tekrar gelmez.
+            $msg = "Bir değişiklik algılandı: $($script:DriftChanges -join ", "). Daha önce uyguladığınız ayarlar kontrol edildi; şu $($rev.Count) ayar şu an uygulanmış değil:`n`n$list`n`nBunların bu değişiklikle ilgisi olmayabilir: ör. güç planını ya da DNS'i sonradan kendiniz değiştirdiyseniz de burada görünür.`n`nEvet: Tweaks sekmesinde işaretlenir, UYGULA ile geri getirirsiniz.`nHayır: bu ayarlar 'uyguladıklarım' listesinden çıkarılır, bir daha sorulmaz."
+            $r = Show-MrCleanMessage -Text $msg -Title "Ayar Denetimi" -Buttons YesNo -Icon Question
             if ($r -eq 'Yes') {
                 $script:PendingReapply = $rev
                 try { $tabTweaks.IsSelected = $true } catch {}
                 if ($global:TweaksLoaded -and -not ($script:TweakScanTimer -and $script:TweakScanTimer.IsEnabled)) { Set-MrCleanPendingReapply }
+            } else {
+                Update-MrCleanAppliedList @() @($rev | ForEach-Object { [pscustomobject]@{ Name = "$_" } })
+                WpfLog "[Denetim] Kullanıcı istemedi; $($rev.Count) ayar uygulanan listeden çıkarıldı: $($rev -join " | ")"
             }
         })
         $script:DriftTimer.Start()
