@@ -11908,8 +11908,15 @@ function Restore-MrCleanServicesStart([string[]]$Names) {
         Restore-TweakRegValue "SvcStart_$n" $p "Start" ([int]$parts[0]) "DWord"
         Restore-TweakRegValue "SvcDelay_$n" $p "DelayedAutostart" $delay "DWord"
         $now = (Get-ItemProperty -LiteralPath $p -Name Start -ErrorAction SilentlyContinue).Start
-        if ("$now" -eq '2') { try { Start-Service -Name $n -ErrorAction SilentlyContinue } catch {} }
-        Write-Host "[Servis] $n eski ayarına döndü (Start=$now)."
+        # v2.0.2 (§150): kayit defterine yazilan baslangic turu servis yoneticisine hemen yansimayabiliyor (WSearch geri
+        # alininca "Otomatik" ama durmus kaldi). sc config ile servis yoneticisi de guncellenir; baslatma hatasi kayda yazilir.
+        $scTur = switch ("$now") { '2' { if ("$((Get-ItemProperty -LiteralPath $p -Name DelayedAutostart -ErrorAction SilentlyContinue).DelayedAutostart)" -eq '1') { 'delayed-auto' } else { 'auto' } } '3' { 'demand' } '4' { 'disabled' } default { $null } }
+        if ($scTur -and -not (Get-Service -Name "$($n)_*" -ErrorAction SilentlyContinue)) { $null = Invoke-HiddenCommand "sc.exe" "config `"$n`" start= $scTur" }
+        if ("$now" -eq '2') {
+            try { Start-Service -Name $n -ErrorAction Stop }
+            catch { Write-Host "[Servis] $n başlatılamadı, yeniden başlatınca kendiliğinden başlar: $($_.Exception.Message)" }
+        }
+        Write-Host "[Servis] $n eski ayarına döndü (Start=$now, durum: $((Get-Service -Name $n -ErrorAction SilentlyContinue).Status))."
     }
 }
 # v2.0.x (§137): riskli servislerde satirdaki "El ile | Devre dışı" secimi (3 / 4). Kullanici tercihi; sisteme Uygula'da yazilir.
