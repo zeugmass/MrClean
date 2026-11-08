@@ -906,7 +906,7 @@ $global:Strings = @{
         dash_detail='Donanım detayı'; dash_test='Ağ testi'
         dash_rec_card='ÖNERİ'; dash_pingcard='GECİKME'; dash_sysinfo='Sistem bilgisi'; dash_rec_title='Önerilen işlemler'; dash_rec_wait='Öneriler hazırlanıyor…'; dash_rec_n='Bekleyen öneri: {0}'; dash_rec_none='Bekleyen öneri yok'; dash_src_hw='Donanım özeti (WMI) · {0}'; dash_src_wg='winget upgrade · {0}'; dash_src_su='Kayıt defteri ve Başlangıç klasörü · az önce'; dash_src_tw='Tweaks bekleyen listesi · az önce'; dash_wg_n='{0} paket güncellemesi var'; dash_wg_fail='Güncelleme kontrol edilemedi'; dash_wg_ok0='winget: güncelleme yok'; dash_wg_wait='Güncellemeler kontrol ediliyor…'; dash_su_n='Açılışta {0} uygulama başlıyor'; dash_tw_n='{0} tweak uygulanmayı bekliyor'; dash_disk_full='C: diski yüzde {0} dolu'; dash_age_now='az önce'; dash_age_min='{0} dk önce'; dash_age_hour='{0} sa önce'; dash_card_mem='BELLEK'; dash_card_disk='DİSK C:'; dash_ram_free='Boşalt'; dash_ping_gw='ağ geçidi'; dash_ping_tip='Ağ testi: Cloudflare, Google ve ağ geçidi ortalaması (ms). Büyük sayı ağ geçidinin canlı pingidir.'; dash_more='Ayrıntılar'; dash_row_os='İşletim sistemi'; dash_row_cpu='İşlemci'; dash_row_gpu='Ekran kartı'; dash_row_mem='Bellek'; dash_row_disk='Disk C:'; dash_row_sec='Önyükleme'; dash_row_up='Çalışma süresi'; dash_row_upd='Son güncelleme'; dash_row_dns='DNS'; dash_row_net='Bağlantı'; dash_hist_title='Son işlemler'; dash_hist_clean='Temizlik  ·  {0} silindi'; dash_hist_tw_apply='Tweaks  ·  {0} ayar uygulandı'; dash_hist_tw_undo='Tweaks  ·  {0} ayar geri alındı'; dash_yesterday='Dün'
         btn_check='♻ Denetle'; btn_manage='⚙ Yönet'; btn_saveprofile='💾 Profil'; btn_quickundo='↶ Geri Al'
-        tw_search_ph='Ayar ara...'; tw_cats_title='KATEGORİLER'; tw_badge_reboot='YENİDEN BAŞLATMA'; tw_badge_risk_high='YÜKSEK RİSK'; tw_badge_risk_med='RİSKLİ'; tw_badge_pending='BEKLİYOR'; tw_badge_pending_tip='Uygula''ya basınca bu ayar değişecek'; log_toggle_show='İşlem kayıtları  ˄'; log_toggle_hide='İşlem kayıtları  ˅'; tw_filter_tip='Yazdıkça tweak listesini daraltır — isim, açıklama ve kategori içinde arar (Türkçe karakter gerekmez: sifre → Şifresiz). Esc ile temizlenir.'; tw_filter_clear='Aramayı temizle'; tw_filter_count='{0} / {1} tweak'; tw_active_count='✅ {0} / {1} aktif'; tw_incompat_count='⛔ {0} bu PC''de uygulanamaz'; tw_chip_all='Tümü'; tw_chip_active='✅ Aktif'; tw_chip_passive='○ Pasif'; tw_chip_new='✦ Yeni'; tw_chip_risky='⚠ Riskli'; tw_chip_reboot='↻ Yeniden başlatma'; tw_progress_tip='Aktif tweak oranı (son denetime göre)'; tw_badge_reboot_tip='Uygulandıktan sonra yeniden başlatma gerekir'; tw_hw_wifi='Wi-Fi kartı yok'; tw_hw_eth='Ethernet kartı yok'; tw_hw_laptop='Sadece dizüstü'; tw_hw_hdd='Mekanik disk (HDD) yok'; tw_hw_ssd='SSD yok'; tw_hw_cores='En az 4 çekirdek gerekir'; tw_hw_dnstool='{0} çalışıyor — DNS ayarını o yönetiyor'; tw_hw_wifiband='Wi-Fi kartı 5 GHz bant tercihini desteklemiyor (2.4 GHz kart veya sürücüde ayar yok)'; tw_hw_wifiadv='Wi-Fi sürücüsünde bu ayarlar yok'; tw_hw_vendortel='Bu PC''de Intel / AMD / HP / Dell / Lenovo telemetri bileşeni kurulu değil'; tw_hw_adrenalin='AMD Software (Adrenalin) kurulu değil';  tw_hw_uefi='Bu sistem UEFI değil (eski BIOS)'; tw_hw_nosvc='Bu Windows''ta yok'; tw_hwwarn_printer='Yazıcı algılandı: {0}'; tw_hwwarn_scanner='Tarayıcı / kamera algılandı: {0}'; tw_hwwarn_camera='Kamera algılandı: {0}'; tw_hwwarn_sensor='Sensör algılandı: {0}'; tw_hwwarn_laptop='Dizüstü bilgisayar: döndürme / parlaklık sensörleri kullanılıyor olabilir'; tw_hwwarn_cellular='Hücresel modem algılandı: {0}'; tw_hwwarn_nfc='NFC aygıtı algılandı: {0}'; tw_hwwarn_domain='Bu bilgisayar bir etki alanına bağlı: {0}'; tw_hwwarn_insider='Bu bilgisayar Windows Insider programına kayıtlı'; tw_hwwarn_tail='kapatırsanız bu aygıt / özellik çalışmaz.'; tw_hwwarn_badge='AYGIT VAR'; tw_hwwarn_title='{0} kapatılsın mı?'; tw_hwwarn_q='Yine de kapatılsın mı? Geri Al, servisi önceki ayarına aynen döndürür.'; tw_hw_novm='Fiziksel bilgisayarda etkisiz (yalnız sanal makinede)'; tw_hwwarn_bluetooth='Bluetooth algılandı: {0}'; tw_hwwarn_wifi='Wi-Fi kartı algılandı'; tw_hwwarn_location='Konum açık'; tw_hwwarn_cliphist='Pano geçmişi (Win+V) açık'; tw_hwwarn_vm='Bu bir sanal makine: {0}'; tw_mode_manual='El ile'; tw_mode_disabled='Devre dışı'; tw_mode_tip='El ile: Windows gerektiğinde yine başlatır. Devre dışı: hiç başlamaz.'; tw_hw_cabc='Bu ekranda içerik uyarlamalı parlaklık (CABC) yok'; tw_hw_gpu='{0} ekran kartı yok'; tw_hw_tip='⛔ Bu bilgisayarda uygulanamaz: {0}'; tw_badge_new='YENİ'; tw_incompat_tip='⛔ Bu ayar Windows {0} gerektirir. Sisteminiz: {1}'
+        tw_search_ph='Ayar ara...'; tw_cats_title='KATEGORİLER'; tw_badge_reboot='YENİDEN BAŞLATMA'; tw_badge_risk_high='YÜKSEK RİSK'; tw_badge_risk_med='RİSKLİ'; tw_badge_pending='BEKLİYOR'; tw_badge_pending_tip='Uygula''ya basınca bu ayar değişecek'; log_toggle_show='İşlem kayıtları  ˄'; log_toggle_hide='İşlem kayıtları  ˅'; tw_filter_tip='Yazdıkça tweak listesini daraltır — isim, açıklama ve kategori içinde arar (Türkçe karakter gerekmez: sifre → Şifresiz). Esc ile temizlenir.'; tw_filter_clear='Aramayı temizle'; tw_filter_count='{0} / {1} tweak'; tw_active_count='✅ {0} / {1} aktif'; tw_incompat_count='⛔ {0} bu PC''de uygulanamaz'; tw_chip_all='Tümü'; tw_chip_active='✅ Aktif'; tw_chip_passive='○ Pasif'; tw_chip_new='✦ Yeni'; tw_chip_risky='⚠ Riskli'; tw_chip_reboot='↻ Yeniden başlatma'; tw_progress_tip='Aktif tweak oranı (son denetime göre)'; tw_badge_reboot_tip='Uygulandıktan sonra yeniden başlatma gerekir'; tw_hw_wifi='Wi-Fi kartı yok'; tw_hw_eth='Ethernet kartı yok'; tw_hw_laptop='Sadece dizüstü'; tw_hw_hdd='Mekanik disk (HDD) yok'; tw_hw_ssd='SSD yok'; tw_hw_cores='En az 4 çekirdek gerekir'; tw_hw_dnstool='{0} çalışıyor — DNS ayarını o yönetiyor'; tw_hw_wifiband='Wi-Fi kartı 5 GHz bant tercihini desteklemiyor (2.4 GHz kart veya sürücüde ayar yok)'; tw_hw_wifiadv='Wi-Fi sürücüsünde bu ayarlar yok'; tw_hw_vendortel='Bu PC''de Intel / AMD / HP / Dell / Lenovo telemetri bileşeni kurulu değil'; tw_hw_adrenalin='AMD Software (Adrenalin) kurulu değil';  tw_hw_uefi='Bu sistem UEFI değil (eski BIOS)'; tw_hw_nosvc='Bu Windows''ta yok'; tw_hw_noapp='Program kurulu değil'; tw_hwwarn_printer='Yazıcı algılandı: {0}'; tw_hwwarn_scanner='Tarayıcı / kamera algılandı: {0}'; tw_hwwarn_camera='Kamera algılandı: {0}'; tw_hwwarn_sensor='Sensör algılandı: {0}'; tw_hwwarn_laptop='Dizüstü bilgisayar: döndürme / parlaklık sensörleri kullanılıyor olabilir'; tw_hwwarn_cellular='Hücresel modem algılandı: {0}'; tw_hwwarn_nfc='NFC aygıtı algılandı: {0}'; tw_hwwarn_domain='Bu bilgisayar bir etki alanına bağlı: {0}'; tw_hwwarn_insider='Bu bilgisayar Windows Insider programına kayıtlı'; tw_hwwarn_tail='kapatırsanız bu aygıt / özellik çalışmaz.'; tw_hwwarn_badge='AYGIT VAR'; tw_hwwarn_title='{0} kapatılsın mı?'; tw_hwwarn_q='Yine de kapatılsın mı? Geri Al, servisi önceki ayarına aynen döndürür.'; tw_hw_novm='Fiziksel bilgisayarda etkisiz (yalnız sanal makinede)'; tw_hwwarn_bluetooth='Bluetooth algılandı: {0}'; tw_hwwarn_wifi='Wi-Fi kartı algılandı'; tw_hwwarn_location='Konum açık'; tw_hwwarn_cliphist='Pano geçmişi (Win+V) açık'; tw_hwwarn_vm='Bu bir sanal makine: {0}'; tw_mode_manual='El ile'; tw_mode_disabled='Devre dışı'; tw_mode_tip='El ile: Windows gerektiğinde yine başlatır. Devre dışı: hiç başlamaz.'; tw_hw_cabc='Bu ekranda içerik uyarlamalı parlaklık (CABC) yok'; tw_hw_gpu='{0} ekran kartı yok'; tw_hw_tip='⛔ Bu bilgisayarda uygulanamaz: {0}'; tw_badge_new='YENİ'; tw_incompat_tip='⛔ Bu ayar Windows {0} gerektirir. Sisteminiz: {1}'
         btn_refresh='♻ Yenile'
         lf_userfolders='Kullanıcı Klasörleri'; lf_cdisk='C: Diski (Sistem)'; lf_customfolder='Özel Klasör Seç...';
         ctx_openloc='Dosya Konumunu Aç (Seç)'; ctx_copypath='Yolu Kopyala'; ctx_deleteperm='Kalıcı Olarak SİL'
@@ -1023,7 +1023,7 @@ $global:Strings = @{
         dash_detail='Hardware details'; dash_test='Network test'
         dash_rec_card='TO DO'; dash_pingcard='LATENCY'; dash_sysinfo='System info'; dash_rec_title='Suggested actions'; dash_rec_wait='Preparing suggestions…'; dash_rec_n='Pending suggestions: {0}'; dash_rec_none='No pending suggestions'; dash_src_hw='Hardware summary (WMI) · {0}'; dash_src_wg='winget upgrade · {0}'; dash_src_su='Registry and Startup folder · just now'; dash_src_tw='Tweaks pending list · just now'; dash_wg_n='{0} package updates available'; dash_wg_fail='Could not check for updates'; dash_wg_ok0='winget: no updates'; dash_wg_wait='Checking for updates…'; dash_su_n='{0} apps start with Windows'; dash_tw_n='{0} tweaks waiting to apply'; dash_disk_full='Drive C: is {0} percent full'; dash_age_now='just now'; dash_age_min='{0} min ago'; dash_age_hour='{0} h ago'; dash_card_mem='MEMORY'; dash_card_disk='DISK C:'; dash_ram_free='Free up'; dash_ping_gw='gateway'; dash_ping_tip='Network test: Cloudflare, Google and gateway average (ms). The large number is the live gateway ping.'; dash_more='Details'; dash_row_os='Operating system'; dash_row_cpu='Processor'; dash_row_gpu='Graphics'; dash_row_mem='Memory'; dash_row_disk='Disk C:'; dash_row_sec='Boot'; dash_row_up='Uptime'; dash_row_upd='Last update'; dash_row_dns='DNS'; dash_row_net='Connection'; dash_hist_title='Recent activity'; dash_hist_clean='Cleanup  ·  {0} removed'; dash_hist_tw_apply='Tweaks  ·  {0} applied'; dash_hist_tw_undo='Tweaks  ·  {0} undone'; dash_yesterday='Yesterday'
         btn_check='♻ Check'; btn_manage='⚙ Manage'; btn_saveprofile='💾 Profile'; btn_quickundo='↶ Undo'
-        tw_search_ph='Search tweaks...'; tw_cats_title='CATEGORIES'; tw_badge_reboot='RESTART'; tw_badge_risk_high='HIGH RISK'; tw_badge_risk_med='RISKY'; tw_badge_pending='PENDING'; tw_badge_pending_tip='This setting will change when you press Apply'; log_toggle_show='Activity log  ˄'; log_toggle_hide='Activity log  ˅'; tw_filter_tip='Narrows the tweak list as you type — searches name, description and category. Press Esc to clear.'; tw_filter_clear='Clear search'; tw_filter_count='{0} / {1} tweaks'; tw_active_count='✅ {0} / {1} active'; tw_incompat_count='⛔ {0} unavailable on this PC'; tw_chip_all='All'; tw_chip_active='✅ Active'; tw_chip_passive='○ Inactive'; tw_chip_new='✦ New'; tw_chip_risky='⚠ Risky'; tw_chip_reboot='↻ Needs restart'; tw_progress_tip='Share of active tweaks (last check)'; tw_badge_reboot_tip='Requires a restart after applying'; tw_hw_wifi='No Wi-Fi adapter'; tw_hw_eth='No Ethernet adapter'; tw_hw_laptop='Laptops only'; tw_hw_hdd='No hard disk (HDD)'; tw_hw_ssd='No SSD'; tw_hw_cores='Needs at least 4 cores'; tw_hw_dnstool='{0} is running and manages DNS'; tw_hw_wifiband='Wi-Fi adapter has no 5 GHz band preference (2.4 GHz only or not exposed by driver)'; tw_hw_wifiadv='Wi-Fi driver does not expose these settings'; tw_hw_vendortel='No Intel / AMD / HP / Dell / Lenovo telemetry component installed on this PC'; tw_hw_adrenalin='AMD Software (Adrenalin) is not installed'; tw_hw_uefi='This system is not UEFI (legacy BIOS)'; tw_hw_nosvc='Not present in this Windows'; tw_hwwarn_printer='Printer detected: {0}'; tw_hwwarn_scanner='Scanner / camera detected: {0}'; tw_hwwarn_camera='Camera detected: {0}'; tw_hwwarn_sensor='Sensor detected: {0}'; tw_hwwarn_laptop='Laptop: rotation / brightness sensors may be in use'; tw_hwwarn_cellular='Cellular modem detected: {0}'; tw_hwwarn_nfc='NFC device detected: {0}'; tw_hwwarn_domain='This PC is joined to a domain: {0}'; tw_hwwarn_insider='This PC is enrolled in the Windows Insider Program'; tw_hwwarn_tail='if you disable it, this device / feature stops working.'; tw_hwwarn_badge='DEVICE FOUND'; tw_hwwarn_title='Disable {0}?'; tw_hwwarn_q='Disable anyway? Undo restores the service''s previous setting exactly.'; tw_hw_novm='Has no effect on a physical PC (virtual machines only)'; tw_hwwarn_bluetooth='Bluetooth detected: {0}'; tw_hwwarn_wifi='Wi-Fi adapter detected'; tw_hwwarn_location='Location is on'; tw_hwwarn_cliphist='Clipboard history (Win+V) is on'; tw_hwwarn_vm='This is a virtual machine: {0}'; tw_mode_manual='Manual'; tw_mode_disabled='Disabled'; tw_mode_tip='Manual: Windows still starts it when needed. Disabled: it never starts.'; tw_hw_cabc='Content adaptive brightness (CABC) is not available on this display'; tw_hw_gpu='No {0} graphics card'; tw_hw_tip='⛔ Not applicable on this PC: {0}'; tw_badge_new='NEW'; tw_incompat_tip='⛔ This setting requires Windows {0}. Your system: {1}'
+        tw_search_ph='Search tweaks...'; tw_cats_title='CATEGORIES'; tw_badge_reboot='RESTART'; tw_badge_risk_high='HIGH RISK'; tw_badge_risk_med='RISKY'; tw_badge_pending='PENDING'; tw_badge_pending_tip='This setting will change when you press Apply'; log_toggle_show='Activity log  ˄'; log_toggle_hide='Activity log  ˅'; tw_filter_tip='Narrows the tweak list as you type — searches name, description and category. Press Esc to clear.'; tw_filter_clear='Clear search'; tw_filter_count='{0} / {1} tweaks'; tw_active_count='✅ {0} / {1} active'; tw_incompat_count='⛔ {0} unavailable on this PC'; tw_chip_all='All'; tw_chip_active='✅ Active'; tw_chip_passive='○ Inactive'; tw_chip_new='✦ New'; tw_chip_risky='⚠ Risky'; tw_chip_reboot='↻ Needs restart'; tw_progress_tip='Share of active tweaks (last check)'; tw_badge_reboot_tip='Requires a restart after applying'; tw_hw_wifi='No Wi-Fi adapter'; tw_hw_eth='No Ethernet adapter'; tw_hw_laptop='Laptops only'; tw_hw_hdd='No hard disk (HDD)'; tw_hw_ssd='No SSD'; tw_hw_cores='Needs at least 4 cores'; tw_hw_dnstool='{0} is running and manages DNS'; tw_hw_wifiband='Wi-Fi adapter has no 5 GHz band preference (2.4 GHz only or not exposed by driver)'; tw_hw_wifiadv='Wi-Fi driver does not expose these settings'; tw_hw_vendortel='No Intel / AMD / HP / Dell / Lenovo telemetry component installed on this PC'; tw_hw_adrenalin='AMD Software (Adrenalin) is not installed'; tw_hw_uefi='This system is not UEFI (legacy BIOS)'; tw_hw_nosvc='Not present in this Windows'; tw_hw_noapp='Program not installed'; tw_hwwarn_printer='Printer detected: {0}'; tw_hwwarn_scanner='Scanner / camera detected: {0}'; tw_hwwarn_camera='Camera detected: {0}'; tw_hwwarn_sensor='Sensor detected: {0}'; tw_hwwarn_laptop='Laptop: rotation / brightness sensors may be in use'; tw_hwwarn_cellular='Cellular modem detected: {0}'; tw_hwwarn_nfc='NFC device detected: {0}'; tw_hwwarn_domain='This PC is joined to a domain: {0}'; tw_hwwarn_insider='This PC is enrolled in the Windows Insider Program'; tw_hwwarn_tail='if you disable it, this device / feature stops working.'; tw_hwwarn_badge='DEVICE FOUND'; tw_hwwarn_title='Disable {0}?'; tw_hwwarn_q='Disable anyway? Undo restores the service''s previous setting exactly.'; tw_hw_novm='Has no effect on a physical PC (virtual machines only)'; tw_hwwarn_bluetooth='Bluetooth detected: {0}'; tw_hwwarn_wifi='Wi-Fi adapter detected'; tw_hwwarn_location='Location is on'; tw_hwwarn_cliphist='Clipboard history (Win+V) is on'; tw_hwwarn_vm='This is a virtual machine: {0}'; tw_mode_manual='Manual'; tw_mode_disabled='Disabled'; tw_mode_tip='Manual: Windows still starts it when needed. Disabled: it never starts.'; tw_hw_cabc='Content adaptive brightness (CABC) is not available on this display'; tw_hw_gpu='No {0} graphics card'; tw_hw_tip='⛔ Not applicable on this PC: {0}'; tw_badge_new='NEW'; tw_incompat_tip='⛔ This setting requires Windows {0}. Your system: {1}'
         btn_refresh='♻ Refresh'
         lf_userfolders='User Folders'; lf_cdisk='Disk C: (System)'; lf_customfolder='Select Custom Folder...';
         ctx_openloc='Open File Location (Select)'; ctx_copypath='Copy Path'; ctx_deleteperm='Delete Permanently'
@@ -1140,7 +1140,7 @@ $global:Strings = @{
         dash_detail='Détail matériel'; dash_test='Test réseau'
         dash_rec_card='À FAIRE'; dash_pingcard='LATENCE'; dash_sysinfo='Infos système'; dash_rec_title='Actions suggérées'; dash_rec_wait='Préparation des suggestions…'; dash_rec_n='Suggestions en attente : {0}'; dash_rec_none='Aucune suggestion'; dash_src_hw='Résumé matériel (WMI) · {0}'; dash_src_wg='winget upgrade · {0}'; dash_src_su='Registre et dossier Démarrage · à l''instant'; dash_src_tw='Liste des tweaks en attente · à l''instant'; dash_wg_n='{0} mises à jour de paquets'; dash_wg_fail='Contrôle des mises à jour impossible'; dash_wg_ok0='winget : aucune mise à jour'; dash_wg_wait='Vérification des mises à jour…'; dash_su_n='{0} applications au démarrage'; dash_tw_n='{0} tweaks en attente d''application'; dash_disk_full='Le disque C: est plein à {0} %'; dash_age_now='à l''instant'; dash_age_min='il y a {0} min'; dash_age_hour='il y a {0} h'; dash_card_mem='MÉMOIRE'; dash_card_disk='DISQUE C:'; dash_ram_free='Libérer'; dash_ping_gw='passerelle'; dash_ping_tip='Test réseau : moyenne Cloudflare, Google et passerelle (ms). Le grand nombre est le ping en direct de la passerelle.'; dash_more='Détails'; dash_row_os='Système'; dash_row_cpu='Processeur'; dash_row_gpu='Carte graphique'; dash_row_mem='Mémoire'; dash_row_disk='Disque C:'; dash_row_sec='Démarrage'; dash_row_up='Temps de fonctionnement'; dash_row_upd='Dernière mise à jour'; dash_row_dns='DNS'; dash_row_net='Connexion'; dash_hist_title='Activité récente'; dash_hist_clean='Nettoyage  ·  {0} supprimés'; dash_hist_tw_apply='Tweaks  ·  {0} appliqués'; dash_hist_tw_undo='Tweaks  ·  {0} annulés'; dash_yesterday='Hier'
         btn_check='♻ Vérifier'; btn_manage='⚙ Gérer'; btn_saveprofile='💾 Profil'; btn_quickundo='↶ Annuler'
-        tw_search_ph='Rechercher...'; tw_cats_title='CATÉGORIES'; tw_badge_reboot='REDÉMARRAGE'; tw_badge_risk_high='RISQUE ÉLEVÉ'; tw_badge_risk_med='RISQUÉ'; tw_badge_pending='EN ATTENTE'; tw_badge_pending_tip='Ce réglage changera quand vous cliquerez sur Appliquer'; log_toggle_show='Journal  ˄'; log_toggle_hide='Journal  ˅'; tw_filter_tip='Filtre la liste des tweaks pendant la saisie — recherche dans le nom, la description et la catégorie. Échap pour effacer.'; tw_filter_clear='Effacer la recherche'; tw_filter_count='{0} / {1} tweaks'; tw_active_count='✅ {0} / {1} actifs'; tw_incompat_count='⛔ {0} indisponibles sur ce PC'; tw_chip_all='Tous'; tw_chip_active='✅ Actifs'; tw_chip_passive='○ Inactifs'; tw_chip_new='✦ Nouveaux'; tw_chip_risky='⚠ Risqués'; tw_chip_reboot='↻ Redémarrage'; tw_progress_tip='Part des tweaks actifs (dernière vérification)'; tw_badge_reboot_tip='Redémarrage requis après application'; tw_hw_wifi='Aucune carte Wi-Fi'; tw_hw_eth='Aucune carte Ethernet'; tw_hw_laptop='Portables uniquement'; tw_hw_hdd='Aucun disque dur (HDD)'; tw_hw_ssd='Aucun SSD'; tw_hw_cores='4 cœurs minimum requis'; tw_hw_dnstool='{0} est actif et gère le DNS'; tw_hw_wifiband='La carte Wi-Fi ne propose pas la préférence 5 GHz'; tw_hw_wifiadv='Le pilote Wi-Fi ne propose pas ces réglages'; tw_hw_vendortel='Aucun composant de télémétrie Intel / AMD / HP / Dell / Lenovo installé sur ce PC'; tw_hw_adrenalin='AMD Software (Adrenalin) n''est pas installé'; tw_hw_uefi='Ce système n''est pas UEFI (BIOS hérité)'; tw_hw_nosvc='Absent de ce Windows'; tw_hwwarn_printer='Imprimante détectée : {0}'; tw_hwwarn_scanner='Scanner / caméra détecté : {0}'; tw_hwwarn_camera='Caméra détectée : {0}'; tw_hwwarn_sensor='Capteur détecté : {0}'; tw_hwwarn_laptop='Portable : les capteurs de rotation / luminosité peuvent être utilisés'; tw_hwwarn_cellular='Modem cellulaire détecté : {0}'; tw_hwwarn_nfc='Appareil NFC détecté : {0}'; tw_hwwarn_domain='Ce PC est joint à un domaine : {0}'; tw_hwwarn_insider='Ce PC est inscrit au programme Windows Insider'; tw_hwwarn_tail='si vous le désactivez, cet appareil / cette fonction ne marche plus.'; tw_hwwarn_badge='APPAREIL DÉTECTÉ'; tw_hwwarn_title='Désactiver {0} ?'; tw_hwwarn_q='Désactiver quand même ? Annuler rétablit exactement le réglage précédent du service.'; tw_hw_novm='Sans effet sur un PC physique (machines virtuelles uniquement)'; tw_hwwarn_bluetooth='Bluetooth détecté : {0}'; tw_hwwarn_wifi='Carte Wi-Fi détectée'; tw_hwwarn_location='Localisation activée'; tw_hwwarn_cliphist='Historique du presse-papiers (Win+V) activé'; tw_hwwarn_vm='Ceci est une machine virtuelle : {0}'; tw_mode_manual='Manuel'; tw_mode_disabled='Désactivé'; tw_mode_tip='Manuel : Windows le démarre encore si nécessaire. Désactivé : il ne démarre jamais.'; tw_hw_cabc='Luminosité adaptative au contenu (CABC) indisponible sur cet écran'; tw_hw_gpu='Aucune carte graphique {0}'; tw_hw_tip='⛔ Non applicable sur ce PC : {0}'; tw_badge_new='NOUVEAU'; tw_incompat_tip='⛔ Ce réglage nécessite Windows {0}. Votre système : {1}'
+        tw_search_ph='Rechercher...'; tw_cats_title='CATÉGORIES'; tw_badge_reboot='REDÉMARRAGE'; tw_badge_risk_high='RISQUE ÉLEVÉ'; tw_badge_risk_med='RISQUÉ'; tw_badge_pending='EN ATTENTE'; tw_badge_pending_tip='Ce réglage changera quand vous cliquerez sur Appliquer'; log_toggle_show='Journal  ˄'; log_toggle_hide='Journal  ˅'; tw_filter_tip='Filtre la liste des tweaks pendant la saisie — recherche dans le nom, la description et la catégorie. Échap pour effacer.'; tw_filter_clear='Effacer la recherche'; tw_filter_count='{0} / {1} tweaks'; tw_active_count='✅ {0} / {1} actifs'; tw_incompat_count='⛔ {0} indisponibles sur ce PC'; tw_chip_all='Tous'; tw_chip_active='✅ Actifs'; tw_chip_passive='○ Inactifs'; tw_chip_new='✦ Nouveaux'; tw_chip_risky='⚠ Risqués'; tw_chip_reboot='↻ Redémarrage'; tw_progress_tip='Part des tweaks actifs (dernière vérification)'; tw_badge_reboot_tip='Redémarrage requis après application'; tw_hw_wifi='Aucune carte Wi-Fi'; tw_hw_eth='Aucune carte Ethernet'; tw_hw_laptop='Portables uniquement'; tw_hw_hdd='Aucun disque dur (HDD)'; tw_hw_ssd='Aucun SSD'; tw_hw_cores='4 cœurs minimum requis'; tw_hw_dnstool='{0} est actif et gère le DNS'; tw_hw_wifiband='La carte Wi-Fi ne propose pas la préférence 5 GHz'; tw_hw_wifiadv='Le pilote Wi-Fi ne propose pas ces réglages'; tw_hw_vendortel='Aucun composant de télémétrie Intel / AMD / HP / Dell / Lenovo installé sur ce PC'; tw_hw_adrenalin='AMD Software (Adrenalin) n''est pas installé'; tw_hw_uefi='Ce système n''est pas UEFI (BIOS hérité)'; tw_hw_nosvc='Absent de ce Windows'; tw_hw_noapp='Programme non installé'; tw_hwwarn_printer='Imprimante détectée : {0}'; tw_hwwarn_scanner='Scanner / caméra détecté : {0}'; tw_hwwarn_camera='Caméra détectée : {0}'; tw_hwwarn_sensor='Capteur détecté : {0}'; tw_hwwarn_laptop='Portable : les capteurs de rotation / luminosité peuvent être utilisés'; tw_hwwarn_cellular='Modem cellulaire détecté : {0}'; tw_hwwarn_nfc='Appareil NFC détecté : {0}'; tw_hwwarn_domain='Ce PC est joint à un domaine : {0}'; tw_hwwarn_insider='Ce PC est inscrit au programme Windows Insider'; tw_hwwarn_tail='si vous le désactivez, cet appareil / cette fonction ne marche plus.'; tw_hwwarn_badge='APPAREIL DÉTECTÉ'; tw_hwwarn_title='Désactiver {0} ?'; tw_hwwarn_q='Désactiver quand même ? Annuler rétablit exactement le réglage précédent du service.'; tw_hw_novm='Sans effet sur un PC physique (machines virtuelles uniquement)'; tw_hwwarn_bluetooth='Bluetooth détecté : {0}'; tw_hwwarn_wifi='Carte Wi-Fi détectée'; tw_hwwarn_location='Localisation activée'; tw_hwwarn_cliphist='Historique du presse-papiers (Win+V) activé'; tw_hwwarn_vm='Ceci est une machine virtuelle : {0}'; tw_mode_manual='Manuel'; tw_mode_disabled='Désactivé'; tw_mode_tip='Manuel : Windows le démarre encore si nécessaire. Désactivé : il ne démarre jamais.'; tw_hw_cabc='Luminosité adaptative au contenu (CABC) indisponible sur cet écran'; tw_hw_gpu='Aucune carte graphique {0}'; tw_hw_tip='⛔ Non applicable sur ce PC : {0}'; tw_badge_new='NOUVEAU'; tw_incompat_tip='⛔ Ce réglage nécessite Windows {0}. Votre système : {1}'
         btn_refresh='♻ Actualiser'
         lf_userfolders='Dossiers utilisateur'; lf_cdisk='Disque C: (Système)'; lf_customfolder='Choisir un dossier...';
         ctx_openloc='Ouvrir l''emplacement (Sélectionner)'; ctx_copypath='Copier le chemin'; ctx_deleteperm='Supprimer définitivement'
@@ -4240,6 +4240,76 @@ public class SpiMenu {
             }
         )
         
+        # --- 6b. UYGULAMALAR (v2.0.2, §146): Stix uygulama betiklerinin guvenli kismi. Dosya silme / internetten ayar indirme yok;
+        # her satir yalniz program kuruluysa etkin (App: / Svc:), eski deger yedeklenir.
+        "🧩 Uygulamalar" = @(
+            @{
+                Name="Discord Windows ile Başlamasın";
+                SubCategory="Discord"; Since="2.0.2";
+                Risk="Low"; RestartExplorer=$false; Requires=@("App:Discord");
+                Description="Discord'un Windows açılışında kendiliğinden başlamasını kapatır (Discord > Ayarlar > Windows Ayarları > 'Discord'u aç' ile aynı). Açılış biraz hızlanır, Discord'u açmadığınız sürece bellek kullanmaz (ölçülen: açıkken 6 işlem, yaklaşık 600-900 MB özel bellek).`n`nKapatınca: Discord'u kendiniz açarsınız; açık değilken arkadaş bildirimleri gelmez.`nℹ️ Discord açıksa onay istenir, kapatılıp yeniden açılır (ayar dosyası açıkken yazılırsa Discord eski değeri geri yazar). Geri Al, önceki değeri aynen geri koyar.`n📚 Kaynak: Stix Tweaks (Optimize Discord); Stix ayar dosyasını tamamen değiştirir, burada yalnız bu ayar değişir.";
+                DetectScript='
+                    $run = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "Discord" -ErrorAction SilentlyContinue
+                    return ((Test-MrCleanDiscordSetting "OPEN_ON_STARTUP" "False") -and $null -eq $run)
+                ';
+                Command='
+                    Set-MrCleanDiscordSetting "OPEN_ON_STARTUP" $false
+                    if (Test-MrCleanDiscordSetting "OPEN_ON_STARTUP" "False") {
+                        Backup-TweakRegValue "DiscordRun" "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" "Discord"
+                        Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" -Name "Discord" -Force -ErrorAction SilentlyContinue
+                    }
+                ';
+                UndoCommand='
+                    Set-MrCleanDiscordSetting "OPEN_ON_STARTUP" $null -Restore
+                    Restore-TweakRegValue "DiscordRun" "HKCU:\Software\Microsoft\Windows\CurrentVersion\Run" "Discord"
+                '
+            },
+            @{
+                Name="Discord Donanım Hızlandırmasını Kapat";
+                SubCategory="Discord"; Since="2.0.2";
+                Risk="Low"; RestartExplorer=$false; Requires=@("App:Discord");
+                Description="Discord arayüzünün ekran kartıyla çizilmesini kapatır (Discord > Ayarlar > Gelişmiş > 'Donanım Hızlandırma' ile aynı). Oyun açıkken Discord ekran kartı belleği ve zamanı kullanmaz.`n`n📊 Ölçüm (Discord simge durumunda): özel bellek 896 → 577 MB, ekran kartı belleği 162 → 0 MB, işlemci kullanımı değişmedi.`n⚠️ Karşılığı: Discord çizimi işlemciye geçer; işlemci kullanımı biraz artar, ekran paylaşımı / yayın izlemede görüntü takılabilir.`nℹ️ Discord açıksa onay istenir, kapatılıp yeniden açılır. Geri Al, önceki değeri aynen geri koyar.`n📚 Kaynak: Stix Tweaks (Optimize Discord).";
+                DetectScript='Test-MrCleanDiscordSetting "enableHardwareAcceleration" "False"';
+                Command='Set-MrCleanDiscordSetting "enableHardwareAcceleration" $false';
+                UndoCommand='Set-MrCleanDiscordSetting "enableHardwareAcceleration" $null -Restore'
+            },
+            @{
+                Name="Chrome Kapatınca Arka Planda Çalışmasın";
+                SubCategory="Chrome"; Since="2.0.2";
+                Risk="Low"; RestartExplorer=$false; Requires=@("App:Chrome");
+                Description="Chrome penceresini kapatınca tarayıcının uzantılar ve bildirimler için arka planda çalışmaya devam etmesini kapatır (Chrome > Ayarlar > Sistem > 'Google Chrome kapatıldığında arka plan uygulamalarını çalıştırmaya devam et' ile aynı). Chrome kapalıyken bellek kullanmaz.`n`nKapatınca: Chrome kapalıyken web bildirimleri ve arka plan uzantıları çalışmaz.`n⚠️ Chrome 'Tarayıcınız kuruluşunuz tarafından yönetiliyor' yazısı gösterebilir. Geri alınca kaybolur.`n📚 Kaynak: Google Chrome politika belgesi (BackgroundModeEnabled).";
+                Key="HKLM:\SOFTWARE\Policies\Google\Chrome"; ValueName="BackgroundModeEnabled"; Type="DWord"; Data=0; Undo="DELETE_VALUE"
+            },
+            @{
+                Name="Chrome Yazım Denetimi ve Geri Bildirim Verisini Göndermesin";
+                SubCategory="Chrome"; Since="2.0.2";
+                Risk="Low"; RestartExplorer=$false; Requires=@("App:Chrome");
+                Description="Chrome'un 'gelişmiş yazım denetimi' için yazdığınız metni Google sunucularına göndermesini ve geri bildirim (ekran görüntüsü dahil) gönderme özelliğini kapatır. Yazım denetimi Chrome'un yerel sözlüğüyle çalışmaya devam eder.`n`nℹ️ Performans için değil, gizlilik için.`n⚠️ Chrome 'Tarayıcınız kuruluşunuz tarafından yönetiliyor' yazısı gösterebilir. Geri alınca kaybolur.`n📚 Kaynak: Stix Tweaks (Debloat Google Chrome; Stix ayrıca Güvenli Tarama'yı kapatır ve güncellemeyi elle yapar, burada yok); Google Chrome politika belgesi.";
+                Batch=@(
+                    @{ Key="HKLM:\SOFTWARE\Policies\Google\Chrome"; ValueName="SpellCheckServiceEnabled"; Type="DWord"; Data=0; Undo="DELETE_VALUE" },
+                    @{ Key="HKLM:\SOFTWARE\Policies\Google\Chrome"; ValueName="UserFeedbackAllowed"; Type="DWord"; Data=0; Undo="DELETE_VALUE" }
+                )
+            },
+            @{
+                Name="Logitech G HUB Sanal Oyun Kumandası Sürücülerini Kapat";
+                SubCategory="Çevre Birimleri"; Since="2.0.2";
+                Risk="Medium"; RestartExplorer=$false; RequiresReboot=$true; Requires=@("Svc:logi_joy_bus_enum|logi_joy_vir_hid");
+                Description="G HUB'ın kurduğu sanal oyun kumandası (joystick) sürücülerini Devre dışı yapar. Bu sürücüler yalnız Logitech direksiyon / gamepad ayarlarını oyuna sanal kumanda olarak tanıtmak için kullanılır.`n`nFare, klavye, kulaklık; DPI, makro ve RGB ayarları etkilenmez; G HUB açılışta başlamaya devam eder.`n`nKapatınca: Logitech direksiyon / gamepad ve G HUB'ın 'kumanda taklidi' profilleri çalışmaz. Direksiyon kullanıyorsanız kapatmayın. Geri Al, önceki başlangıç ayarını aynen geri yazar.`n📚 Kaynak: Stix Tweaks (Optimize Logitech G Hub); Stix ayrıca G HUB'ın açılışta başlamasını kaldırır, burada yok (DPI / makro çalışmaz).";
+                DetectScript='Test-MrCleanServicesStart @("logi_joy_bus_enum","logi_joy_vir_hid") 4';
+                Command='Set-MrCleanServicesStart @("logi_joy_bus_enum","logi_joy_vir_hid") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("logi_joy_bus_enum","logi_joy_vir_hid")'
+            },
+            @{
+                Name="SteelSeries Sonar Sanal Ses Sürücüsünü Kapat";
+                SubCategory="Çevre Birimleri"; Since="2.0.2";
+                Risk="Medium"; RestartExplorer=$false; RequiresReboot=$true; Requires=@("Svc:SteelSeries_Sonar_VAD");
+                Description="SteelSeries GG'nin Sonar sanal ses aygıtlarını (Oyun, Sohbet, Medya, Mikrofon kanalları) sağlayan sürücüyü Devre dışı yapar. Sonar kullanmıyorsanız ses aygıtı listesi sadeleşir.`n`nKapatınca: Sonar ekolayzır, kanal ayrımı ve Sonar mikrofon işleme çalışmaz; ses doğrudan kulaklık / hoparlöre gider. Sonar kullanıyorsanız kapatmayın. Geri Al, önceki başlangıç ayarını aynen geri yazar.`n📚 Kaynak: Stix Tweaks (SteelSeries GG Optimization); Stix ayrıca GG'nin program dosyalarını siler, burada yok.";
+                DetectScript='Test-MrCleanServicesStart @("SteelSeries_Sonar_VAD") 4';
+                Command='Set-MrCleanServicesStart @("SteelSeries_Sonar_VAD") 4';
+                UndoCommand='Restore-MrCleanServicesStart @("SteelSeries_Sonar_VAD")'
+            }
+        )
+
         # --- 7. UYGULAMA KALDIRMA ---
         "Uygulama Kaldırma" = @(
             @{
@@ -11794,6 +11864,8 @@ $script:MrCleanSvcDefaults = @{
     # §145: uretici servisleri Windows'ta yok; yedek yoksa yukleyicinin olagan degeri Otomatik
     DSAService='2|'; DSAUpdateService='2|'; igccservice='2|'; 'igfxCUIService2.0.0.0'='2|'; WMIRegistrationService='2|'; 'AMD Crash Defender Service'='2|'
     LMS='2|'; RstMwService='2|'; iaStorAfsService='2|'; jhi_service='2|'; cplspcon='2|'; cphs='3|'
+    # §146: cevre birimi surucu servisleri (El ile)
+    logi_joy_bus_enum='3|'; logi_joy_vir_hid='3|'; SteelSeries_Sonar_VAD='3|'
 }
 function Test-MrCleanServicesExist([string[]]$Names) {
     foreach ($n in $Names) { if (Test-Path -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services\$n") { return $true } }
@@ -11853,6 +11925,71 @@ function Set-MrCleanSvcMode([string]$Key, [int]$Mode) {
     $root = 'HKCU:\Software\MrClean\SvcMode'
     if (-not (Test-Path -LiteralPath $root)) { New-Item -Path $root -Force | Out-Null }
     Set-ItemProperty -LiteralPath $root -Name $Key -Value "$Mode" -Type String -Force
+}
+
+# v2.0.2 (§146): Uygulamalar kategorisi. Requires "App:Ad" — program kurulu degilse satir soluk ("Program kurulu degil").
+function Test-MrCleanAppInstalled([string]$App) {
+    switch ($App) {
+        "Discord" { return (Test-Path -LiteralPath "$env:APPDATA\discord\settings.json") }
+        "Chrome"  { return [bool](@("$env:ProgramFiles\Google\Chrome\Application\chrome.exe", "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe", "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe") | Where-Object { Test-Path -LiteralPath $_ }) }
+    }
+    return $false
+}
+
+# Programin ayar dosyasi / kaydi acikken yazilirsa program kapanirken eski degeri geri yazar. Calisiyorsa kullaniciya sorulur
+# (ayni program icin 2 dk icinde ikinci soru sorulmaz), zorla kapatilir. Donus: 'NotRunning' | 'Closed' | 'Cancelled'.
+function Close-MrCleanApp([string]$App, [string[]]$Procs) {
+    if (-not @(Get-Process -Name $Procs -ErrorAction SilentlyContinue).Count) { return 'NotRunning' }
+    if (-not $global:MrCleanAppCloseOk) { $global:MrCleanAppCloseOk = @{} }
+    $ok = $global:MrCleanAppCloseOk[$App]
+    if (-not ($ok -and ((Get-Date) - $ok).TotalSeconds -lt 120)) {
+        $r = Show-MrCleanMessage -Text "$App açık. Ayarı yazmak için $App kapatılıp yeniden açılacak (sesli görüşme / oyun varsa kesilir).`n`nDevam edilsin mi?" -Title $App -Buttons YesNo -Icon Warning
+        if ($r -ne "Yes") { WpfLog "[ATLANDI] $App açıktı, kullanıcı kapatmayı istemedi."; return 'Cancelled' }
+        $global:MrCleanAppCloseOk[$App] = Get-Date
+    }
+    Get-Process -Name $Procs -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    $sw = [Diagnostics.Stopwatch]::StartNew()
+    while (@(Get-Process -Name $Procs -ErrorAction SilentlyContinue).Count -and $sw.ElapsedMilliseconds -lt 10000) { Start-Sleep -Milliseconds 200; try { Do-Events } catch {} }
+    return 'Closed'
+}
+
+function Start-MrCleanApp([string]$App) {
+    try {
+        if ($App -eq "Discord") { Start-Process -FilePath "$env:LOCALAPPDATA\Discord\Update.exe" -ArgumentList "--processStart Discord.exe" -ErrorAction Stop }
+    } catch { WpfLog "[$App] yeniden açılamadı: $($_.Exception.Message)" }
+}
+
+# Discord settings.json anahtarlari. Ilk uygulamada eski deger (JSON) ya da "absent" ValueBackup'a yazilir; geri alma onu koyar.
+function Test-MrCleanDiscordSetting([string]$Key, $Value) {
+    # BOM'suz UTF-8: Get-Content (PS 5.1) ANSI okur, Turkce karakterler bozulur
+    try { $j = [IO.File]::ReadAllText("$env:APPDATA\discord\settings.json", [Text.Encoding]::UTF8) | ConvertFrom-Json } catch { return $false }
+    $p = $j.PSObject.Properties[$Key]
+    return [bool]($p -and "$($p.Value)" -eq "$Value")
+}
+function Set-MrCleanDiscordSetting([string]$Key, $Value, [switch]$Restore) {
+    $f = "$env:APPDATA\discord\settings.json"
+    $root = "HKLM:\SOFTWARE\MrClean\ValueBackup"; $id = "Discord_$Key"
+    $was = Close-MrCleanApp "Discord" @("Discord")
+    if ($was -eq 'Cancelled') { return }
+    $j = [IO.File]::ReadAllText($f, [Text.Encoding]::UTF8) | ConvertFrom-Json
+    $p = $j.PSObject.Properties[$Key]
+    if ($Restore) {
+        $rec = (Get-ItemProperty -LiteralPath $root -Name $id -ErrorAction SilentlyContinue).$id
+        if ("$rec" -eq "absent") { if ($p) { [void]$j.PSObject.Properties.Remove($Key) } }
+        elseif ($null -ne $rec) { $j | Add-Member -NotePropertyName $Key -NotePropertyValue ("$rec" | ConvertFrom-Json) -Force }
+        Remove-ItemProperty -LiteralPath $root -Name $id -Force -ErrorAction SilentlyContinue
+    } else {
+        if (-not (Test-Path -LiteralPath $root)) { New-Item -Path $root -Force | Out-Null }
+        if ($null -eq (Get-ItemProperty -LiteralPath $root -Name $id -ErrorAction SilentlyContinue)) {
+            $rec = if ($p) { ConvertTo-Json -InputObject $p.Value -Compress -Depth 10 } else { "absent" }
+            Set-ItemProperty -LiteralPath $root -Name $id -Value $rec -Type String -Force
+        }
+        $j | Add-Member -NotePropertyName $Key -NotePropertyValue $Value -Force
+    }
+    # Discord BOM'suz UTF-8 okur
+    [IO.File]::WriteAllText($f, ($j | ConvertTo-Json -Depth 20), (New-Object System.Text.UTF8Encoding($false)))
+    Write-Host "[Discord] $Key = $(if ($Restore) { 'eski değer' } else { $Value })"
+    if ($was -eq 'Closed') { Start-MrCleanApp "Discord" }
 }
 
 # v2.0.x (§136): Debloat satirlarindaki donanim uyarisi (HwWarn). Aygit bu bilgisayarda varsa satir kirmizi + acarken onay.
@@ -14694,7 +14831,10 @@ function Get-TweakHardwareReason($tweak) {
             "UEFI"     { if (-not $hw.IsUefi) { return (T 'tw_hw_uefi') } }
             "VM"       { if (-not (Get-MrCleanHwWarnings).VM) { return (T 'tw_hw_novm') } }   # v2.0.x (§137): Hyper-V konuk servisleri
             # v2.0.x (§136): "Svc:Ad1|Ad2" — servislerden hicbiri bu Windows'ta yoksa satir soluk ("Bu Windows'ta yok")
-            default    { if ("$r" -like "Svc:*" -and -not (Test-MrCleanServicesExist ("$r".Substring(4).Split('|')))) { return (T 'tw_hw_nosvc') } }
+            default    {
+                if ("$r" -like "Svc:*" -and -not (Test-MrCleanServicesExist ("$r".Substring(4).Split('|')))) { return (T 'tw_hw_nosvc') }
+                if ("$r" -like "App:*" -and -not (Test-MrCleanAppInstalled "$r".Substring(4))) { return (T 'tw_hw_noapp') }   # v2.0.2 (§146)
+            }
         }
     }
     if ($tweak.Vendor -and @($hw.Gpu).Count -gt 0 -and -not (@($hw.Gpu) -contains "$($tweak.Vendor)")) { return ((T 'tw_hw_gpu') -f $tweak.Vendor) }
