@@ -4037,27 +4037,26 @@ public class SpiMenu {
                 Command='Set-MrCleanServicesStart @("AMD Crash Defender Service") (Get-MrCleanSvcMode "AmdCrashDef" 4)';
                 UndoCommand='Restore-MrCleanServicesStart @("AMD Crash Defender Service")'
             },
-            # --- §137: Stix servisleri, riskli grup (RAPOR_STIX_servisler.md §4). Görünür bir özellik kapanır. Temiz 25H2'de "Otomatik"
-            # olan 4 serviste (Spooler, WSearch, cbdhsvc, CDPUserSvc) satırda "El ile | Devre dışı" seçimi (SvcMode); diğerleri zaten
-            # "El ile" olduğu için yalnız Devre dışı.
+            # --- §137: Stix servisleri, riskli grup (RAPOR_STIX_servisler.md §4). Görünür bir özellik kapanır.
+            # §148: temiz 25H2'de "Otomatik" olan 4 serviste (Spooler, WSearch, cbdhsvc, CDPUserSvc) "El ile" secimi kaldirildi.
+            # VM dogrulamasi: Spooler / CDPUserSvc El ile'de istek gelince baslamiyor (ozellik bozuluyor), WSearch / cbdhsvc
+            # El ile'de de acilista calisiyor (kazanc yok). Hepsi yalniz Devre disi.
             @{
                 Name="Yazdırma Servisini Kapat (Spooler)";
                 SubCategory="Servisler — Riskli"; Since="2.0.1";
                 Risk="Medium"; RestartExplorer=$false; Requires=@("Svc:Spooler"); HwWarn=@("Printer");
-                SvcMode="Spooler"; SvcModeDefault=4;
-                Description="Yazdırma Biriktiricisi (Print Spooler) servisini kapatır. Satırdaki seçimle 'El ile' ya da 'Devre dışı' yapılır.`n`nTemiz Windows'ta 'Otomatik' başlar ve sürekli çalışır. Yazıcısı olmayan bilgisayarda kapatmak, geçmişte PrintNightmare gibi açıklarla saldırıya uğrayan bir servisi devreden çıkarır (Microsoft'un o dönemki önerisi).`n`nKapatınca: hiçbir yazıcıya ve 'PDF olarak yazdır'a çıktı alınamaz, yazıcılar listelenmez. Yazıcı algılanırsa satır kırmızı uyarılıdır. Geri Al, önceki başlangıç ayarını aynen geri yazar ve servisi yeniden başlatır.";
-                DetectScript='Test-MrCleanServicesStart @("Spooler") (Get-MrCleanSvcMode "Spooler" 4)';
-                Command='Set-MrCleanServicesStart @("Spooler") (Get-MrCleanSvcMode "Spooler" 4)';
+                Description="Yazdırma Biriktiricisi (Print Spooler) servisini Devre dışı yapar.`n`nTemiz Windows'ta 'Otomatik' başlar ve sürekli çalışır. Yazıcısı olmayan bilgisayarda kapatmak, geçmişte PrintNightmare gibi açıklarla saldırıya uğrayan bir servisi devreden çıkarır (Microsoft'un o dönemki önerisi).`n`nKapatınca: hiçbir yazıcıya ve 'PDF olarak yazdır'a çıktı alınamaz, yazıcılar listelenmez. Yazıcı kullanıyorsanız uygulamayın.`nℹ️ 'El ile' seçeneği yok: test sanal makinesinde 'El ile' iken yazıcı istenince servis kendiliğinden başlamadı, yazıcılar listelenmedi (sonuç Devre dışı ile aynı).`nYazıcı algılanırsa satır kırmızı uyarılıdır. Geri Al, önceki başlangıç ayarını aynen geri yazar ve servisi yeniden başlatır.";
+                DetectScript='Test-MrCleanServicesStart @("Spooler") 4';
+                Command='Set-MrCleanServicesStart @("Spooler") 4';
                 UndoCommand='Restore-MrCleanServicesStart @("Spooler")'
             },
             @{
                 Name="Windows Arama Dizinini Kapat (WSearch)";
                 SubCategory="Servisler — Riskli"; Since="2.0.1";
                 Risk="Medium"; RestartExplorer=$false; Requires=@("Svc:WSearch");
-                SvcMode="WSearch"; SvcModeDefault=3;
-                Description="Dosya ve e-posta içeriğini dizine ekleyen Windows Arama servisini kapatır. Satırdaki seçimle 'El ile' ya da 'Devre dışı' yapılır.`n`nTemiz Windows'ta 'Otomatik (gecikmeli)' başlar; arka planda dosyaları tarar ve disk kullanır.`n`nKapatınca: Başlat ve Gezgin araması dizinsiz çalışır, belirgin şekilde yavaşlar ve dosya içeriğinde arama yapılamaz; klasik Outlook kendi (daha yavaş) aramasına geçer. Geri Al, önceki başlangıç ayarını aynen geri yazar ve servisi yeniden başlatır.";
-                DetectScript='Test-MrCleanServicesStart @("WSearch") (Get-MrCleanSvcMode "WSearch" 3)';
-                Command='Set-MrCleanServicesStart @("WSearch") (Get-MrCleanSvcMode "WSearch" 3)';
+                Description="Dosya ve e-posta içeriğini dizine ekleyen Windows Arama servisini Devre dışı yapar.`n`nTemiz Windows'ta 'Otomatik (gecikmeli)' başlar; arka planda dosyaları tarar ve disk kullanır.`n`nKapatınca: Başlat ve Gezgin araması dizinsiz çalışır, belirgin şekilde yavaşlar ve dosya içeriğinde arama yapılamaz; klasik Outlook kendi (daha yavaş) aramasına geçer. Aramayı sık kullanıyorsanız uygulamayın.`nℹ️ 'El ile' seçeneği yok: test sanal makinesinde 'El ile' iken servis açılışta yine kendiliğinden başladı; hiçbir kazanç sağlamıyor.`nGeri Al, önceki başlangıç ayarını aynen geri yazar ve servisi yeniden başlatır.";
+                DetectScript='Test-MrCleanServicesStart @("WSearch") 4';
+                Command='Set-MrCleanServicesStart @("WSearch") 4';
                 UndoCommand='Restore-MrCleanServicesStart @("WSearch")'
             },
             @{
@@ -4073,20 +4072,18 @@ public class SpiMenu {
                 Name="Pano Geçmişi Servisini Kapat (cbdhsvc)";
                 SubCategory="Servisler — Riskli"; Since="2.0.1";
                 Risk="Medium"; RestartExplorer=$false; RequiresReboot=$true; Requires=@("Svc:cbdhsvc"); HwWarn=@("ClipHist");
-                SvcMode="cbdhsvc"; SvcModeDefault=3;
-                Description="Pano geçmişi (Win+V) ve cihazlar arası pano eşitlemesini sağlayan kullanıcı servisini kapatır. Satırdaki seçimle 'El ile' ya da 'Devre dışı' yapılır.`n`nTemiz Windows'ta 'Otomatik (gecikmeli)' başlar. Kullanıcı başı servistir: değişiklik yeniden başlatmadan sonra tam geçerli olur.`n`nKapatınca: Win+V pano geçmişi ve cihazlar arası pano çalışmaz. Normal kopyala / yapıştır (Ctrl+C / Ctrl+V) bu servise bağlı değildir. Pano geçmişi açıksa satır kırmızı uyarılıdır. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
-                DetectScript='Test-MrCleanServicesStart @("cbdhsvc") (Get-MrCleanSvcMode "cbdhsvc" 3)';
-                Command='Set-MrCleanServicesStart @("cbdhsvc") (Get-MrCleanSvcMode "cbdhsvc" 3)';
+                Description="Pano geçmişi (Win+V) ve cihazlar arası pano eşitlemesini sağlayan kullanıcı servisini Devre dışı yapar.`n`nTemiz Windows'ta 'Otomatik (gecikmeli)' başlar. Kullanıcı başı servistir: değişiklik yeniden başlatmadan sonra tam geçerli olur.`n`nKapatınca: Win+V pano geçmişi ve cihazlar arası pano çalışmaz. Normal kopyala / yapıştır (Ctrl+C / Ctrl+V) bu servise bağlı değildir. Win+V kullanıyorsanız uygulamayın.`nℹ️ 'El ile' seçeneği yok: test sanal makinesinde 'El ile' iken servis açılışta yine kendiliğinden başladı; hiçbir kazanç sağlamıyor.`nPano geçmişi açıksa satır kırmızı uyarılıdır. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("cbdhsvc") 4';
+                Command='Set-MrCleanServicesStart @("cbdhsvc") 4';
                 UndoCommand='Restore-MrCleanServicesStart @("cbdhsvc")'
             },
             @{
                 Name="Bağlı Cihazlar Kullanıcı Servisini Kapat (CDPUserSvc)";
                 SubCategory="Servisler — Riskli"; Since="2.0.1";
                 Risk="Medium"; RestartExplorer=$false; RequiresReboot=$true; Requires=@("Svc:CDPUserSvc");
-                SvcMode="CDPUserSvc"; SvcModeDefault=3;
-                Description="Telefon, Xbox ve diğer bağlı cihazlarla iletişimi sağlayan Bağlı Cihazlar Platformu kullanıcı servisini kapatır. Satırdaki seçimle 'El ile' ya da 'Devre dışı' yapılır.`n`nTemiz Windows'ta 'Otomatik' başlar. Kullanıcı başı servistir: değişiklik yeniden başlatmadan sonra tam geçerli olur. Debloat'taki 'CDP Servisini El Ile Al' sistem servisini, bu satır kullanıcı servisini ayarlar.`n`nKapatınca: Telefon Bağlantısı, Yakın Paylaşım ve bazı Bluetooth / Xbox özellikleri çalışmayabilir. Geri Al, önceki başlangıç ayarını aynen geri yazar.";
-                DetectScript='Test-MrCleanServicesStart @("CDPUserSvc") (Get-MrCleanSvcMode "CDPUserSvc" 3)';
-                Command='Set-MrCleanServicesStart @("CDPUserSvc") (Get-MrCleanSvcMode "CDPUserSvc" 3)';
+                Description="Telefon, Xbox ve diğer bağlı cihazlarla iletişimi sağlayan Bağlı Cihazlar Platformu kullanıcı servisini Devre dışı yapar.`n`nTemiz Windows'ta 'Otomatik' başlar. Kullanıcı başı servistir: değişiklik yeniden başlatmadan sonra tam geçerli olur. Debloat'taki 'CDP Servisini El Ile Al' sistem servisini, bu satır kullanıcı servisini ayarlar.`n`nKapatınca: Telefon Bağlantısı, Yakın Paylaşım ve bazı Bluetooth / Xbox özellikleri çalışmayabilir. Bunları kullanıyorsanız uygulamayın.`nℹ️ 'El ile' seçeneği yok: test sanal makinesinde 'El ile' iken Ayarlar > Mobil cihazlar açılınca da servis başlamadı (özellik bozulabilir, Devre dışı ile farkı gösterilemedi).`nGeri Al, önceki başlangıç ayarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("CDPUserSvc") 4';
+                Command='Set-MrCleanServicesStart @("CDPUserSvc") 4';
                 UndoCommand='Restore-MrCleanServicesStart @("CDPUserSvc")'
             },
             @{
