@@ -3995,6 +3995,48 @@ public class SpiMenu {
                 Command='Set-MrCleanServicesStart @("perceptionsimulation","MixedRealityOpenXRSvc") 4';
                 UndoCommand='Restore-MrCleanServicesStart @("perceptionsimulation","MixedRealityOpenXRSvc")'
             },
+            # --- §145: Intel / AMD uretici servisleri (Stix "Disable CPU Bloat"). Yalniz kuruluysa gorunur (Svc:); yukleyici
+            # varsayilani Otomatik oldugu icin satirda "El ile | Devre disi" secimi. Bu PC'de (AMD) yalniz AMD Crash Defender var.
+            @{
+                Name="Intel Sürücü ve Destek Asistanı Servislerini Kapat (DSAService)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.2";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:DSAService|DSAUpdateService");
+                SvcMode="IntelDSA"; SvcModeDefault=4;
+                Description="Intel Driver & Support Assistant'ın arka planda sürekli çalışan iki servisini kapatır. Satırdaki seçimle 'El ile' ya da 'Devre dışı' yapılır.`n`nBu servisler yalnız Intel sürücü güncellemesi olup olmadığını denetler; sürücülerin kendisi etkilenmez.`n`nKapatınca: Intel DSA güncelleme bildirimi göstermez, tarayıcıdaki DSA sayfası bilgisayarı tarayamaz. Sürücüyü elle ya da Windows Update ile güncelleyebilirsiniz. Geri Al, önceki başlangıç ayarını aynen geri yazar.`n📚 Kaynak: Stix Tweaks (Disable CPU Bloat).";
+                DetectScript='Test-MrCleanServicesStart @("DSAService","DSAUpdateService") (Get-MrCleanSvcMode "IntelDSA" 4)';
+                Command='Set-MrCleanServicesStart @("DSAService","DSAUpdateService") (Get-MrCleanSvcMode "IntelDSA" 4)';
+                UndoCommand='Restore-MrCleanServicesStart @("DSAService","DSAUpdateService")'
+            },
+            @{
+                Name="Intel Grafik Komuta Merkezi Servislerini Kapat (igccservice)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.2";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:igccservice|igfxCUIService2.0.0.0");
+                SvcMode="IntelIGCC"; SvcModeDefault=3;
+                Description="Intel Graphics Command Center (ve eski Intel Grafik Denetim Masası) yardımcı servisini kapatır. Satırdaki seçimle 'El ile' ya da 'Devre dışı' yapılır; önerilen 'El ile'.`n`nGrafik sürücüsü ve ekran ayarları bu servise bağlı değildir; servis yalnız ayar uygulamasının arka planda hazır beklemesini sağlar.`n`nKapatınca ('Devre dışı'): Intel Graphics Command Center açılmayabilir ya da ayar değiştiremeyebilir; kısayol tuşu profilleri çalışmaz. 'El ile'de uygulama açılınca servisi kendisi başlatabilir. Geri Al, önceki başlangıç ayarını aynen geri yazar.`n📚 Kaynak: Stix Tweaks (Disable CPU Bloat).";
+                DetectScript='Test-MrCleanServicesStart @("igccservice","igfxCUIService2.0.0.0") (Get-MrCleanSvcMode "IntelIGCC" 3)';
+                Command='Set-MrCleanServicesStart @("igccservice","igfxCUIService2.0.0.0") (Get-MrCleanSvcMode "IntelIGCC" 3)';
+                UndoCommand='Restore-MrCleanServicesStart @("igccservice","igfxCUIService2.0.0.0")'
+            },
+            @{
+                Name="Intel ME WMI Kayıt Servisini Kapat (WMIRegistrationService)";
+                SubCategory="Servisler — Güvenli"; Since="2.0.2";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:WMIRegistrationService");
+                SvcMode="IntelMEWMI"; SvcModeDefault=4;
+                Description="Intel Management Engine bileşenlerini WMI'ya kaydeden servisi kapatır. Satırdaki seçimle 'El ile' ya da 'Devre dışı' yapılır.`n`nME sürücüsü ve işlemcinin kendisi etkilenmez; servis yalnız yönetim yazılımlarının ME bilgisini WMI üzerinden okumasını sağlar.`n`nKapatınca: kurumsal yönetim yazılımları (ör. Intel EMA, bazı OEM araçları) ME bilgisini göremez. Ev bilgisayarında fark edilmez. Geri Al, önceki başlangıç ayarını aynen geri yazar.`n📚 Kaynak: Stix Tweaks (Disable CPU Bloat).";
+                DetectScript='Test-MrCleanServicesStart @("WMIRegistrationService") (Get-MrCleanSvcMode "IntelMEWMI" 4)';
+                Command='Set-MrCleanServicesStart @("WMIRegistrationService") (Get-MrCleanSvcMode "IntelMEWMI" 4)';
+                UndoCommand='Restore-MrCleanServicesStart @("WMIRegistrationService")'
+            },
+            @{
+                Name="AMD Crash Defender Servisini Kapat";
+                SubCategory="Servisler — Güvenli"; Since="2.0.2";
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:AMD Crash Defender Service");
+                SvcMode="AmdCrashDef"; SvcModeDefault=4;
+                Description="AMD Adrenalin sürücüsüyle gelen, sürücü çökünce tanılama bilgisi toplayıp AMD'ye rapor hazırlayan servisi kapatır. Satırdaki seçimle 'El ile' ya da 'Devre dışı' yapılır.`n`nGrafik sürücüsü ve Adrenalin ayarları bu servise bağlı değildir.`n`nKapatınca: sürücü çökmesinden sonra AMD hata raporu aracı açılmaz. Windows'un kendi çökme kayıtları (MrClean Çökme Analizi dahil) etkilenmez. Geri Al, önceki başlangıç ayarını aynen geri yazar.`n📚 Kaynak: Stix Tweaks (Disable CPU Bloat).";
+                DetectScript='Test-MrCleanServicesStart @("AMD Crash Defender Service") (Get-MrCleanSvcMode "AmdCrashDef" 4)';
+                Command='Set-MrCleanServicesStart @("AMD Crash Defender Service") (Get-MrCleanSvcMode "AmdCrashDef" 4)';
+                UndoCommand='Restore-MrCleanServicesStart @("AMD Crash Defender Service")'
+            },
             # --- §137: Stix servisleri, riskli grup (RAPOR_STIX_servisler.md §4). Görünür bir özellik kapanır. Temiz 25H2'de "Otomatik"
             # olan 4 serviste (Spooler, WSearch, cbdhsvc, CDPUserSvc) satırda "El ile | Devre dışı" seçimi (SvcMode); diğerleri zaten
             # "El ile" olduğu için yalnız Devre dışı.
@@ -4154,6 +4196,47 @@ public class SpiMenu {
                 DetectScript='Test-MrCleanServicesStart @("vmicguestinterface","vmicheartbeat","vmickvpexchange","vmicrdv","vmicshutdown","vmictimesync","vmicvmsession","vmicvss") 4';
                 Command='Set-MrCleanServicesStart @("vmicguestinterface","vmicheartbeat","vmickvpexchange","vmicrdv","vmicshutdown","vmictimesync","vmicvmsession","vmicvss") 4';
                 UndoCommand='Restore-MrCleanServicesStart @("vmicguestinterface","vmicheartbeat","vmickvpexchange","vmicrdv","vmicshutdown","vmictimesync","vmicvmsession","vmicvss")'
+            },
+            # --- §145: Intel uretici servisleri, riskli grup (Stix "Disable CPU Bloat"). esifsvc / ipfsvc (isi yonetimi) bilerek yok.
+            @{
+                Name="Intel AMT Yerel Yönetim Servisini Kapat (LMS)";
+                SubCategory="Servisler — Riskli"; Since="2.0.2";
+                Risk="Medium"; RestartExplorer=$false; Requires=@("Svc:LMS");
+                SvcMode="IntelLMS"; SvcModeDefault=4;
+                Description="Intel Active Management Technology'nin (AMT, vPro) bilgisayar içindeki yerel yönetim servisini kapatır. Satırdaki seçimle 'El ile' ya da 'Devre dışı' yapılır.`n`nAMT, şirketlerin bilgisayarları uzaktan yönetmesi içindir; ev bilgisayarlarının çoğunda kullanılmaz.`n`nKapatınca: AMT / vPro uzaktan yönetimi ve Intel'in yerel yönetim araçları çalışmaz. Şirket bilgisayarıysa kapatmayın. Geri Al, önceki başlangıç ayarını aynen geri yazar.`n📚 Kaynak: Stix Tweaks (Disable CPU Bloat).";
+                DetectScript='Test-MrCleanServicesStart @("LMS") (Get-MrCleanSvcMode "IntelLMS" 4)';
+                Command='Set-MrCleanServicesStart @("LMS") (Get-MrCleanSvcMode "IntelLMS" 4)';
+                UndoCommand='Restore-MrCleanServicesStart @("LMS")'
+            },
+            @{
+                Name="Intel RST Arayüz Servisini Kapat (RstMwService)";
+                SubCategory="Servisler — Riskli"; Since="2.0.2";
+                Risk="Medium"; RestartExplorer=$false; Requires=@("Svc:RstMwService");
+                SvcMode="IntelRST"; SvcModeDefault=3;
+                Description="Intel Rapid Storage Technology'nin arayüz / bildirim servisini kapatır. Satırdaki seçimle 'El ile' ya da 'Devre dışı' yapılır; önerilen 'El ile'.`n`nDisk sürücüsü (iaStor / VMD) bu servise bağlı değildir; diskler normal çalışır.`n`nKapatınca: RAID kullanıyorsanız disk arızası ve yeniden kurma bildirimleri gelmez, Intel RST uygulaması durumu gösteremez. RAID kurduysanız kapatmayın. Geri Al, önceki başlangıç ayarını aynen geri yazar.`n📚 Kaynak: Stix Tweaks (Disable CPU Bloat).";
+                DetectScript='Test-MrCleanServicesStart @("RstMwService") (Get-MrCleanSvcMode "IntelRST" 3)';
+                Command='Set-MrCleanServicesStart @("RstMwService") (Get-MrCleanSvcMode "IntelRST" 3)';
+                UndoCommand='Restore-MrCleanServicesStart @("RstMwService")'
+            },
+            @{
+                Name="Intel Optane Bellek Servisini Kapat (iaStorAfsService)";
+                SubCategory="Servisler — Riskli"; Since="2.0.2";
+                Risk="Medium"; RestartExplorer=$false; Requires=@("Svc:iaStorAfsService");
+                SvcMode="IntelOptane"; SvcModeDefault=4;
+                Description="Intel Optane Bellek (disk hızlandırma önbelleği) servisini kapatır. Satırdaki seçimle 'El ile' ya da 'Devre dışı' yapılır.`n`nSürücüyle birlikte kurulur ama Optane modülü olmayan bilgisayarda iş yapmaz.`n`nKapatınca: Optane Bellek ile hızlandırılan bir HDD / SSD varsa hızlandırma çalışmayabilir. Optane modülünüz varsa kapatmayın. Geri Al, önceki başlangıç ayarını aynen geri yazar.`n📚 Kaynak: Stix Tweaks (Disable CPU Bloat).";
+                DetectScript='Test-MrCleanServicesStart @("iaStorAfsService") (Get-MrCleanSvcMode "IntelOptane" 4)';
+                Command='Set-MrCleanServicesStart @("iaStorAfsService") (Get-MrCleanSvcMode "IntelOptane" 4)';
+                UndoCommand='Restore-MrCleanServicesStart @("iaStorAfsService")'
+            },
+            @{
+                Name="Intel İçerik Koruma Servislerini Kapat (jhi_service, cplspcon, cphs)";
+                SubCategory="Servisler — Riskli"; Since="2.0.2";
+                Risk="Medium"; RestartExplorer=$false; Requires=@("Svc:jhi_service|cplspcon|cphs");
+                SvcMode="IntelDRM"; SvcModeDefault=3;
+                Description="Intel'in içerik koruma (DRM / HDCP) servislerini kapatır: Dynamic Application Loader (jhi_service), Content Protection HDCP (cplspcon) ve Content Protection HECI (cphs). Satırdaki seçimle 'El ile' ya da 'Devre dışı' yapılır; önerilen 'El ile'.`n`nYalnız Intel dahili grafikle korumalı içerik oynatırken kullanılırlar.`n`nKapatınca: Intel dahili grafikle Netflix / Disney+ gibi uygulamalarda 4K-HDR oynatma düşük çözünürlüğe inebilir ya da hiç açılmayabilir; Blu-ray yazılımları çalışmayabilir. Harici NVIDIA / AMD kartla oynatmada etkisi yoktur. Geri Al, önceki başlangıç ayarını aynen geri yazar.`n📚 Kaynak: Stix Tweaks (Disable CPU Bloat).";
+                DetectScript='Test-MrCleanServicesStart @("jhi_service","cplspcon","cphs") (Get-MrCleanSvcMode "IntelDRM" 3)';
+                Command='Set-MrCleanServicesStart @("jhi_service","cplspcon","cphs") (Get-MrCleanSvcMode "IntelDRM" 3)';
+                UndoCommand='Restore-MrCleanServicesStart @("jhi_service","cplspcon","cphs")'
             }
         )
         
@@ -11708,6 +11791,9 @@ $script:MrCleanSvcDefaults = @{
     UserDataSvc='3|'; PimIndexMaintenanceSvc='3|'; CaptureService='3|'; ConsentUxUserSvc='3|'; DevicePickerUserSvc='3|'; DevicesFlowUserSvc='3|'
     FrameServer='3|'; icssvc='3|'; InstallService='3|'; WpcMonSvc='3|'; WdiServiceHost='3|'; TroubleshootingSvc='3|'
     vmicguestinterface='3|'; vmicheartbeat='3|'; vmickvpexchange='3|'; vmicrdv='3|'; vmicshutdown='3|'; vmictimesync='3|'; vmicvmsession='3|'; vmicvss='3|'
+    # §145: uretici servisleri Windows'ta yok; yedek yoksa yukleyicinin olagan degeri Otomatik
+    DSAService='2|'; DSAUpdateService='2|'; igccservice='2|'; 'igfxCUIService2.0.0.0'='2|'; WMIRegistrationService='2|'; 'AMD Crash Defender Service'='2|'
+    LMS='2|'; RstMwService='2|'; iaStorAfsService='2|'; jhi_service='2|'; cplspcon='2|'; cphs='3|'
 }
 function Test-MrCleanServicesExist([string[]]$Names) {
     foreach ($n in $Names) { if (Test-Path -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services\$n") { return $true } }
