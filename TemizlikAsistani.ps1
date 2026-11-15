@@ -6095,10 +6095,10 @@ public class SpiMenu {
 						Get-ChildItem -Path $drsPath -Recurse -ErrorAction SilentlyContinue | Unblock-File -ErrorAction SilentlyContinue
 					}
 
-					# PhysX -> GPU (FR33THY birebir: ControlSet001)
-					reg add "HKLM\System\ControlSet001\Services\nvlddmkm\Parameters\Global\NVTweak" /v "NvCplPhysxAuto" /t REG_DWORD /d "0" /f | Out-Null
-					# Developer Tools acik (ControlSet001)
-					reg add "HKLM\System\ControlSet001\Services\nvlddmkm\Parameters\Global\NVTweak" /v "NvDevToolsVisible" /t REG_DWORD /d "1" /f | Out-Null
+					# PhysX -> GPU. v2.0.3 (§156): ControlSet001 yerine CurrentControlSet (etkin kume 001 olmayabilir)
+					reg add "HKLM\System\CurrentControlSet\Services\nvlddmkm\Parameters\Global\NVTweak" /v "NvCplPhysxAuto" /t REG_DWORD /d "0" /f | Out-Null
+					# Developer Tools acik
+					reg add "HKLM\System\CurrentControlSet\Services\nvlddmkm\Parameters\Global\NVTweak" /v "NvDevToolsVisible" /t REG_DWORD /d "1" /f | Out-Null
 
 					# v1.3.0: "GPU Performance Counter erisimi tum kullanicilara" (RmProfilingAdminOnly=0) KALDIRILDI.
 					# Performansa etkisi yok; NVIDIA CVE-2018-6260 sonrasi bu erisimi yoneticiye kisitlamisti.
@@ -6140,11 +6140,12 @@ public class SpiMenu {
 					$tmpNip = Join-Path $env:TEMP "mrclean_nv_optimized.nip"
 					$ok = $false
 					try {
-						Set-Content -Path $tmpNip -Value $global:NvidiaInspectorOptimizedNip -Encoding Unicode -Force
+						$nipText = $global:NvidiaInspectorOptimizedNip
+						Set-Content -Path $tmpNip -Value $nipText -Encoding Unicode -Force
 						Write-Host "[NVIDIA] Optimize profil import ediliyor..."
 						$ok = Invoke-NvidiaInspector -Exe $insp -Arguments "-silentImport `"$tmpNip`"" -TimeoutSec 60
 						if ($ok) {
-							$bad = Test-NvidiaProfileApplied -Exe $insp -ExpectedNip $global:NvidiaInspectorOptimizedNip
+							$bad = Test-NvidiaProfileApplied -Exe $insp -ExpectedNip $nipText
 							if ($null -eq $bad) { Write-Host "[NVIDIA] Inspector profili uygulandi (dogrulama yapilamadi)." }
 							elseif ($bad.Count -eq 0) { Write-Host "[NVIDIA] Inspector profili uygulandi ve dogrulandi." }
 							else { Write-Host "[NVIDIA] UYARI: Surucude farkli kalan ayarlar: $($bad -join ", ")" }
@@ -6174,6 +6175,8 @@ public class SpiMenu {
 					reg delete "HKLM\System\ControlSet001\Services\nvlddmkm\Parameters\Global\NVTweak" /v "NvCplPhysxAuto"      /f 2>$null | Out-Null
 					reg delete "HKLM\System\ControlSet001\Services\nvlddmkm\Parameters\Global\NVTweak" /v "NvDevToolsVisible"   /f 2>$null | Out-Null
 					reg delete "HKLM\System\ControlSet001\Services\nvlddmkm\Parameters\Global\NVTweak" /v "RmProfilingAdminOnly" /f 2>$null | Out-Null
+					reg delete "HKLM\System\CurrentControlSet\Services\nvlddmkm\Parameters\Global\NVTweak" /v "NvCplPhysxAuto"    /f 2>$null | Out-Null
+					reg delete "HKLM\System\CurrentControlSet\Services\nvlddmkm\Parameters\Global\NVTweak" /v "NvDevToolsVisible" /f 2>$null | Out-Null
 
 					$cls = "Registry::HKLM\SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}"
 					Get-ChildItem -Path $cls -Force -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -notmatch "Configuration" } | ForEach-Object {
@@ -12975,9 +12978,16 @@ function Get-NvidiaInspectorPath {
     $dir      = Join-Path $AppDataPath "nvidiaProfileInspector"
     $cacheExe = Join-Path $dir "nvidiaProfileInspector.exe"
 
-    # CACHE HIT
+    # v2.0.3 (§156): surum SABIT ve ZIP ozeti (SHA256) dogrulanir — eskiden "en son surum" ozet kontrolu olmadan indirilip
+    # yonetici olarak calistiriliyordu. Yeni Inspector surumune gecmek icin bu uc deger birlikte guncellenir
+    # (ozet: gh api repos/Orbmu2k/nvidiaProfileInspector/releases/tags/<surum> -> assets[].digest).
+    $npiVer = "3.0.2.1"
+    $npiUrl = "https://github.com/Orbmu2k/nvidiaProfileInspector/releases/download/v3.0.2.1/nvidiaProfileInspector.zip"
+    $npiSha = "88dcf3514111e8de630688467c03c36d8c2a8ad9ebc8073f27c069f82b75bb40"
+
+    # CACHE HIT: yalniz sabitlenen surumse (eski / farkli surum yeniden indirilir)
     if (Test-Path $cacheExe) {
-        if ((Get-Item $cacheExe).Length -gt 100KB) { return $cacheExe }
+        if ((Get-Item $cacheExe).Length -gt 100KB -and "$((Get-Item $cacheExe).VersionInfo.FileVersion)" -eq $npiVer) { return $cacheExe }
         Remove-Item $cacheExe -Force -ErrorAction SilentlyContinue
     }
     if (-not (Test-Path $dir)) { New-Item -Path $dir -ItemType Directory -Force | Out-Null }
@@ -12987,19 +12997,16 @@ function Get-NvidiaInspectorPath {
     # --- KADEME 1: Resmi GitHub Releases (Orbmu2k/nvidiaProfileInspector) ---
     try {
         WpfLog "[NPI] Resmi kaynaktan indiriliyor (Orbmu2k GitHub Releases)..."
-        $headers  = @{ "User-Agent" = "MrClean-App" }
-        $releases = Invoke-RestMethod -Uri "https://api.github.com/repos/Orbmu2k/nvidiaProfileInspector/releases" -Headers $headers -Method Get -TimeoutSec 15 -ErrorAction Stop
-        $stable   = $releases | Where-Object { -not $_.prerelease } | Select-Object -First 1
-        if (-not $stable) { $stable = $releases | Select-Object -First 1 }
-        if (-not $stable) { throw "Surum bulunamadi." }
-        $asset = $stable.assets | Where-Object { $_.name -match '\.zip$' } | Select-Object -First 1
-        if (-not $asset) { throw "ZIP asseti bulunamadi." }
-
         $zipPath = Join-Path $env:TEMP "npi_$([Guid]::NewGuid().ToString('N')).zip"
         $wc = New-Object System.Net.WebClient
         $wc.Headers.Add("User-Agent", "MrClean-App")
-        $wc.DownloadFile($asset.browser_download_url, $zipPath)
+        $wc.DownloadFile($npiUrl, $zipPath)
         if (-not (Test-Path $zipPath) -or (Get-Item $zipPath).Length -le 0) { throw "ZIP indirilemedi." }
+        $got = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash
+        if ($got -ne $npiSha) {
+            Remove-Item $zipPath -Force -ErrorAction SilentlyContinue
+            throw "ZIP ozeti beklenenle ayni degil (dosya degismis olabilir) — calistirilmadi."
+        }
         Unblock-File -Path $zipPath -ErrorAction SilentlyContinue
 
         Get-ChildItem -Path $dir -Force -ErrorAction SilentlyContinue | Where-Object { $_.Extension -ne ".nip" } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
@@ -13012,7 +13019,7 @@ function Get-NvidiaInspectorPath {
         if (-not $exe) { throw "Inspector exe zip icinde bulunamadi." }
         Get-ChildItem -Path $dir -Recurse -File -ErrorAction SilentlyContinue | Unblock-File -ErrorAction SilentlyContinue
         $kb = [Math]::Round($exe.Length / 1KB, 1)
-        WpfLog "[NPI] OK: $($stable.tag_name) ($kb KB)."
+        WpfLog "[NPI] OK: v$npiVer ($kb KB, ozet dogrulandi)."
         return $exe.FullName
     } catch {
         WpfLog "[NPI] Resmi kaynak basarisiz: $($_.Exception.Message)"
@@ -13060,6 +13067,21 @@ function Backup-NvidiaProfiles([string]$Exe, [string]$TargetNip) {
     return (Test-Path $TargetNip)
 }
 
+# v2.0.3 (§156): Disa aktarilan Base Profile ($Actual: SettingID -> deger) beklenen profille karsilastirilir.
+# Donus: farkli ya da kayip ayar adlari. Disa aktarim surucu varsayilanina esit degerleri yazmaz; bu uc ayarda
+# bizim degerimiz varsayilan (olculdu: OpenGL GDI, CUDA P2, G-SYNC gostergesi). Digerleri listede YOKSA ayar
+# yazilmamis / kaybolmus demektir (eskiden import sonrasi dogrulama bunu "tamam" sayiyordu).
+function Compare-NvidiaBaseProfile([hashtable]$Actual, [string]$ExpectedNip) {
+    $defaultIds = @("544392611", "1343646814", "268604728")
+    $lost = @()
+    foreach ($st in ([xml]$ExpectedNip).SelectNodes('//Profile[ProfileName="Base Profile"]/Settings/ProfileSetting')) {
+        $id = [string]$st.SettingID; $val = [string]$st.SettingValue
+        if ($Actual.ContainsKey($id)) { if ($Actual[$id] -ne $val) { $lost += [string]$st.SettingNameInfo } }
+        elseif ($defaultIds -notcontains $id) { $lost += [string]$st.SettingNameInfo }
+    }
+    return $lost
+}
+
 # 12. tur (birlestirme — diger gelistirici): import sonrasi Base Profile disa aktarilip beklenen degerlerle karsilastirilir.
 # Donus: uyusmayan ayar adlari (bos dizi = tamam) veya $null (dogrulama yapilamadi).
 # Surucu varsayilanina esit degerler export ta YER ALMAZ; bu yuzden sadece export ta olup FARKLI olan degerler hata sayilir.
@@ -13076,12 +13098,7 @@ function Test-NvidiaProfileApplied([string]$Exe, [string]$ExpectedNip) {
         }
         $actual = @{}
         foreach ($st in $actualDoc.SelectNodes($xpath)) { $actual[[string]$st.SettingID] = [string]$st.SettingValue }
-        $bad = @()
-        foreach ($st in $expected) {
-            $id = [string]$st.SettingID
-            if ($actual.ContainsKey($id) -and $actual[$id] -ne [string]$st.SettingValue) { $bad += [string]$st.SettingNameInfo }
-        }
-        return ,$bad
+        return ,@(Compare-NvidiaBaseProfile $actual $ExpectedNip)
     } catch {
         return $null
     } finally {
@@ -13177,15 +13194,7 @@ function Complete-NvidiaTweakCheck {
     } finally {
         Remove-Item $exp.FullName -Force -ErrorAction SilentlyContinue
     }
-    # Disa aktarim surucu varsayilanina esit degerleri yazmaz. Bu uc ayarda bizim degerimiz varsayilan
-    # (olculdu: OpenGL GDI, CUDA P2, G-SYNC gostergesi); digerleri listede yoksa ayar kaybolmus demektir.
-    $defaultIds = @("544392611", "1343646814", "268604728")
-    $lost = @()
-    foreach ($st in ([xml]$global:NvidiaInspectorOptimizedNip).SelectNodes($xpath)) {
-        $id = [string]$st.SettingID
-        if ($actual.ContainsKey($id)) { if ($actual[$id] -ne [string]$st.SettingValue) { $lost += [string]$st.SettingNameInfo } }
-        elseif ($defaultIds -notcontains $id) { $lost += [string]$st.SettingNameInfo }
-    }
+    $lost = @(Compare-NvidiaBaseProfile $actual $global:NvidiaInspectorOptimizedNip)
     if ($lost.Count -eq 0) {
         Set-ItemProperty -Path "HKCU:\Software\MrClean\AppliedMarkers" -Name "NvidiaDriverVer" -Value $c.Ver -Type String -Force -ErrorAction SilentlyContinue
         WpfLog "[NVIDIA] Surucu degisti ($($c.Ver)): tweak ayarlari yerinde."
@@ -18614,6 +18623,10 @@ function Start-MrCleanDriftCheck {
         if ("$($old.EnvWin)" -ne $fp.Win) { $changes.Add("Windows güncellemesi ($($old.EnvWin) → $($fp.Win))") }
         if ("$($old.EnvGpu)" -ne $fp.Gpu) { $changes.Add("ekran kartı sürücüsü güncellemesi") }
         if ("$($old.EnvNic)" -ne $fp.Nic) { $changes.Add("ağ kartı sürücüsü güncellemesi") }
+        # v2.0.3 (§159): neyin degistigi kayda yazilir (surucu ayniyken "guncelleme algilandi" denmisti, eski deger bilinmiyordu)
+        if ("$($old.EnvWin)" -ne $fp.Win) { WpfLog "[Denetim] Windows: '$($old.EnvWin)' -> '$($fp.Win)'" }
+        if ("$($old.EnvGpu)" -ne $fp.Gpu) { WpfLog "[Denetim] Ekran karti: '$($old.EnvGpu)' -> '$($fp.Gpu)'" }
+        if ("$($old.EnvNic)" -ne $fp.Nic) { WpfLog "[Denetim] Ag karti: '$($old.EnvNic)' -> '$($fp.Nic)'" }
         $stale = $true
         try { $stale = ((Get-Date) - [datetime]$old.EnvCheckedAt).TotalDays -ge 7 } catch {}
         & $saveFp
@@ -18622,7 +18635,9 @@ function Start-MrCleanDriftCheck {
 
         $byName = @{}
         foreach ($c in $global:TweakList.Keys) { foreach ($t in $global:TweakList[$c]) { $byName["$($t.Name)"] = $t } }
-        $queue = @($applied | Where-Object { $byName.ContainsKey("$_") } | ForEach-Object { $byName["$_"] } | Where-Object { Test-TweakBuildCompatible $_ })
+        # v2.0.3 (§159): DNS ve guc plani "birini sec" ayarlari; baskasini kullanmak kullanicinin tercihi, guncellemenin
+        # bozdugu bir sey degil (ornek: CleanBrowsing kullanirken Cloudflare soruluyordu) — denetime girmez.
+        $queue = @($applied | Where-Object { $byName.ContainsKey("$_") } | ForEach-Object { $byName["$_"] } | Where-Object { @("DNS", "PowerPlan") -notcontains "$($_.Group)" } | Where-Object { Test-TweakBuildCompatible $_ })
         if ($queue.Count -eq 0) { return }
         try { Refresh-PowerCfg-Cache; Refresh-BcdEdit-Cache; Refresh-NetshTcp-Cache } catch {}
         $script:DriftQueue = $queue; $script:DriftIdx = 0; $script:DriftChanges = @($changes)
@@ -18696,13 +18711,15 @@ function Get-TweakStatusCachePath {
 
 function Load-TweakStatusCache {
     # Donus: hashtable (string→bool) veya $null (yok/expired/bozuk)
+    # v2.0.3 (§160): -IgnoreAge = sure siniri uygulanmaz ("son denetimden bu yana degisen" karsilastirmasi icin)
+    param([switch]$IgnoreAge)
     $path = Get-TweakStatusCachePath
     if (-not $path -or -not (Test-Path $path)) { return $null }
     try {
         $raw = Get-Content $path -Raw -ErrorAction Stop | ConvertFrom-Json
         if (-not $raw -or -not $raw._timestamp) { return $null }
         $ts = [datetime]$raw._timestamp
-        if ((Get-Date) - $ts -gt $global:TweakStatusCacheTTL) { return $null }
+        if (-not $IgnoreAge -and (Get-Date) - $ts -gt $global:TweakStatusCacheTTL) { return $null }
         $result = @{}
         if ($raw.results) {
             foreach ($prop in $raw.results.PSObject.Properties) {
@@ -19148,7 +19165,10 @@ function Check-Tweak-Status {
     # 3) Background scan'i baslat (chunked DispatcherTimer)
     # 10. tur: onceki sonuc saklanir -> bitince "son denetimden bu yana degisen" ozeti (Windows Update geri aldi mi?) gosterilir
     $script:TweakScanPrev = $null
-    try { $script:TweakScanPrev = if ($global:TweakStatusCache) { $global:TweakStatusCache.Clone() } else { Load-TweakStatusCache } } catch {}
+    # v2.0.3 (§160): bellekteki sonuc bossa (onbellek 30 dk dan eski -> yuklenmedi) dosyadaki son sonuc yasina bakilmadan
+    # alinir. Eskiden bos tablo "onceki denetim var" sayiliyor, hicbir sey karsilastirilmadan "her sey yerinde" yaziliyordu.
+    try { $script:TweakScanPrev = if ($global:TweakStatusCache -and $global:TweakStatusCache.Count -gt 0) { $global:TweakStatusCache.Clone() } else { Load-TweakStatusCache -IgnoreAge } } catch {}
+    if ($script:TweakScanPrev -and $script:TweakScanPrev.Count -eq 0) { $script:TweakScanPrev = $null }
     $script:TweakScanIdx       = 0
     $script:TweakScanChunk     = 10
     $script:TweakScanItems     = $allItems
@@ -28718,10 +28738,10 @@ function Show-TimerResolutionTest {
     # davranisi: helper kendi process'inde 0.5ms hold ediyor ama MrClean process kendi Set yapmadiysa
     # Sleep ölcumu throttled (PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION). Reboot sonrasi
     # MrClean acilirken Apply-System-Tweaks cagrilmadigi icin ana program Set yapmiyor → modal'da
-    # bunu telafi ediyoruz.
+    # bunu telafi ediyoruz. v2.0.3: sabit 0.5 degil kullanicinin kurdugu hedef (yoksa pencere sistemi 0.5'e cekiyordu).
     try {
         if (Get-ScheduledTask -TaskName $global:TimerResTaskName -ErrorAction SilentlyContinue) {
-            [void][TimerRes]::Set(0.5)
+            [void][TimerRes]::Set((Get-MrCleanTimerTarget))
         }
     } catch {}
     $xamlTRT = @"
