@@ -1,4 +1,4 @@
-MRCLEAN SİSTEM BAKIM ARACI - KULLANIM KILAVUZU (v2.0.2)
+MRCLEAN SİSTEM BAKIM ARACI - KULLANIM KILAVUZU (v2.0.3)
 =========================================================
 
 1. PROGRAM NEDİR?

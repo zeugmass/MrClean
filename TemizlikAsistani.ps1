@@ -630,7 +630,7 @@ $global:DetectedGpuVendors = $null
 # AppVersion: Mevcut programin SemVer numarasi. Her release'de elle artirilir + GitHub'a tag olarak push edilir.
 # GitHub Actions tag'i alir, PS2EXE ile EXE compile eder, Release olusturur, SHA256SUMS yazar.
 # Program acilis kontrolu bu sayiyi GitHub'taki en son release tag'i ile karsilastirir.
-$global:AppVersion = "2.0.2"
+$global:AppVersion = "2.0.3"
 
 # v1.3.0: Windows surum bilgisi — Tweaks sekmesi uyumluluk filtresi (tweak.MinBuild / tweak.MaxBuild) ve
 # ust bilgi bandi icin. 24H2=26100, 25H2=26200, 26H2=26300 (ortak servis dali, eKB ile surum degisir).
