@@ -1263,12 +1263,54 @@ function Localize-Xaml([string]$Xaml) {
 # #region 4 -- VARSAYILAN VERILER (Tweak DB, Winget DB, Repair Tree)
 # =========================================================================
 
+# v2.0.3 (§164, onizleme 22): Tweaks sekmesinin kategori / alt baslik duzeni. Satir TANIMLARI asagida eski yerlerinde
+# durur (4 MB lik listede blok tasimamak icin); burada adi gecen satir hedef kategoriye tasinir ve alt basligi yazilir.
+# Sira: tablodaki sira (ayni alt baslik icinde). Listede olmayan ad atlanir. Alt basliklar agacta ada gore siralanir.
+function Set-MrCleanTweakLayout($tw) {
+    $lowLat = @($tw.Keys | Where-Object { "$_" -like "*Low Latency*" })[0]
+    $layout = @(
+        @{ Cat = "Oyun"; Sub = "Oyun Özellikleri"; Names = @("Oyun Modunu Aç", "Kol ile Game Bar Açmayı Kapat", "Oyun Çubuğu Başlangıç İpuçlarını Kapat", "Xbox Game DVR Kapat",
+            "Uygulama Arşivlemeyi Kapat (Oyunlar Silinmesin)", "Yapışkan Tuşları Kapat", "Pencereli Oyunlar İçin Optimizasyon (Flip Model)") },
+        @{ Cat = "Oyun"; Sub = "Oyun Performansı"; Names = @("Power Throttling Kapat (CPU Tam Frekans)", "Defender Tarama CPU Kullanımını Sınırla (%25)",
+            "Sanal Makine Platformunu Kapat (Sanallaştırma Yükü - Oyun FPS)", "Bellek Bütünlüğü (HVCI / Çekirdek Yalıtımı) Kapat - Oyun FPS") },
+        @{ Cat = "Sistem"; Sub = "Klavye ve Menü"; Names = @("Klavye Tekrar Gecikmesini En Kısa Yap", "Açılışta NumLock'u Açık Başlat", "Menu Açılma Gecikmesini Sıfırla (MenuShowDelay=0)") },
+        @{ Cat = "Sistem"; Sub = "Açılış ve Oturum"; Names = @("Hızlı Başlatmayı Kapat (Fast Startup)", "Hazırda Bekletmeyi Kapat (Hibernate)", "Uygulama Başlangıç Gecikmesini Kaldır (Startup Delay)",
+            "Açılış ve Kapanışta Ayrıntılı Durum Mesajlarını Göster", "Mavi Ekranda Ayrıntılı Hata Bilgisi Göster", "UAC Bildirimini Kapat (Never Notify)", "Şifresiz Girişi Kapat (Klasik Şifre Açık)") },
+        @{ Cat = "Sistem"; Sub = "Bellek ve Arka Plan"; Names = @("Bellek Sayfa Birleştirmeyi Kapat (Page Combining)", "Servis İşlemlerini Birleştir (svchost Sayısını Azalt)",
+            "Arka Plan Uygulamalarını Kapat (Yalnız Bu Kullanıcı)", "Edge Arka Planda Çalışmasın (Startup Boost + Arka Plan Modu)", "Hata Toleranslı Yığını (FTH) Kapat",
+            "Uyku İzleme Günlüğünü (SleepStudy) Kapat", "AppInstaller Deneysel Özellikleri Kapat") },
+        @{ Cat = "Sistem"; Sub = "Depolama"; Names = @("Ayrılmış Depolamayı Kapat (~7 GB Geri Kazan)", "Depolama Algısı'nı Kapat (Otomatik Disk Temizliği)", "BitLocker Otomatik Cihaz Şifrelemesini Engelle") },
+        @{ Cat = "Gelişmiş Sistem"; Sub = "Arama ve Copilot"; Names = @("Cortana ve Cloud Aramayı Tamamen Kapat", "Windows Arama'nın Konum ve Web Kullanımını Kapat", "Copilot Tamamen Kapat (Uninstall + Policy)") },
+        @{ Cat = "Gelişmiş Sistem"; Sub = "Windows Update"; Names = @("Windows Update'i Kısıtla (Otomatik Yüklemeyi Kapat)", "Windows Update'i TAMAMEN Kilitle (Güncelleme Ekranı Dahil)") },
+        @{ Cat = "Gizlilik ve Telemetri"; Sub = "Genel"; Names = @("Phone Link / Mobil Cihazları Kapat") },
+        @{ Cat = $lowLat; Sub = "Ses (Audio)"; Names = @("Ses Yüksekliği Dengelemeyi Aç (Loudness EQ — Geliştirmeler Sekmesi)") }
+    )
+    $lists = [ordered]@{}; $where = @{}
+    foreach ($c in $tw.Keys) {
+        $lists[$c] = New-Object System.Collections.ArrayList
+        foreach ($t in @($tw[$c])) { [void]$lists[$c].Add($t); $where["$($t.Name)"] = $c }
+    }
+    foreach ($e in $layout) {
+        if (-not $e.Cat -or -not $lists.Contains($e.Cat)) { continue }
+        foreach ($n in $e.Names) {
+            if (-not $where.ContainsKey($n)) { continue }
+            $src = $lists[$where[$n]]
+            $t = @($src | Where-Object { "$($_.Name)" -eq $n })[0]
+            $t["SubCategory"] = $e.Sub
+            $src.Remove($t); [void]$lists[$e.Cat].Add($t); $where[$n] = $e.Cat
+        }
+    }
+    $out = [ordered]@{}
+    foreach ($c in $lists.Keys) { $out[$c] = $lists[$c].ToArray() }
+    return $out
+}
+
 function Get-Default-Tweaks {
-    return [ordered]@{
+    $tw = [ordered]@{
         # --- 1. GÖRSEL PERFORMANS (PROCESS MONITOR VERİLERİNE GÖRE) ---
         "Görsel Performans" = @(
             @{
-                Name="Görsel Efektler: Özel (Yazı Tipi + Küçük Resimler Açık)";
+                Name="Görsel Efektler: Özel (Yazı Tipi + Küçük Resimler Açık)"; Risk="Low";
                 Description="Görsel Efektler'i 'Özel' moda alır: yalnız yazı tipi yumuşatma (ClearType) ve küçük resim önizlemeleri açık kalır; pencere animasyonları, gölgeler, saydamlık ve diğer efektler kapanır. Arayüzün CPU / GPU yükü düşer, eski bilgisayarlarda belirgin hızlanma olur.`n`nAyarlar anında uygulanır; Gezgin yeniden başlatılır.`nℹ️ Duvar kâğıdına dokunmaz. Geri aldıktan sonra masaüstü düz siyah kalırsa sebep 'Karanlık Modu Aç (Sistem + Wallpaper + Kilit Ekranı)' tweak'idir — onu da geri alın.";
                 RestartExplorer="Hard";
                 DetectScript='
@@ -1428,7 +1470,7 @@ public class SpiFx {
 			# v1.3.0 fix: eskiden RotatingLockScreenEnabled yaziyordu — o deger Spotlight RESIM DONGUSUNU kapatir,
 			# "eglenceli bilgiler/ipuclari" katmanini degil. Dogru degerler: Overlay + SubscribedContent-338387.
 			@{
-				Name="Kilit Ekranında Eğlenceli Bilgileri Kapat"; SubCategory="Arka Plan"; RestartExplorer=$false;
+				Name="Kilit Ekranında Eğlenceli Bilgileri Kapat"; Risk="Low"; SubCategory="Arka Plan"; RestartExplorer=$false;
 				Description="Kilit ekranındaki 'eğlenceli bilgiler, ipuçları, püf noktaları' metin katmanını kapatır (Ayarlar > Kişiselleştirme > Kilit ekranı). Kilit ekranı resminiz ve Spotlight resim döngüsü değişmez.";
 				Batch=@(
 					@{ Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"; ValueName="RotatingLockScreenOverlayEnabled"; Type="DWord"; Data=0; Undo=1 },
@@ -1450,7 +1492,7 @@ public class SpiFx {
 			
 			# KARANLIK MOD — TAM PAKET (FR33THY 5 Theme Black.ps1 + 6 Signout Lockscreen Wallpaper Black.ps1 BIRLESTIRILMIS)
             @{
-                Name="Karanlık Modu Aç (Sistem + Wallpaper + Kilit Ekranı)";
+                Name="Karanlık Modu Aç (Sistem + Wallpaper + Kilit Ekranı)"; Risk="Low";
 				SubCategory="Renkler";
                 Description="Tek tıkla tam koyu görünüm:`n• Sistem ve uygulamalar koyu tema`n• Saydamlık kapalı, başlık çubukları renksiz`n• Pencere kenarları ve görev çubuğu vurgu rengi koyu gri`n• Klasik Denetim Masası arka planı siyah`n• Masaüstü düz siyah renk`n• Kilit ekranı ekran çözünürlüğünde siyah resim`n`n↩️ Geri alma açık temaya ve Windows Spotlight masaüstü arka planına döner.";
                 RestartExplorer=$false;
@@ -1608,10 +1650,10 @@ public class SpiFx {
 			# Eski tweak'ler: Layout, En son Eklenen, Atlama listesi, Gözatma Geçmişi, İpuçları, Hesap Bildirimleri,
 			# Web Arama, Önerilenler Bölümü, Format Sonrası Temiz Düzen — hepsinin işi Tertemiz Paket içinde.
 
-			@{ Name="Arama Butonunu Gizle"; SubCategory="Görev Çubuğu"; Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Search"; ValueName="SearchboxTaskbarMode"; Type="DWord"; Data=0; Undo=2; RestartExplorer=$false; Description="Görev çubuğundaki arama kutusunu / simgesini gizler. Win tuşuna basıp yazarak arama aynen çalışır. Geri alma Windows 11 varsayılanı olan arama kutusuna döner." },
-            @{ Name="Görev Görünümü Butonunu Gizle"; Description="Görev çubuğundaki Görev Görünümü (sanal masaüstleri) düğmesini gizler. Win+Tab kısayolu aynen çalışır."; SubCategory="Görev Çubuğu"; Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; ValueName="ShowTaskViewButton"; Type="DWord"; Data=0; Undo=1; RestartExplorer=$false },
+			@{ Name="Arama Butonunu Gizle"; Risk="Low"; SubCategory="Görev Çubuğu"; Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Search"; ValueName="SearchboxTaskbarMode"; Type="DWord"; Data=0; Undo=2; RestartExplorer=$false; Description="Görev çubuğundaki arama kutusunu / simgesini gizler. Win tuşuna basıp yazarak arama aynen çalışır. Geri alma Windows 11 varsayılanı olan arama kutusuna döner." },
+            @{ Name="Görev Görünümü Butonunu Gizle"; Risk="Low"; Description="Görev çubuğundaki Görev Görünümü (sanal masaüstleri) düğmesini gizler. Win+Tab kısayolu aynen çalışır."; SubCategory="Görev Çubuğu"; Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; ValueName="ShowTaskViewButton"; Type="DWord"; Data=0; Undo=1; RestartExplorer=$false },
             @{
-                Name="Pencere Öğelerini (Widget) Kapat";
+                Name="Pencere Öğelerini (Widget) Kapat"; Risk="Low";
 				SubCategory="Görev Çubuğu";
 				RestartExplorer=$false;
 				Description="Görev çubuğundaki Pencere Öğeleri (haber, hava durumu, borsa) düğmesini ve panosunu Group Policy ile kapatır; arka planda çalışan Widgets / WebView süreçleri durur. Kilit ekranındaki hava durumu kartları ayrı tweak'tir.`n📚 Kaynak: Sophia Script, winscript; Microsoft ADMX (AllowNewsAndInterests).";
@@ -1637,7 +1679,7 @@ public class SpiFx {
 
 			# === GÖREV ÇUBUĞU EK TWEAK'LERİ (FR33THY 1 Start Menu Taskbar.ps1 birebir) ===
 			@{
-				Name="Görev Çubuğunu Ortala (Win11)";
+				Name="Görev Çubuğunu Ortala (Win11)"; Risk="Low";
 				SubCategory="Görev Çubuğu";
 				Description="Windows 11 görev çubuğu simgelerini ortaya hizalar (Ayarlar > Kişiselleştirme > Görev çubuğu > Görev çubuğu hizalaması). Daha önce sola aldıysanız ortaya geri getirir.";
 				Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; ValueName="TaskbarAl"; Type="DWord"; Data=1; Undo=0; RestartExplorer="Soft";
@@ -1647,7 +1689,7 @@ public class SpiFx {
 				'
 			},
 			@{
-				Name="Chat Butonunu Gizle";
+				Name="Chat Butonunu Gizle"; Risk="Low";
 				SubCategory="Görev Çubuğu";
 				Description="Görev çubuğundaki Microsoft Teams 'Sohbet' düğmesini kaldırır. Güncel Windows 11 sürümlerinde bu düğme zaten çoğunlukla yoktur.";
 				Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; ValueName="TaskbarMn"; Type="DWord"; Data=0; Undo="DELETE_VALUE"; RestartExplorer="Soft";
@@ -1657,7 +1699,7 @@ public class SpiFx {
 				'
 			},
 			@{
-				Name="Meet Now Butonunu Gizle";
+				Name="Meet Now Butonunu Gizle"; Risk="Low";
 				SubCategory="Görev Çubuğu";
 				Description="Sistem tepsisindeki Skype 'Şimdi Toplantı Yap' (Meet Now) simgesini gizler.";
 				Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"; ValueName="HideSCAMeetNow"; Type="DWord"; Data=1; Undo="DELETE_VALUE"; RestartExplorer="Soft";
@@ -1667,7 +1709,7 @@ public class SpiFx {
 				'
 			},
 			@{
-				Name="Tüm Tray İkonlarını Göster";
+				Name="Tüm Tray İkonlarını Göster"; Risk="Low";
 				SubCategory="Görev Çubuğu";
 				Description="Sistem tepsisindeki gizli simgelerin hepsini görev çubuğunda gösterir; '^' taşma menüsüne düşen simge kalmaz. Gezgin yeniden başlatılır.";
 				RestartExplorer="Hard";
@@ -1902,7 +1944,7 @@ public class SpiFx {
 			}
         )
 		"Oyun" = @(
-			@{ Name="Kol ile Game Bar Açmayı Kapat"; Aliases=@("Kol ile Game Bar Acmayi Kapat"); Key="HKCU:\Software\Microsoft\GameBar"; ValueName="UseNexusForGameBarEnabled"; Type="DWord"; Data=0; Undo=1; RestartExplorer=$false;
+			@{ Name="Kol ile Game Bar Açmayı Kapat"; Risk="Low"; Aliases=@("Kol ile Game Bar Acmayi Kapat"); Key="HKCU:\Software\Microsoft\GameBar"; ValueName="UseNexusForGameBarEnabled"; Type="DWord"; Data=0; Undo=1; RestartExplorer=$false;
 			   Description="Kumandadaki Xbox (Nexus) tuşuna basınca Game Bar'ın açılmasını kapatır — oyun sırasında yanlışlıkla açılan Game Bar paneli ve odak kaybı biter.`n`nℹ️ Game Bar'ı KALDIRMAZ (bilerek): Oyun Modu algılaması, Xbox kablosuz kulaklık/kumanda ve çift CCD'li Ryzen X3D (7950X3D / 9950X3D) çekirdek park etme mekanizması Game Bar'a ihtiyaç duyar." },
 			@{ Name="Oyun Çubuğu Başlangıç İpuçlarını Kapat"; Since="2.0.0"; Risk="Low"; RestartExplorer=$false;
 			   Description="Oyun başlarken Game Bar'ın gösterdiği 'Win+G ile Oyun Çubuğunu açın' ipucu/panelini kapatır.`n`n✅ Game Bar'ın kendisi KAPANMAZ — çift CCD'li Ryzen X3D çekirdek yönlendirmesi, Oyun Modu ve Xbox aksesuarları etkilenmez.`n📚 Kaynak: Sophia Script, RyTuneX, optimizer.";
@@ -1910,7 +1952,7 @@ public class SpiFx {
 			@{ Name="Uygulama Arşivlemeyi Kapat (Oyunlar Silinmesin)"; Since="2.0.0"; Risk="Low"; RestartExplorer=$false;
 			   Description="Windows'un az kullanılan Microsoft Store / Game Pass uygulamalarını yer açmak için kendiliğinden 'arşivlemesini' (dosyalarını silip kısayolunu bırakmasını) engeller. Bir süre oynamadığınız Game Pass oyunu açarken yeniden indirme beklemezsiniz.`n📚 Kaynak: kubsonxtm/Windows-Tweaks, Microsoft ADMX (AllowAutomaticAppArchiving).";
 			   Key="HKLM:\SOFTWARE\Policies\Microsoft\Windows\Appx"; ValueName="AllowAutomaticAppArchiving"; Type="DWord"; Data=0; Undo="DELETE_VALUE" },
-			@{ Name="Oyun Modunu Aç"; RestartExplorer=$false;
+			@{ Name="Oyun Modunu Aç"; Risk="Low"; RestartExplorer=$false;
 			   # v1.3.0 (4. tur): AllowAutoGameMode da yazilir (optimizer, optimizerNXT, GTweak ortak)
 			   Batch=@(
 			       @{ Key="HKCU:\Software\Microsoft\GameBar"; ValueName="AutoGameModeEnabled"; Type="DWord"; Data=1; Undo="DELETE_VALUE" },
@@ -1924,7 +1966,7 @@ public class SpiFx {
 		)
 
        "Gizlilik ve Telemetri" = @(
-            @{  Name="Reklam Kimliğini Kapat"; Description="Windows'un size özel reklam kimliğini kapatır (Ayarlar > Gizlilik ve güvenlik > Genel > 'Uygulamaların bana kişiselleştirilmiş reklamlar göstermesine izin ver'). Uygulamalar sizi bu kimlikle izleyip kişiselleştirilmiş reklam gösteremez.";
+            @{  Name="Reklam Kimliğini Kapat"; Risk="Low"; Description="Windows'un size özel reklam kimliğini kapatır (Ayarlar > Gizlilik ve güvenlik > Genel > 'Uygulamaların bana kişiselleştirilmiş reklamlar göstermesine izin ver'). Uygulamalar sizi bu kimlikle izleyip kişiselleştirilmiş reklam gösteremez.";
 				SubCategory="Genel";
 				RestartExplorer=$false;
 				Batch=@(
@@ -1933,7 +1975,7 @@ public class SpiFx {
                 ) 
 			},
 			@{  
-				Name="Yerel olarak uygun içerik Kapat"; Description="Web sitelerinin dil listenize erişip size göre içerik sunmasını kapatır (Ayarlar > Gizlilik ve güvenlik > Genel > 'Web sitelerinin dil listeme erişerek yerel olarak uygun içerik sunmasına izin ver').";
+				Name="Yerel olarak uygun içerik Kapat"; Risk="Low"; Description="Web sitelerinin dil listenize erişip size göre içerik sunmasını kapatır (Ayarlar > Gizlilik ve güvenlik > Genel > 'Web sitelerinin dil listeme erişerek yerel olarak uygun içerik sunmasına izin ver').";
 				SubCategory="Genel";
 				RestartExplorer=$false; # Bu ayar için explorer gerekmez, Settings uygulamasını kapatıp açmak yeterlidir.
 				Batch=@(
@@ -1945,9 +1987,9 @@ public class SpiFx {
 					@{ Key="HKCU:\Software\Microsoft\Internet Explorer\International"; ValueName="AcceptLanguage"; Type="String"; Data=""; Undo="DELETE_VALUE" }
 				) 
 			},
-			@{ Name="Başlatma ve Arama Sonuçlarını Geliştir Kapat"; Description="Windows'un hangi uygulamaları başlattığınızı izleyip Başlat menüsü ve arama sonuçlarını buna göre düzenlemesini kapatır (Ayarlar > Gizlilik ve güvenlik > Genel > 'Başlat ve arama sonuçlarını iyileştirmek için uygulama başlatmaları izlensin')."; SubCategory="Genel"; Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; ValueName="Start_TrackProgs"; Type="DWord"; Data=0; Undo=1; RestartExplorer=$false },
+			@{ Name="Başlatma ve Arama Sonuçlarını Geliştir Kapat"; Risk="Low"; Description="Windows'un hangi uygulamaları başlattığınızı izleyip Başlat menüsü ve arama sonuçlarını buna göre düzenlemesini kapatır (Ayarlar > Gizlilik ve güvenlik > Genel > 'Başlat ve arama sonuçlarını iyileştirmek için uygulama başlatmaları izlensin')."; SubCategory="Genel"; Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; ValueName="Start_TrackProgs"; Type="DWord"; Data=0; Undo=1; RestartExplorer=$false },
 			@{ 
-                Name="Ayarlar ve Windows Genelinde Önerileri Gizle"; Description="Ayarlar uygulamasında ve Windows genelinde çıkan önerilen içerikleri, uygulama tanıtımlarını ve 'Windows'tan en iyi şekilde yararlanın' tipi önerileri kapatır (Ayarlar > Gizlilik ve güvenlik > Genel > 'Ayarlar uygulamasında önerilen içeriği göster')."; 
+                Name="Ayarlar ve Windows Genelinde Önerileri Gizle"; Risk="Low"; Description="Ayarlar uygulamasında ve Windows genelinde çıkan önerilen içerikleri, uygulama tanıtımlarını ve 'Windows'tan en iyi şekilde yararlanın' tipi önerileri kapatır (Ayarlar > Gizlilik ve güvenlik > Genel > 'Ayarlar uygulamasında önerilen içeriği göster')."; 
                 SubCategory="Genel";
                 RestartExplorer=$false;
                 Batch=@(
@@ -1981,7 +2023,7 @@ public class SpiFx {
                 )
             },
 			@{ 
-                Name="Windows Tanılama Verileri Kapat"; 
+                Name="Windows Tanılama Verileri Kapat"; Risk="Low"; 
                 SubCategory="Genel"; 
                 RestartExplorer=$false;
                 Description="Windows'un Microsoft'a gönderdiği tanılama (telemetri) verisini Group Policy ile en düşük düzeye indirir ve 'Bağlı Kullanıcı Deneyimleri ve Telemetri' (DiagTrack) servisini kapatır.`n`nℹ️ Microsoft en düşük düzeyi (Güvenlik) yalnız Enterprise / Education sürümlerinde uygular; Home / Pro'da Windows bunu 'Gerekli' düzeyine yükseltebilir — o zaman tweak pasif görünür, bu beklenen bir durumdur. Sistemin açılmasını ya da güncellemeleri etkilemez.";
@@ -2056,13 +2098,13 @@ public class SpiFx {
                 )
             },
 
-            @{ Name="Sesle Etkinleştirme Kapat"; Description="Uygulamaların sesli komutla (anahtar sözcük) etkinleştirilmesini kapatır (Ayarlar > Gizlilik ve güvenlik > Sesle etkinleştirme). Mikrofon, Discord ve oyun içi sesli sohbet etkilenmez."; SubCategory="Uygulama İzinleri"; Key="HKCU:\Software\Microsoft\Speech_OneCore\Settings\VoiceActivation\UserPreferenceForAllApps"; ValueName="AgentActivationEnabled"; Type="DWord"; Data=0; Undo=1; RestartExplorer=$false },
+            @{ Name="Sesle Etkinleştirme Kapat"; Risk="Low"; Description="Uygulamaların sesli komutla (anahtar sözcük) etkinleştirilmesini kapatır (Ayarlar > Gizlilik ve güvenlik > Sesle etkinleştirme). Mikrofon, Discord ve oyun içi sesli sohbet etkilenmez."; SubCategory="Uygulama İzinleri"; Key="HKCU:\Software\Microsoft\Speech_OneCore\Settings\VoiceActivation\UserPreferenceForAllApps"; ValueName="AgentActivationEnabled"; Type="DWord"; Data=0; Undo=1; RestartExplorer=$false },
 
             # --- AŞAĞIDAKİLERİN HEPSİNE "POLICY" EKLENDİ ---
             # Data=2 (Force Deny), Undo="DELETE_VALUE" (Varsayılana Dön)
 
             @{ 
-                Name="Bildirim Erişimi Kapat"; Description="Uygulamaların diğer uygulamaların bildirimlerini okumasını kapatır (Ayarlar > Gizlilik ve güvenlik > Bildirimler + Group Policy). Kendi bildirimleriniz gelmeye devam eder.";
+                Name="Bildirim Erişimi Kapat"; Risk="Low"; Description="Uygulamaların diğer uygulamaların bildirimlerini okumasını kapatır (Ayarlar > Gizlilik ve güvenlik > Bildirimler + Group Policy). Kendi bildirimleriniz gelmeye devam eder.";
 				SubCategory="Uygulama İzinleri";
 				RestartExplorer=$false;
                 Batch=@(
@@ -2072,14 +2114,14 @@ public class SpiFx {
             },
             
             @{ 
-                Name="Hesap Bilgileri Erişimi Kapat"; Description="Uygulamaların adınız, resminiz ve hesap bilgilerinize erişmesini kapatır (Ayarlar > Gizlilik ve güvenlik > Hesap bilgileri + Group Policy)."; SubCategory="Uygulama İzinleri"; Batch=@( 
+                Name="Hesap Bilgileri Erişimi Kapat"; Risk="Low"; Description="Uygulamaların adınız, resminiz ve hesap bilgilerinize erişmesini kapatır (Ayarlar > Gizlilik ve güvenlik > Hesap bilgileri + Group Policy)."; SubCategory="Uygulama İzinleri"; Batch=@( 
                 @{ Key="HKLM:\SOFTWARE\Policies\Microsoft\Windows\AppPrivacy"; ValueName="LetAppsAccessAccountInfo"; Type="DWord"; Data=2; Undo="DELETE_VALUE" }, 
                 @{ Key="HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\userAccountInformation"; ValueName="Value"; Type="String"; Data="Deny"; Undo="Allow" }
 				) 
 			},
 
             @{ 
-				Name="Kişilere (Contacts) Erişimi Kapat"; Description="Uygulamaların kişiler listenize erişmesini kapatır (Ayarlar > Gizlilik ve güvenlik > Kişiler + Group Policy). Mağaza Kişiler / Posta uygulamaları kişileri göremez.";
+				Name="Kişilere (Contacts) Erişimi Kapat"; Risk="Low"; Description="Uygulamaların kişiler listenize erişmesini kapatır (Ayarlar > Gizlilik ve güvenlik > Kişiler + Group Policy). Mağaza Kişiler / Posta uygulamaları kişileri göremez.";
 				SubCategory="Uygulama İzinleri";
 				RestartExplorer=$false;
 				Batch=@(
@@ -2097,7 +2139,7 @@ public class SpiFx {
 			},
 
             @{ 
-                Name="Takvim Erişimi Kapat"; Description="Uygulamaların takviminize erişmesini kapatır (Ayarlar > Gizlilik ve güvenlik > Takvim + Group Policy).";
+                Name="Takvim Erişimi Kapat"; Risk="Low"; Description="Uygulamaların takviminize erişmesini kapatır (Ayarlar > Gizlilik ve güvenlik > Takvim + Group Policy).";
 				SubCategory="Uygulama İzinleri";
 				RestartExplorer=$false;
                 Batch=@(
@@ -2107,7 +2149,7 @@ public class SpiFx {
             },
 
             @{ 
-                Name="Telefon Araması Erişimi Kapat"; Description="Uygulamaların telefon araması yapmasını kapatır (Ayarlar > Gizlilik ve güvenlik > Telefon aramaları + Group Policy). Telefon Bağlantısı ile PC'den arama çalışmaz.";
+                Name="Telefon Araması Erişimi Kapat"; Risk="Low"; Description="Uygulamaların telefon araması yapmasını kapatır (Ayarlar > Gizlilik ve güvenlik > Telefon aramaları + Group Policy). Telefon Bağlantısı ile PC'den arama çalışmaz.";
 				SubCategory="Uygulama İzinleri";
 				RestartExplorer=$false;
                 Batch=@(
@@ -2117,7 +2159,7 @@ public class SpiFx {
             },
 
             @{ 
-                Name="Arama Geçmişi Erişimi Kapat"; Description="Uygulamaların telefon arama geçmişinize erişmesini kapatır (Ayarlar > Gizlilik ve güvenlik > Arama geçmişi + Group Policy).";
+                Name="Arama Geçmişi Erişimi Kapat"; Risk="Low"; Description="Uygulamaların telefon arama geçmişinize erişmesini kapatır (Ayarlar > Gizlilik ve güvenlik > Arama geçmişi + Group Policy).";
 				SubCategory="Uygulama İzinleri";
 				RestartExplorer=$false;
                 Batch=@(
@@ -2127,7 +2169,7 @@ public class SpiFx {
             },
 
             @{ 
-                Name="E-posta Erişimi Kapat"; Description="Uygulamaların e-postalarınıza erişmesini kapatır (Ayarlar > Gizlilik ve güvenlik > E-posta + Group Policy). Posta uygulamasının kendisi çalışır; başka uygulamalar postalarınızı okuyamaz.";
+                Name="E-posta Erişimi Kapat"; Risk="Low"; Description="Uygulamaların e-postalarınıza erişmesini kapatır (Ayarlar > Gizlilik ve güvenlik > E-posta + Group Policy). Posta uygulamasının kendisi çalışır; başka uygulamalar postalarınızı okuyamaz.";
 				SubCategory="Uygulama İzinleri";
 				RestartExplorer=$false;
                 Batch=@(
@@ -2137,7 +2179,7 @@ public class SpiFx {
             },
 
             @{ 
-                Name="Görevler (Tasks) Erişimi Kapat"; Description="Uygulamaların görev / yapılacaklar listelerinize erişmesini kapatır (Ayarlar > Gizlilik ve güvenlik > Görevler + Group Policy).";
+                Name="Görevler (Tasks) Erişimi Kapat"; Risk="Low"; Description="Uygulamaların görev / yapılacaklar listelerinize erişmesini kapatır (Ayarlar > Gizlilik ve güvenlik > Görevler + Group Policy).";
 				SubCategory="Uygulama İzinleri";
 				RestartExplorer=$false;
                 Batch=@(
@@ -2147,7 +2189,7 @@ public class SpiFx {
             },
 
             @{ 
-                Name="Mesajlaşma (Chat) Erişimi Kapat"; Description="Uygulamaların SMS / MMS mesajlarınıza erişmesini kapatır (Ayarlar > Gizlilik ve güvenlik > Mesajlaşma + Group Policy). Discord, WhatsApp masaüstü gibi uygulamaların kendi mesajları etkilenmez.";
+                Name="Mesajlaşma (Chat) Erişimi Kapat"; Risk="Low"; Description="Uygulamaların SMS / MMS mesajlarınıza erişmesini kapatır (Ayarlar > Gizlilik ve güvenlik > Mesajlaşma + Group Policy). Discord, WhatsApp masaüstü gibi uygulamaların kendi mesajları etkilenmez.";
 				SubCategory="Uygulama İzinleri";
 				RestartExplorer=$false;
                 Batch=@(
@@ -2157,7 +2199,7 @@ public class SpiFx {
             },
 
             @{ 
-                Name="Radyo (Bluetooth vb.) Erişimi Kapat";
+                Name="Radyo (Bluetooth vb.) Erişimi Kapat"; Risk="Low";
 				SubCategory="Uygulama İzinleri";
 				Description="Mağaza (UWP) uygulamalarının Bluetooth/Wi-Fi radyolarını kendi başına açıp kapatma iznini kaldırır (Gizlilik > Radyolar).`n`n✅ Bluetooth kulaklık, klavye, mouse ve kumanda bağlantıları ETKİLENMEZ — bu sadece uygulamaların radyoyu AÇMA/KAPATMA iznidir. Bluetooth'u Ayarlar'dan ve hızlı ayarlardan yönetmeye devam edersiniz.";
 				RestartExplorer=$false;
@@ -2168,7 +2210,7 @@ public class SpiFx {
             },
 
             @{
-                Name="Uygulama Tanılama (Diagnostics) Erişimi Kapat"; Description="Uygulamaların diğer çalışan uygulamalar hakkında tanılama bilgisi toplamasını kapatır (Ayarlar > Gizlilik ve güvenlik > Uygulama tanılaması + Group Policy).";
+                Name="Uygulama Tanılama (Diagnostics) Erişimi Kapat"; Risk="Low"; Description="Uygulamaların diğer çalışan uygulamalar hakkında tanılama bilgisi toplamasını kapatır (Ayarlar > Gizlilik ve güvenlik > Uygulama tanılaması + Group Policy).";
 				SubCategory="Uygulama İzinleri";
 				RestartExplorer=$false;
                 Batch=@(
@@ -2178,7 +2220,7 @@ public class SpiFx {
             },
 
             @{
-                Name="Arka Plan Uygulamalarını Kapat (Sistem Politikası)";
+                Name="Arka Plan Uygulamalarını Kapat (Tüm Kullanıcılar — İlke)"; Aliases=@("Arka Plan Uygulamalarını Kapat (Sistem Politikası)"); Risk="Medium";
                 SubCategory="Uygulama İzinleri";
                 Description="Microsoft Store (UWP) uygulamalarının arka planda çalışmasını Group Policy ile tüm kullanıcılar için engeller. Xbox Game Bar istisna tutulur (çift CCD Ryzen X3D çekirdek yönlendirmesi ve Oyun Modu için gerekli).`n`n✅ Discord, Steam, masaüstü Spotify, medya tuşları ve PrtSc / Ekran Alıntısı etkilenmez.`n⚠️ Posta, Takvim, Fotoğraflar, Telefon Bağlantısı ve Mağaza WhatsApp arka planda bildirim gönderemez. Spotify'ın Mağaza sürümünde medya tuşu sorunu olursa geri alın.`nℹ️ Uygulama ve geri alma sonrası Ayarlar > Arka plan uygulamaları sayfası açılır.";
                 DetectScript='
@@ -2205,7 +2247,7 @@ public class SpiFx {
             # --- v1.2.22 SPRINT: C paketi (4 ek privacy/telemetri tweak) ---
 
             @{
-                Name="Cloud Clipboard Devre Disi (Win+V Senkronizasyonu Kapat)";
+                Name="Pano Bulut Eşitlemesini Kapat (Cloud Clipboard)"; Aliases=@("Cloud Clipboard Devre Disi (Win+V Senkronizasyonu Kapat)");
                 SubCategory="Genel";
                 Risk="Low"; RestartExplorer=$false;
                 Description="Panonun (kopyaladıklarınızın) Microsoft hesabı üzerinden diğer cihazlarla bulut senkronizasyonunu Group Policy ile kapatır. Kopyaladıklarınız bu bilgisayarda kalır; şifre, kart numarası gibi bilgiler yanlışlıkla buluta gitmez.`n`n✅ Ctrl+C / Ctrl+V ve Win+V pano geçmişi normal çalışır (geçmişi kapatmak ayrı tweak: 'Pano Geçmişini (Win+V) Kapat').`n⚠️ Telefon / başka bilgisayarla pano paylaşımı çalışmaz.";
@@ -2237,13 +2279,13 @@ public class SpiFx {
                 Name="Pano Geçmişini (Win+V) Kapat"; Since="2.0.0";
                 SubCategory="Genel";
                 Risk="Low"; RestartExplorer=$false;
-                Description="Windows pano geçmişini (Win+V ile açılan, kopyalanan son öğeler listesi) ilkeyle kapatır. Kopyala / yapıştır normal çalışır; sadece geçmiş tutulmaz (parola, kart numarası gibi kopyalanan bilgiler bellekte birikmez).`n`nℹ️ Bulut senkronizasyonu ayrı tweaktir: 'Cloud Clipboard Devre Disi'. Geri alma ilkeyi kaldırır, Ayarlar > Sistem > Pano'dan yeniden açılabilir.";
+                Description="Windows pano geçmişini (Win+V ile açılan, kopyalanan son öğeler listesi) ilkeyle kapatır. Kopyala / yapıştır normal çalışır; sadece geçmiş tutulmaz (parola, kart numarası gibi kopyalanan bilgiler bellekte birikmez).`n`nℹ️ Bulut senkronizasyonu ayrı tweaktir: 'Pano Bulut Eşitlemesini Kapat (Cloud Clipboard)'. Geri alma ilkeyi kaldırır, Ayarlar > Sistem > Pano'dan yeniden açılabilir.";
                 Key="HKLM:\SOFTWARE\Policies\Microsoft\Windows\System"; ValueName="AllowClipboardHistory"; Type="DWord"; Data=0; Undo="DELETE_VALUE"
             },
 
 
             @{
-                Name="Tailored Experiences (Kisisellestirilmis Deneyimler) Kapat";
+                Name="Kişiselleştirilmiş Deneyimleri Kapat (Tailored Experiences)"; Aliases=@("Tailored Experiences (Kisisellestirilmis Deneyimler) Kapat");
                 SubCategory="Telemetri";
                 Risk="Low"; RestartExplorer=$false;
                 Description="Microsoft'un tanılama verilerinizi kullanarak size özel ipucu, reklam ve öneri göstermesini kapatır (Ayarlar > Gizlilik > Tanılama ve geri bildirim > Kişiselleştirilmiş deneyimler). Ayar Group Policy ile kilitlenir, Ayarlar'dan değiştirilemez.`n`n✅ Başlat, Ayarlar ve aramadaki reklam içeriği azalır.";
@@ -2256,7 +2298,7 @@ public class SpiFx {
             },
 
             @{
-                Name="LLMNR Devre Disi (DNS Multicast Privacy + Guvenlik)";
+                Name="LLMNR Kapat (Yerel Ağ Ad Çözümleme — Gizlilik ve Güvenlik)"; Aliases=@("LLMNR Devre Disi (DNS Multicast Privacy + Guvenlik)");
                 SubCategory="Ag (Network Privacy)";
                 Risk="Low"; RestartExplorer=$false;
                 Description="LLMNR (Link-Local Multicast Name Resolution) protokolünü Group Policy ile kapatır. LLMNR, DNS bir adı çözemediğinde yerel ağa çok noktaya yayın sorusu gönderir; yerel ağdaki bir saldırgan sahte yanıt verip kimlik bilgilerinizi ele geçirebilir (LLMNR zehirleme).`n`n✅ Ev ve ofis ağlarında modern uygulamalar LLMNR'a ihtiyaç duymaz; internet ve DNS etkilenmez.`n⚠️ Çok eski yerel ağ kurulumlarında bilgisayar adıyla erişim sorun çıkarabilir.";
@@ -2634,7 +2676,7 @@ public class SpiFx {
         # --- v1.3.0: WINDOWS AI (24H2 / 25H2 / 26H2) ---
         # Recall, Click to Do, Explorer AI Actions, AI Fabric servisi ve uygulama-ici AI ozellikleri.
         # Hepsi resmi Group Policy degerleri (Undo = policy silinir → Windows varsayilani).
-        # Copilot'un kendisi "Gelişmiş Sistem (Batch)" > "Copilot Tamamen Kapat" tweak'inde.
+        # Copilot'un kendisi "Gelişmiş Sistem" > "Copilot Tamamen Kapat" tweak'inde.
         "🤖 Windows AI (24H2 / 25H2 / 26H2)" = @(
             @{
                 Name="Recall (Anlık Görüntü Hafızası) Kapat";
@@ -2804,9 +2846,9 @@ public class SpiFx {
 
         # --- 4. WINDOWS GEZGİNİ ---
         "Windows Gezgini" = @(
-            @{ Name="Dosya Uzantılarını Göster"; Description="Dosya Gezgini'nde dosya uzantılarını gösterir (ör. 'belge' yerine 'belge.pdf'). 'fatura.pdf.exe' gibi uzantısını gizleyen zararlı dosyaları fark etmeyi kolaylaştırır. Masaüstü ve açık Gezgin pencereleri hemen yenilenir."; Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; ValueName="HideFileExt"; Type="DWord"; Data=0; Undo=1; RestartExplorer="Soft" },
-            @{ Name="Gizli Dosyaları Göster"; Description="Dosya Gezgini'nde gizli dosya ve klasörleri gösterir (ör. AppData). Korunan işletim sistemi dosyaları yine gizli kalır."; Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; ValueName="Hidden"; Type="DWord"; Data=1; Undo=2; RestartExplorer="Soft" },
-            @{ Name="Bu Bilgisayar Simgesini Masaüstüne Koy"; Description="Masaüstüne 'Bu Bilgisayar' simgesini ekler (Ayarlar > Kişiselleştirme > Temalar > Masaüstü simgesi ayarları ile aynı)."; Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel"; ValueName="{20D04FE0-3AEA-1069-A2D8-08002B30309D}"; Type="DWord"; Data=0; Undo=1; RestartExplorer="Soft" },
+            @{ Name="Dosya Uzantılarını Göster"; Risk="Low"; Description="Dosya Gezgini'nde dosya uzantılarını gösterir (ör. 'belge' yerine 'belge.pdf'). 'fatura.pdf.exe' gibi uzantısını gizleyen zararlı dosyaları fark etmeyi kolaylaştırır. Masaüstü ve açık Gezgin pencereleri hemen yenilenir."; Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; ValueName="HideFileExt"; Type="DWord"; Data=0; Undo=1; RestartExplorer="Soft" },
+            @{ Name="Gizli Dosyaları Göster"; Risk="Low"; Description="Dosya Gezgini'nde gizli dosya ve klasörleri gösterir (ör. AppData). Korunan işletim sistemi dosyaları yine gizli kalır."; Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"; ValueName="Hidden"; Type="DWord"; Data=1; Undo=2; RestartExplorer="Soft" },
+            @{ Name="Bu Bilgisayar Simgesini Masaüstüne Koy"; Risk="Low"; Description="Masaüstüne 'Bu Bilgisayar' simgesini ekler (Ayarlar > Kişiselleştirme > Temalar > Masaüstü simgesi ayarları ile aynı)."; Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\HideDesktopIcons\NewStartPanel"; ValueName="{20D04FE0-3AEA-1069-A2D8-08002B30309D}"; Type="DWord"; Data=0; Undo=1; RestartExplorer="Soft" },
             @{ Name="Klasik Sağ Tık Menüsü (Win 11)"; Key="HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32"; ValueName=""; Type="String"; Data=""; UndoCommand="Remove-Item -Path 'HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}' -Recurse -Force -ErrorAction SilentlyContinue"; RestartExplorer="Hard"; Risk="Low"; Description="Windows 11'in kısaltılmış sağ tık menüsü yerine doğrudan klasik (tam) menüyü açar; 'Diğer seçenekleri göster' adımı kalkar. Yalnız bu kullanıcı için geçerlidir, Gezgin yeniden başlatılır.`n`nℹ️ Microsoft'un resmi bir ayarı değildir; bazı Windows güncellemeleri yeni menüyü geri getirebilir — o zaman tweak'i yeniden uygulayın. Geri alma Windows 11 menüsüne döner." },
 
             # --- v1.3.0: 24H2 / 25H2 / 26H2 GEZGİN EKLERİ ---
@@ -3019,7 +3061,7 @@ public class SpiFx {
         )
 
         # --- 5. SİSTEM VE OYUN ---
-        "Sistem ve Oyun" = @(
+        "Sistem" = @(
 
             @{
                 Name="Yapışkan Tuşları Kapat"; RestartExplorer=$false; Risk="Low";
@@ -3117,7 +3159,7 @@ public class SpiFx {
                 '
             },
             @{
-                Name="Hazırda Bekletmeyi Kapat (Hibernate)";
+                Name="Hazırda Bekletmeyi Kapat (Hibernate)"; Risk="Medium";
                 Description="Hazırda bekletmeyi kapatır ve hiberfil.sys dosyasını siler (RAM boyutunun bir kısmı kadar disk alanı geri gelir). Hızlı Başlangıç hazırda bekletmeye bağlı olduğu için o da kapanır.`n`n⚠️ Dizüstünde uygulamadan önce sorulur: pil bitince oturumun diske kaydedilmesi çalışmaz.`n↩️ Geri alma hazırda bekletmeyi açar; Hızlı Başlangıç tercihi 'Hızlı Başlatmayı Kapat' tweak'ine bırakılır.";
                 RestartExplorer=$false;
                 DetectScript='
@@ -3158,7 +3200,7 @@ public class SpiFx {
 
             # === LOUDNESS EQ AKTIF ET (FR33THY 24 Loudness EQ.ps1 birebir) ===
             @{
-                Name="Ses: Loudness EQ Aktif Et (Enhancements Tab Unhide)";
+                Name="Ses Yüksekliği Dengelemeyi Aç (Loudness EQ — Geliştirmeler Sekmesi)"; Aliases=@("Ses: Loudness EQ Aktif Et (Enhancements Tab Unhide)");
                 Description="Ses çıkış aygıtlarına 'Ses Yüksekliği Dengeleme' (Loudness Equalization) iyileştirmesini ekler: Ses özellikleri penceresinde 'Geliştirmeler' sekmesi görünür ve ses seviyesi dengelenir — sessiz diyaloglar yükselir, gürültülü sahneler kısılır.`n`n⚠️ Ses servisi yeniden başlatılır (anlık kesinti olabilir).`n✅ Yalnız bu ayarı eksik olan aygıtlara yazılır; geri alma yalnız MrClean'in eklediklerini siler.`n💡 Çalışmazsa ses sürücüsünü yeniden yükleyin ya da başka bir aygıt deneyin.";
                 Risk="Low"; RestartExplorer=$false;
                 DetectScript='
@@ -3271,7 +3313,7 @@ public class SpiMenu {
                 UndoCommand="Enable-MMAgent -PageCombining -ErrorAction SilentlyContinue"
             },
             @{
-                Name="Arka Plan Uygulamalarını Kapat (UWP)";
+                Name="Arka Plan Uygulamalarını Kapat (Yalnız Bu Kullanıcı)"; Aliases=@("Arka Plan Uygulamalarını Kapat (UWP)");
                 Description="Mail, Calendar, Photos gibi UWP (Mağaza) uygulamalarının arka planda çalışmasını engeller. RAM ve network tasarrufu. Bildirim almıyorsan dert değil; e-posta canlı bildirim isteyenler dikkat.`n`n✅ Spotify (spotify.com masaüstü sürümü), Discord, Steam, medya tuşları ve PrtSc etkilenmez.`n⚠️ Telefon Bağlantısı ve WhatsApp (Store) arka planda çalışmaz. Spotify Microsoft Store sürümünde pencere küçültülünce sorun olursa geri alın.";
                 Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications";
                 ValueName="GlobalUserDisabled"; Type="DWord"; Data=1; Undo=0;
@@ -3545,7 +3587,7 @@ public class SpiMenu {
                 )
             },
             @{ 
-                Name="Nihai Performans Güç Planını Aktif Et";
+                Name="Nihai Performans Güç Planını Aktif Et"; Risk="Medium";
 				Group="PowerPlan";
                 Description="Windows 'Nihai Performans' (Ultimate Performance) güç planını oluşturup etkinleştirir: işlemci boşta frekans düşürmez, çekirdek park etme kapalı, disk / PCIe güç tasarrufu kapalı; PCIe bağlantı güç yönetimi (ASPM) prizdeyken ayrıca kapatılır. Tek CCD'li işlemcilerde (5800X3D, 9800X3D, 9850X3D, Intel) en düşük gecikme için.`n`n⚠️ Çift CCD'li X3D (7900X3D / 7950X3D / 9900X3D / 9950X3D): AMD 'Dengeli' planı önerir — bu planda V-Cache CCD park mekanizması çalışmaz, FPS düşebilir. Bu işlemcilerde uygulamadan önce uyarı gösterilir.`n⚠️ Boşta güç tüketimi ve sıcaklık artar; dizüstünde önerilmez.`nℹ️ İşlemci minimum durumu bu planda fabrika ayarında %100'dür (sürücü / araçlar düşürebilir). Boşta işlemcinin serin kalması, oyunda ise %100 olması için ayrı tweak: 'İşlemci Minimum Durumu %100 — Yalnız Oyun Açıkken'.";
                 # v1.3.0 (4. tur): Plan SABIT bir GUID ile kopyalanir — Fransizca/Almanca Windows ta plan adi farkli oldugu icin
@@ -3560,7 +3602,7 @@ public class SpiMenu {
                 UndoCommand='powercfg -setactive 381b4222-f694-41f0-9685-ff5bb260df2e 2>$null; if ($LASTEXITCODE -ne 0) { powercfg -duplicatescheme 381b4222-f694-41f0-9685-ff5bb260df2e 381b4222-f694-41f0-9685-ff5bb260df2e | Out-Null; powercfg -setactive 381b4222-f694-41f0-9685-ff5bb260df2e }'; 
                 RestartExplorer=$false 
             },
-            @{ Name="Yüksek Performans Güç Planını Aktif Et"; Group="PowerPlan";
+            @{ Name="Yüksek Performans Güç Planını Aktif Et"; Risk="Medium"; Group="PowerPlan";
                Description="Windows 'Yüksek Performans' güç planını etkinleştirir: fabrika ayarında işlemci prizdeyken minimum %100'de çalışır, disk / PCIe güç tasarrufu kapalıdır ve bilgisayar uykuya geçmez.`n`n⚠️ Çift CCD'li X3D işlemcilerde (7950X3D / 9950X3D vb.) AMD 'Dengeli' planı önerir — uygulamadan önce uyarı gösterilir.";
                Command='if (-not (Confirm-DualCcdX3DPowerTweak "Yuksek Performans Guc Plani")) { return }; powercfg -setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'; UndoCommand='powercfg -setactive 381b4222-f694-41f0-9685-ff5bb260df2e 2>$null; if ($LASTEXITCODE -ne 0) { powercfg -duplicatescheme 381b4222-f694-41f0-9685-ff5bb260df2e 381b4222-f694-41f0-9685-ff5bb260df2e | Out-Null; powercfg -setactive 381b4222-f694-41f0-9685-ff5bb260df2e }'; RestartExplorer=$false }
         )
@@ -3629,7 +3671,7 @@ public class SpiMenu {
                 '
             },
             @{
-                Name="DPS (Tanılama) Servisini Manuele Al";
+                Name="Tanılama İlkesi Servisini El ile Başlat (DPS)"; Aliases=@("DPS (Tanılama) Servisini Manuele Al");
                 SubCategory="MrClean servis ayarları";
                 Description="Tanılayıcı İlkesi Hizmeti'ni (Diagnostic Policy Service, DPS) 'Otomatik' yerine 'El ile' başlatmaya alır; açılışta çalışmaz, gerektiğinde başlar. Küçük bir RAM / CPU tasarrufu sağlar.`n`n⚠️ Windows'un sorun giderici araçları ve ağ tanılaması bu servise ihtiyaç duyduğunda yavaş açılabilir.";
                 Command="Set-Service -Name DPS -StartupType Manual -ErrorAction SilentlyContinue";
@@ -3650,8 +3692,8 @@ public class SpiMenu {
                 Risk="Low"; RestartExplorer=$false
             },
             @{
-                Name="Connected Devices Platform (CDP) Servisini El Ile Al";
-                Aliases=@("Connected Devices Platform (CDP) Servisini Kapat");
+                Name="Bağlı Cihazlar Platformu Servisini El ile Başlat (CDPSvc)";
+                Aliases=@("Connected Devices Platform (CDP) Servisini El Ile Al", "Connected Devices Platform (CDP) Servisini Kapat");
                 SubCategory="MrClean servis ayarları";
                 Risk="Low"; RestartExplorer=$false;
                 Description="Bağlı Cihazlar Platformu servisini (CDPSvc) durdurur ve 'El ile' başlatmaya alır — kapatmaz. Arka planda sürekli çalışmaz; Bluetooth Swift Pair veya Yakın Paylaşım gerektiğinde Windows yine başlatır.`n`n⚠️ Telefon Bağlantısı, PC'den sesli arama ve telefon-PC dosya paylaşımı gecikebilir ya da zayıflayabilir.`n↩️ Geri alma servisi yeniden otomatik başlatır.";
@@ -3693,9 +3735,9 @@ public class SpiMenu {
                 '
             },
             @{
-                Name="Microsoft GameInput Servisini El Ile Al";
+                Name="Microsoft GameInput Servisini El ile Başlat";
                 SubCategory="MrClean servis ayarları";
-                Aliases=@("Microsoft GameInput Kaldır");
+                Aliases=@("Microsoft GameInput Servisini El Ile Al", "Microsoft GameInput Kaldır");
                 Description="Microsoft GameInput servislerini (varsa) durdurup 'El ile' başlatmaya alır; paket kaldırılmaz. Gerektiğinde (Xbox uygulaması, Game Pass oyunu, kumanda) Windows servisi yine başlatır.`n`n⚠️ Uygulamadan önce sorulur. Kumandayla oynayan ya da Game Pass kullanan biriyseniz 'Hayır' deyin.`n↩️ Geri alma önceki başlangıç türlerine döner.";
                 Risk="Low"; RestartExplorer=$false;
                 DetectScript='
@@ -4396,7 +4438,7 @@ public class SpiMenu {
             },
 
             @{
-                Name="Şifresiz Giriş Devre Dışı (Klasik Şifre Açık)";
+                Name="Şifresiz Girişi Kapat (Klasik Şifre Açık)"; Aliases=@("Şifresiz Giriş Devre Dışı (Klasik Şifre Açık)");
                 Description="Windows 11'in 'Gelişmiş güvenlik için bu cihazda yalnız Windows Hello oturum açmasına izin ver' (şifresiz oturum) seçeneğini kapatır. Oturum açma ekranında klasik şifre seçeneği yeniden görünür; Microsoft hesabı ve yerel hesap için geçerlidir.";
                 Risk="Low"; RestartExplorer=$false;
                 Key="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\PasswordLess\Device";
@@ -4408,7 +4450,7 @@ public class SpiMenu {
         # TCP/IPv4 Properties dialog'unda "otomatik" gosteriyordu, netsh source=static|dhcp daha guvenilir) ---
         "Ağ ve DNS Ayarları" = @(
             @{
-                Name="DNS: Google (Hız ve Kararlılık)"; Description="Fiziksel ağ kartlarında DNS'i Google'a ayarlar (8.8.8.8 / 8.8.4.4, IPv6 2001:4860:4860::8888). Hızlı ve yaygın, dünyanın her yerinde düşük gecikmeli bir DNS.`n`n✅ VPN / sanal kartların DNS'ine dokunulmaz. Önceki elle girilmiş DNS yedeklenir; geri alma ona (yoksa otomatik DNS'e) döner. Gecikmeyi Araçlar > DNS Benchmark ile karşılaştırabilirsiniz."; Requires=@("NoDnsTool");
+                Name="DNS: Google (Hız ve Kararlılık)"; Risk="Low"; Description="Fiziksel ağ kartlarında DNS'i Google'a ayarlar (8.8.8.8 / 8.8.4.4, IPv6 2001:4860:4860::8888). Hızlı ve yaygın, dünyanın her yerinde düşük gecikmeli bir DNS.`n`n✅ VPN / sanal kartların DNS'ine dokunulmaz. Önceki elle girilmiş DNS yedeklenir; geri alma ona (yoksa otomatik DNS'e) döner. Gecikmeyi Araçlar > DNS Benchmark ile karşılaştırabilirsiniz."; Requires=@("NoDnsTool");
                 Group="DNS";
                 Command='
                     # v1.3.0 (4. tur): sadece FIZIKSEL adaptorler (VPN/Hyper-V/Tailscale DNS i bozulmaz), kopuk Wi-Fi dahil;
@@ -4422,7 +4464,7 @@ public class SpiMenu {
                 RestartExplorer=$false
             },
             @{
-                Name="DNS: Cloudflare (Gizlilik ve Hız)"; Description="Fiziksel ağ kartlarında DNS'i Cloudflare'e ayarlar (1.1.1.1 / 1.0.0.1, IPv6 2606:4700:4700::1111). Genellikle en hızlı genel DNS'tir ve sorgu kaydı tutmama taahhüdü verir.`n`n✅ VPN / sanal kartların DNS'ine dokunulmaz. Önceki elle girilmiş DNS yedeklenir; geri alma ona (yoksa otomatik DNS'e) döner. Gecikmeyi Araçlar > DNS Benchmark ile karşılaştırabilirsiniz."; Requires=@("NoDnsTool");
+                Name="DNS: Cloudflare (Gizlilik ve Hız)"; Risk="Low"; Description="Fiziksel ağ kartlarında DNS'i Cloudflare'e ayarlar (1.1.1.1 / 1.0.0.1, IPv6 2606:4700:4700::1111). Genellikle en hızlı genel DNS'tir ve sorgu kaydı tutmama taahhüdü verir.`n`n✅ VPN / sanal kartların DNS'ine dokunulmaz. Önceki elle girilmiş DNS yedeklenir; geri alma ona (yoksa otomatik DNS'e) döner. Gecikmeyi Araçlar > DNS Benchmark ile karşılaştırabilirsiniz."; Requires=@("NoDnsTool");
                 Group="DNS";
                 Command='
                     # v1.3.0 (4. tur): sadece FIZIKSEL adaptorler (VPN/Hyper-V/Tailscale DNS i bozulmaz), kopuk Wi-Fi dahil;
@@ -4436,7 +4478,7 @@ public class SpiMenu {
                 RestartExplorer=$false
             },
             @{
-                Name="DNS: Quad9 (Güvenlik + Gizlilik)"; Requires=@("NoDnsTool");
+                Name="DNS: Quad9 (Güvenlik + Gizlilik)"; Risk="Low"; Requires=@("NoDnsTool");
                 Group="DNS"; Since="2.0.0";
                 Description="Quad9 DNS (9.9.9.9 / 149.112.112.112, IPv6 2620:fe::fe): bilinen zararlı/oltalama alan adlarını DNS seviyesinde engeller, kayıt tutmaz (İsviçre merkezli, kâr amacı gütmeyen). Cloudflare/Google'a göre gecikme konuma göre değişir — Araçlar > DNS Benchmark ile karşılaştırın.`n📚 Kaynak: RyTuneX ve Sparkle DNS ön ayarları.";
                 Command='
@@ -4451,7 +4493,7 @@ public class SpiMenu {
                 RestartExplorer=$false
             },
             @{
-                Name="DNS: AdGuard (Reklam ve İzleyici Engelleme)"; Requires=@("NoDnsTool");
+                Name="DNS: AdGuard (Reklam ve İzleyici Engelleme)"; Risk="Low"; Requires=@("NoDnsTool");
                 Group="DNS"; Since="2.0.0";
                 Description="AdGuard DNS (94.140.14.14 / 94.140.15.15): reklam, izleyici ve bilinen zararlı alan adlarını DNS seviyesinde engeller — tüm uygulamalarda ve tarayıcılarda geçerli.`n`n⚠️ Bazı alışveriş/kampanya bağlantıları, reklamlı ücretsiz oyun ödülleri veya mağaza sayfaları açılmayabilir — sorun olursa başka DNS seçin. Gecikmeyi Araçlar > DNS Benchmark ile karşılaştırın.`n✅ Sadece fiziksel ağ kartları; önceki DNS yedeklenir.`n📚 Kaynak: optimizer, optimizerNXT DNS ön ayarları.";
                 Command='
@@ -4465,7 +4507,7 @@ public class SpiMenu {
                 RestartExplorer=$false
             },
             @{
-                Name="DNS: Cloudflare Güvenlik (Zararlı Site Engelleme)"; Requires=@("NoDnsTool");
+                Name="DNS: Cloudflare Güvenlik (Zararlı Site Engelleme)"; Risk="Low"; Requires=@("NoDnsTool");
                 Group="DNS"; Since="2.0.0";
                 Description="Cloudflare'in zararlı yazılım engelleyen DNS'i (1.1.1.2 / 1.0.0.2): Cloudflare hızında, bilinen zararlı ve oltalama alan adlarını engeller. Reklamları engellemez (site kırma riski düşük).`n✅ Sadece fiziksel ağ kartları; önceki DNS yedeklenir.`n📚 Kaynak: ağ araştırması; Cloudflare for Families belgesi.";
                 Command='
@@ -4532,7 +4574,7 @@ public class SpiMenu {
                 '
             },
             @{
-                Name="DNS: Otomatik (Varsayılan / İSS)"; Description="Fiziksel ağ kartlarında DNS'i otomatik (modem / İSS'den DHCP ile) yapar — Windows'un varsayılanı. Elle girilmiş DNS ve MrClean'in DNS yedeği temizlenir. VPN / sanal kartlara dokunulmaz."; Requires=@("NoDnsTool");
+                Name="DNS: Otomatik (Varsayılan / İSS)"; Risk="Low"; Description="Fiziksel ağ kartlarında DNS'i otomatik (modem / İSS'den DHCP ile) yapar — Windows'un varsayılanı. Elle girilmiş DNS ve MrClean'in DNS yedeği temizlenir. VPN / sanal kartlara dokunulmaz."; Requires=@("NoDnsTool");
                 Group="DNS";
                 Command='
                     # v1.3.0 (4. tur): tum FIZIKSEL adaptorlerde DNS otomatik (DHCP / ISS). source=dhcp
@@ -4550,9 +4592,9 @@ public class SpiMenu {
         )
 
         # --- 9. GELİŞMİŞ SİSTEM (BATCH) ---
-        "Gelişmiş Sistem (Batch)" = @(
+        "Gelişmiş Sistem" = @(
             @{
-                Name="Cortana ve Cloud Aramayı Tamamen Kapat"; Description="Cortana'yı ve aramanın bulut içeriğini (Microsoft hesabı / iş hesabı içerikleri) Group Policy ile kapatır; kilit ekranında Cortana çalışmaz. Yerel dosya, uygulama ve ayar araması aynen çalışır.";
+                Name="Cortana ve Cloud Aramayı Tamamen Kapat"; Risk="Low"; Description="Cortana'yı ve aramanın bulut içeriğini (Microsoft hesabı / iş hesabı içerikleri) Group Policy ile kapatır; kilit ekranında Cortana çalışmaz. Yerel dosya, uygulama ve ayar araması aynen çalışır.";
                 RestartExplorer=$false;
                 Batch=@(
                     @{ Key="HKLM:\SOFTWARE\Policies\Microsoft\Windows\Windows Search"; ValueName="AllowCloudSearch"; Type="DWord"; Data=0; Undo="DELETE_VALUE" },
@@ -4641,7 +4683,7 @@ public class SpiMenu {
                 '
             },
             @{ 
-                Name="Windows Update'i Kısıtla (Otomatik Yüklemeyi Kapat)";
+                Name="Windows Update'i Kısıtla (Otomatik Yüklemeyi Kapat)"; Risk="Medium";
                 RestartExplorer=$false; Group="WUPolicy";
                 Description="Windows Update'i 'indirmeden önce bildir' moduna alır (Group Policy: Otomatik Güncelleştirmeleri Yapılandır = 2). Güncellemeler onayınız olmadan indirilmez / kurulmaz; Ayarlar > Windows Update'ten istediğiniz zaman denetleyip kurabilirsiniz. Cihaz takılınca sürücüler de otomatik aranmaz.`n`n💡 Sürüm yükseltmesini durdurmak için 'Özellik Güncellemesini Mevcut Sürümde Sabitle' tweak'ini kullanın. 'Windows Update'i TAMAMEN Kilitle' ile aynı gruptadır (biri seçilince diğeri kapanır).`n📚 Kaynak: optimizer / optimizerNXT, Microsoft Group Policy belgesi.";
                 DetectScript='
@@ -4853,7 +4895,7 @@ public class SpiMenu {
         "🎮 Low Latency (Espor)" = @(
             # --- A: FARE VE KLAVYE (INPUT) ---
             @{ 
-                Name="Fare İvmesini (Acceleration) Tamamen Kapat"; 
+                Name="Fare İvmesini (Acceleration) Tamamen Kapat"; Risk="Low"; 
                 SubCategory="Giriş ve İşlemci";
 				Description="Windows'un 'İşaretçi hassasiyetini artır' (fare ivmesi) özelliğini kapatır: farenin fiziksel hareketi ile imleç hareketi 1'e 1 olur (kas hafızası için önemli). Oyunların çoğu ham girdi kullanır; fark masaüstünde, menülerde ve ham girdi kullanmayan oyunlarda hissedilir.`n`nAnında uygulanır; oturum açma ekranı için de yazılır.`nℹ️ İnternette dolaşan 'MarkC' ivme eğrileri ivme kapalıyken hiçbir şey yapmadığı için eklenmedi.";
                 DetectScript='
@@ -4980,7 +5022,7 @@ public class SpiMenu {
                 '
             },
 			@{
-				Name        = "[SIFIRLA] Windows Varsayılanları"
+				Name        = "[SIFIRLA] Windows Varsayılanları"; Risk="Medium"
 				SubCategory = "Ağ ve Ping"
 				Group       = "NetProfile"
 				# v2.0.0 (§115): acilinca 'Ag ve Ping' alt kategorisindeki acik tweak'ler aninda kapali + BEKLIYOR olur (Add_Click)
@@ -5034,7 +5076,7 @@ public class SpiMenu {
 				RestartExplorer = $false
 			},
             @{
-                Name="Network Throttling Kapat (Ağ Kısıtlamasını Kaldır)";
+                Name="Network Throttling Kapat (Ağ Kısıtlamasını Kaldır)"; Risk="Low";
                 SubCategory="Ağ ve Ping";
 				Description="Windows'un multimedya (müzik/video) çalarken multimedya dışı ağ paketlerini sınırlayan mekanizmasını kapatır (NetworkThrottlingIndex=FFFFFFFF). Arka planda Spotify/YouTube açıkken yüksek hızlı indirmelerde fark edilir.`n`nℹ️ Dürüst not: Oyun ping'ine etkisi küçüktür; djdallmann ölçümlerinde açık bırakmak (varsayılan 10) NDIS DPC gecikmesini bir miktar düşürmüştür. 1 Gbit+ hatta indirme yapan için faydalı, sadece oyun için tartışmalıdır. Varsayılana dönmek için geri alın.";
                 Key="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"; ValueName="NetworkThrottlingIndex"; Type="DWord"; Data=0xffffffff; Undo=10; RestartExplorer=$false
@@ -5483,7 +5525,7 @@ public class SpiMenu {
             # davranisi vardi (birini secince digerleri kapaniyordu). Kullanici hepsini birden secebilir,
             # acikma kullanici karari (description'larda anti-cheat uyarisi var).
             @{
-                Name="HPET (Platform Clock) Kapat";
+                Name="HPET (Platform Clock) Kapat"; Risk="Low";
                 SubCategory="Zamanlayıcı (Timer)";
 				Description="Windows'un HPET'i (eski platform saati) zorla kullanmasını sağlayan 'useplatformclock' önyükleme ayarını siler. Modern Ryzen / Core sistemlerde Windows zaten daha hızlı olan TSC saatini kullanır; HPET'in zorlanması zamanlama çağrılarını yavaşlatıp takılmaya yol açar.`n`n💡 Bu, Windows'un varsayılan durumudur — çoğu sistemde tweak zaten aktif görünür, yapılacak iş yoktur. Geri alma HPET'i zorla açmaz.`n📚 Kaynak: Blur Busters topluluk ölçümleri.";
                 Command='bcdedit /deletevalue useplatformclock';
@@ -5527,7 +5569,7 @@ public class SpiMenu {
 
             # --- E: USB / GIRDI LATENCY ---
             @{
-                Name="USB Selective Suspend Devre Dışı";
+                Name="USB Seçici Askıya Almayı Kapat (Selective Suspend)"; Aliases=@("USB Selective Suspend Devre Dışı");
                 SubCategory="Giriş ve İşlemci";
                 Risk="Low"; RestartExplorer=$false;
                 Description="USB aygıtlarının güç tasarrufu için askıya alınmasını engeller. Fare, klavye, kumanda, 2.4 GHz kablosuz alıcılar, Bluetooth adaptörü ve USB ses kartları sürekli hazır kalır:`n• Boşta bekledikten sonra ilk harekette / tuşta uyanma gecikmesi ve takılma olmaz`n• Kablosuz kulaklık / fare alıcısı kopmaları ve Bluetooth ses kesilmeleri azalır`n• USB DAC / ses arayüzü cızırtıları azalır`n`nHer USB aygıtında Aygıt Yöneticisi > Güç Yönetimi > 'Güç tasarrufu için bilgisayar bu aygıtı kapatabilir' seçeneği de kapatılır (değiştirilenler kaydedilir, geri alma aynen geri açar).`n⚠️ Dizüstünde onay istenir ve yalnız priz (AC) ayarı değişir; masaüstünde priz + pil.`n📚 Kaynak: valleyofdoom/PC-Tuning, djdallmann/GamingPCSetup.";
@@ -5603,7 +5645,7 @@ public class SpiMenu {
                 Name="USB 3 Bağlantı Güç Yönetimini Kapat (U1/U2)";
                 SubCategory="Giriş ve İşlemci"; Since="2.0.0";
                 Risk="Low"; RestartExplorer=$false; SkipRebootDialog=$true;
-                Description="Etkin güç planında 'USB 3 Bağlantı Güç Yönetimi'ni prizdeyken KAPALI yapar: USB 3 bağlantıları boşta U1/U2 düşük güç durumuna geçmez. USB 3 hub'a / ön panele takılı ses kartı, kulaklık alıcısı, 4-8 kHz fare alıcısı ve webcam'lerde uyanma gecikmesi, mikro kopma ve cızırtıları azaltır.`n`nℹ️ 2.4 GHz alıcıların çoğu USB 2'dir — onlar için 'USB Selective Suspend Devre Dışı' tweak'i asıl çözümdür; bu tweak USB 3 yolunu tamamlar.`n✅ Güç planını değiştirmez (X3D için Dengeli plan korunur). Önceki değer yedeklenir. Pil (DC) ayarına dokunulmaz. Anında uygulanır.`n📚 Kaynak: kubsonxtm/Windows-Tweaks, tweaqas Stix güç planı; tenforums/guru3d güç ayarı belgeleri.";
+                Description="Etkin güç planında 'USB 3 Bağlantı Güç Yönetimi'ni prizdeyken KAPALI yapar: USB 3 bağlantıları boşta U1/U2 düşük güç durumuna geçmez. USB 3 hub'a / ön panele takılı ses kartı, kulaklık alıcısı, 4-8 kHz fare alıcısı ve webcam'lerde uyanma gecikmesi, mikro kopma ve cızırtıları azaltır.`n`nℹ️ 2.4 GHz alıcıların çoğu USB 2'dir — onlar için 'USB Seçici Askıya Almayı Kapat (Selective Suspend)' tweak'i asıl çözümdür; bu tweak USB 3 yolunu tamamlar.`n✅ Güç planını değiştirmez (X3D için Dengeli plan korunur). Önceki değer yedeklenir. Pil (DC) ayarına dokunulmaz. Anında uygulanır.`n📚 Kaynak: kubsonxtm/Windows-Tweaks, tweaqas Stix güç planı; tenforums/guru3d güç ayarı belgeleri.";
                 DetectScript='
                     $i = Get-PowerSettingIndex "2a737441-1930-4402-8d77-b2bebba308a3" "d4e98f31-5ffe-4ce1-be31-1b38b384c009"
                     return ($i -and $i.AC -eq 0)
@@ -5666,7 +5708,7 @@ public class SpiMenu {
                 '
             },
             @{
-                Name="CPU Core Parking Devre Dışı (Tüm Çekirdekler Aktif)";
+                Name="Çekirdek Park Etmeyi Kapat (Core Parking — Tüm Çekirdekler Aktif)"; Aliases=@("CPU Core Parking Devre Dışı (Tüm Çekirdekler Aktif)");
                 SubCategory="Giriş ve İşlemci";
                 Risk="Low"; RestartExplorer=$false;
                 Description="Windows'un işlem yükü düşükken işlemci çekirdeklerini 'park etmesini' (uyutmasını) engeller; tüm çekirdekler sürekli hazır kalır:`n• Park'tan uyanma gecikmesi olmaz`n• Çok çekirdekli oyunlarda kare süresi daha tutarlı olur`n• Arka plan işleri çekirdeklere daha düzgün dağılır`n`n⚠️ Boşta tüketim biraz artar (masaüstünde 5-10 W); dizüstünde pil süresi kısalır, uygulamadan önce sorulur.`n⚠️ Çift CCD'li X3D (7900X3D / 7950X3D / 9900X3D / 9950X3D): kullanmayın — AMD'nin oyunda V-Cache olmayan CCD'yi park etme mekanizması buna dayanır, kapatınca FPS düşer. Bu işlemcilerde uygulamadan önce uyarı gösterilir. Tek CCD'li X3D'ler (5800X3D / 9800X3D / 9850X3D) güvenle kullanabilir.`n✅ Etkin güç planına uygulanır; önceki değer yedeklenir, geri alma ona döner.`n📚 Kaynak: valleyofdoom/PC-Tuning.";
@@ -5795,7 +5837,7 @@ public class SpiMenu {
                 Key="HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"; ValueName="SystemResponsiveness"; Type="DWord"; Data=10; Undo=20
             },
             @{
-                Name="MMCSS Pro Audio Task Priority Boost";
+                Name="MMCSS Pro Audio Görev Önceliğini Yükselt"; Aliases=@("MMCSS Pro Audio Task Priority Boost");
                 SubCategory="Ses (Audio)";
                 Risk="Low"; RestartExplorer=$false;
                 Description="Multimedya Sınıf Zamanlayıcısı'nda (MMCSS) 'Pro Audio' görevinin önceliğini 1'den 2'ye yükseltir. Bu görevi Chromium tabanlı uygulamalar (Edge, Chrome, Discord gibi Electron uygulamaları) ve ASIO kullanan müzik yazılımları (Cubase, Ableton, FL Studio) kullanır: Discord sesinde, tarayıcıda müzik / videoda ve DAW'larda ses kesilmeleri azalır. Oyunların kendi ses motorları genelde bu görevi kullanmaz.`n`n✅ Yalnız öncelik değeri değişir; önceki değer kaydedilir, geri alma ona döner.`n📚 Kaynak: Microsoft MMCSS belgeleri, djdallmann ölçümleri.";
@@ -5834,7 +5876,7 @@ public class SpiMenu {
                 Name="Ses Kartı Güç Tasarrufunu Kapat (Ses Başı Kesilmesi / Pıt Sesi)";
                 SubCategory="Ses (Audio)"; Since="2.0.0";
                 Risk="Low"; RestartExplorer=$false; RequiresReboot=$true;
-                Description="HD Audio ses aygıtlarının (Realtek, NVIDIA / AMD HDMI sesi vb.) ~10 sn sessizlikten sonra güç tasarrufuna geçmesini kapatır. Bu uyku yüzünden yeni bir ses başladığında (şarkı değişimi, Discord bildirimi, oyunda ilk efekt) sesin ilk yarım saniyesi kesilir ya da hoparlörden 'pıt' sesi gelir — tweak bunu giderir.`n`n✅ Yalnız sürücüsü bu ayarı tanımlayan aygıtlar değişir; orijinal değerler yedeklenir, geri alma aynen geri yükler. USB / Bluetooth / kablosuz kulaklıklar etkilenmez (onlar için 'USB Selective Suspend Devre Dışı').`n⚠️ Yeniden başlatma (ya da ses aygıtını kapatıp açma) sonrası geçerli olur.`n📚 Kaynak: GTweak, HD Audio sürücü güç ayarları.";
+                Description="HD Audio ses aygıtlarının (Realtek, NVIDIA / AMD HDMI sesi vb.) ~10 sn sessizlikten sonra güç tasarrufuna geçmesini kapatır. Bu uyku yüzünden yeni bir ses başladığında (şarkı değişimi, Discord bildirimi, oyunda ilk efekt) sesin ilk yarım saniyesi kesilir ya da hoparlörden 'pıt' sesi gelir — tweak bunu giderir.`n`n✅ Yalnız sürücüsü bu ayarı tanımlayan aygıtlar değişir; orijinal değerler yedeklenir, geri alma aynen geri yükler. USB / Bluetooth / kablosuz kulaklıklar etkilenmez (onlar için 'USB Seçici Askıya Almayı Kapat (Selective Suspend)').`n⚠️ Yeniden başlatma (ya da ses aygıtını kapatıp açma) sonrası geçerli olur.`n📚 Kaynak: GTweak, HD Audio sürücü güç ayarları.";
                 DetectScript='
                     $base = "HKLM:\SYSTEM\CurrentControlSet\Control\Class\{4d36e96c-e325-11ce-bfc1-08002be10318}"
                     $found = 0
@@ -6230,6 +6272,7 @@ public class SpiMenu {
 			}
 		)
     }
+    return (Set-MrCleanTweakLayout $tw)
 }
 
 # =============================================================
@@ -15197,11 +15240,11 @@ $script:PlanBoundPowerTweaks = [ordered]@{
     'PCIe Bağlantı Güç Tasarrufunu Kapat (ASPM, Prizde)'          = @('501a4d13-42af-4429-9fd1-a8218c268e20|ee12f906-d277-404b-b6da-e5fa1a576df5|AC|0')
     'İşlemci Boşta Durumlarını Kapat (Rekabetçi, Uzman, Prizde)'    = @('54533251-82be-4824-96c1-47b60b740d00|5d76a2ca-e8c0-402f-a133-2158492d58ad|AC|1')
     'Wi-Fi Güç Tasarrufunu Pilde de Kapat (Dizüstü)'               = @('19cbb8fa-5279-450e-9fac-8a3d5fedd0c1|12bbebe6-58d6-4636-95bb-3217ef867c1a|DC|0')
-    'USB Selective Suspend Devre Dışı'                              = @('2a737441-1930-4402-8d77-b2bebba308a3|48e6b7a6-50f5-4782-a5d4-53bb8f07e226|AC|0|A')
+    'USB Seçici Askıya Almayı Kapat (Selective Suspend)'                              = @('2a737441-1930-4402-8d77-b2bebba308a3|48e6b7a6-50f5-4782-a5d4-53bb8f07e226|AC|0|A')
     'USB 3 Bağlantı Güç Yönetimini Kapat (U1/U2)'                  = @('2a737441-1930-4402-8d77-b2bebba308a3|d4e98f31-5ffe-4ce1-be31-1b38b384c009|AC|0|A')
     'Disklerin Kapanmasını Engelle (Prizde: Asla)'                  = @('0012ee47-9041-4b5d-9b77-535fba8b1442|6738e2c4-e8a5-4a42-b16a-e040e769756e|AC|0')
     'NVMe / SATA Bağlantı Güç Tasarrufunu Kapat (Uzman, Prizde)'   = @('0012ee47-9041-4b5d-9b77-535fba8b1442|0b2d69d7-a2a1-449c-9680-f91c70521c60|AC|0|A', '0012ee47-9041-4b5d-9b77-535fba8b1442|d639518a-e56d-4345-8af2-b9f32fb26109|AC|0|A', '0012ee47-9041-4b5d-9b77-535fba8b1442|fc7372b6-ab2d-43ee-8797-15e9841f2cca|AC|0|A')
-    'CPU Core Parking Devre Dışı (Tüm Çekirdekler Aktif)'          = @('54533251-82be-4824-96c1-47b60b740d00|0cc5b647-c1df-4637-891a-dec35c318583|ACDC|100|A')
+    'Çekirdek Park Etmeyi Kapat (Core Parking — Tüm Çekirdekler Aktif)'          = @('54533251-82be-4824-96c1-47b60b740d00|0cc5b647-c1df-4637-891a-dec35c318583|ACDC|100|A')
 }
 
 # v1.3.0 (§93): bir tweak'in uygulanmasi / geri alinmasi baska tweak'lerin durumunu da degistirir mi
@@ -15215,11 +15258,11 @@ $script:PlanBoundBackupIds = @{
     'PCIe Bağlantı Güç Tasarrufunu Kapat (ASPM, Prizde)'          = @('PcieAspm')
     'İşlemci Boşta Durumlarını Kapat (Rekabetçi, Uzman, Prizde)'    = @('IdleDisable')
     'Wi-Fi Güç Tasarrufunu Pilde de Kapat (Dizüstü)'               = @('WifiPowerDC')
-    'USB Selective Suspend Devre Dışı'                              = @('UsbSelectiveSuspend')
+    'USB Seçici Askıya Almayı Kapat (Selective Suspend)'                              = @('UsbSelectiveSuspend')
     'USB 3 Bağlantı Güç Yönetimini Kapat (U1/U2)'                  = @('Usb3Lpm')
     'Disklerin Kapanmasını Engelle (Prizde: Asla)'                  = @('DiskIdle')
     'NVMe / SATA Bağlantı Güç Tasarrufunu Kapat (Uzman, Prizde)'   = @('SataLpm', 'NvmeIdle', 'NvmeNoppme')
-    'CPU Core Parking Devre Dışı (Tüm Çekirdekler Aktif)'          = @('CoreParkingMinCores')
+    'Çekirdek Park Etmeyi Kapat (Core Parking — Tüm Çekirdekler Aktif)'          = @('CoreParkingMinCores')
 }
 
 # MrClean ile uygulanmis plana bagli tweak'ler: uygulama listesinde (HKCU AppliedTweaks) ya da guc yedegi alinmis
@@ -18591,10 +18634,33 @@ function Request-MrCleanAdminLauncherOnce {
     } catch {}
 }
 
+# v2.0.3 (§163): adi degisen tweak'ler — uygulanan listedeki eski ad (satirin Aliases alaninda) yeni ada cevrilir.
+# Cevrilmezse o satir denetimde ve guc plani tasimasinda "uygulanmamis" sayilirdi.
+function Convert-MrCleanAppliedAliases {
+    try {
+        $root = "HKCU:\Software\MrClean"
+        $cur = @(@((Get-ItemProperty -Path $root -Name "AppliedTweaks" -ErrorAction SilentlyContinue).AppliedTweaks) | Where-Object { $_ })
+        if ($cur.Count -eq 0) { return }
+        $official = @{}; $map = @{}
+        foreach ($c in $global:TweakList.Keys) { foreach ($t in $global:TweakList[$c]) { $official["$($t.Name)"] = $true } }
+        foreach ($c in $global:TweakList.Keys) { foreach ($t in $global:TweakList[$c]) { foreach ($al in @($t.Aliases)) { if ($al -and -not $official.ContainsKey("$al")) { $map["$al"] = "$($t.Name)" } } } }
+        $new = New-Object System.Collections.Generic.List[string]; $n = 0
+        foreach ($x in $cur) {
+            $m = "$x"; if ($map.ContainsKey($m)) { $m = $map[$m]; $n++ }
+            if (-not $new.Contains($m)) { $new.Add($m) }
+        }
+        if ($n -gt 0) {
+            Set-ItemProperty -Path $root -Name "AppliedTweaks" -Value ([string[]]@($new)) -Type MultiString -Force
+            WpfLog "[Denetim] Uygulanan listede $n ayar adi yeni adina cevrildi."
+        }
+    } catch {}
+}
+
 function Start-MrCleanDriftCheck {
     try {
         $root = "HKCU:\Software\MrClean"
         if (-not (Test-Path $root)) { New-Item -Path $root -Force | Out-Null }
+        Convert-MrCleanAppliedAliases
         $old = Get-ItemProperty -Path $root -ErrorAction SilentlyContinue
         $fp = Get-MrCleanEnvFingerprint
         $applied = @(@($old.AppliedTweaks) | Where-Object { $_ })
@@ -20774,8 +20840,8 @@ function Get-ProfileTweaks {
             "HPET (Platform Clock) Kapat",
             "Görsel Efektler: Özel (Yazı Tipi + Küçük Resimler Açık)",
             "Xbox Game DVR Kapat",
-            "USB Selective Suspend Devre Dışı",
-            "CPU Core Parking Devre Dışı (Tüm Çekirdekler Aktif)",
+            "USB Seçici Askıya Almayı Kapat (Selective Suspend)",
+            "Çekirdek Park Etmeyi Kapat (Core Parking — Tüm Çekirdekler Aktif)",
             "Hardware Accelerated GPU Scheduling Aç (HAGS)",
             "Pencereli Oyunlar İçin Optimizasyon (Flip Model)",
             "Oturum Açıkken Güncelleme Sonrası Otomatik Yeniden Başlatmayı Engelle",
@@ -20790,7 +20856,8 @@ function Get-ProfileTweaks {
             "Dinamik Aydınlatmayı Kapat (RGB)",
             "İçerik Uyarlamalı Parlaklığı Kapat (CABC)",
             "Pencereli Oyunlarda Değişken Yenileme Hızı (VRR) İyileştirmesi",
-            "Defender Tarama CPU Kullanımını Sınırla (%25)"
+            "Defender Tarama CPU Kullanımını Sınırla (%25)",
+            "Yapışkan Tuşları Kapat"
         )
         "Gizlilik" = @(
             "Reklam Kimliğini Kapat",
@@ -20805,13 +20872,13 @@ function Get-ProfileTweaks {
             "Mesajlaşma (Chat) Erişimi Kapat",
             "Radyo (Bluetooth vb.) Erişimi Kapat",
             "Uygulama Tanılama (Diagnostics) Erişimi Kapat",
-            "Arka Plan Uygulamalarını Kapat (Sistem Politikası)",
+            "Arka Plan Uygulamalarını Kapat (Tüm Kullanıcılar — İlke)",
             "Cortana ve Cloud Aramayı Tamamen Kapat",
             "Yerel olarak uygun içerik Kapat",
-            "Cloud Clipboard Devre Disi (Win+V Senkronizasyonu Kapat)",
-            "Connected Devices Platform (CDP) Servisini El Ile Al",
-            "Tailored Experiences (Kisisellestirilmis Deneyimler) Kapat",
-            "LLMNR Devre Disi (DNS Multicast Privacy + Guvenlik)",
+            "Pano Bulut Eşitlemesini Kapat (Cloud Clipboard)",
+            "Bağlı Cihazlar Platformu Servisini El ile Başlat (CDPSvc)",
+            "Kişiselleştirilmiş Deneyimleri Kapat (Tailored Experiences)",
+            "LLMNR Kapat (Yerel Ağ Ad Çözümleme — Gizlilik ve Güvenlik)",
             "Windows Reklam ve Öneri Bildirimlerini Kapat (Hepsi)",
             "Etkinlik Geçmişini Kapat (Activity History)",
             "Mürekkep ve Yazma Kişiselleştirmesini Kapat",
@@ -20869,7 +20936,9 @@ function Get-ProfileTweaks {
             "Phone Link / Mobil Cihazları Kapat",
             "Haritaların Otomatik Güncellenmesini Kapat",
             "Teslim İyileştirmeyi Kapat (P2P Güncelleme Paylaşımı)",
-            "AMD Adrenalin Optimizasyonu (Reklam/Popup/Bildirim Kapat)"
+            "AMD Adrenalin Optimizasyonu (Reklam/Popup/Bildirim Kapat)",
+            "Chrome Kapatınca Arka Planda Çalışmasın",
+            "Discord Donanım Hızlandırmasını Kapat"
         )
     }
 
@@ -20882,6 +20951,9 @@ function Get-ProfileTweaks {
     $skipPlan = $false
     try { $skipPlan = (Test-IsAmdCpu) -or (Test-IsLaptop) } catch {}
     if ($skipPlan) { $profileTweakNames = @($profileTweakNames | Where-Object { $_ -ne "Nihai Performans Güç Planını Aktif Et" }) }
+    # v2.0.3 (§161): Nihai plan en dusuk islemci durumunu zaten HEP %100 tutar; "yalniz oyun acikken %100" satirinin anlami
+    # (bostayken normal guc yonetimi) onunla birlikte kalmaz. Plan profilde kaliyorsa (Intel masaustu) o satir eklenmez.
+    elseif ($ProfileKey -eq "Oyun") { $profileTweakNames = @($profileTweakNames | Where-Object { $_ -ne "İşlemci Minimum Durumu %100 — Yalnız Oyun Açıkken (Prizde)" }) }
     # Donanima ozel kurallar. Donanim gercekten bulunursa eklenir (algilama basarisizsa eklenmez);
     # uyumsuzlar (Requires / Vendor / surum) asagida ayrica elenir. Wi-Fi ayarlari Ethernet de olsa uygulanir (kablo arizalaninca hazir olur).
     try {
@@ -20901,9 +20973,19 @@ function Get-ProfileTweaks {
             if (@($hw.GpuNames).Count -ge 2) { $profileTweakNames += "Algılanan Oyunlara Yüksek Performans GPU Ata" }
             # Cift CCD X3D: core parking'i kapatmak V-Cache cekirdek yonlendirmesini bozar (AMD onerisi)
             # (Get-DualCcdX3DName ile ayni esleme; islemci adi onbellekteki donanim profilinden, CIM sorgusu yok)
-            if ("$($hw.Cpu)" -match "Ryzen\s+9\s+\d{4}H?X3D") { $profileTweakNames = @($profileTweakNames | Where-Object { $_ -ne "CPU Core Parking Devre Dışı (Tüm Çekirdekler Aktif)" }) }
+            if ("$($hw.Cpu)" -match "Ryzen\s+9\s+\d{4}H?X3D") { $profileTweakNames = @($profileTweakNames | Where-Object { $_ -ne "Çekirdek Park Etmeyi Kapat (Core Parking — Tüm Çekirdekler Aktif)" }) }
         }
+        # v2.0.3 (§161): konum kapaninca Windows 11 24H2+ ta bazi uygulamalar Wi-Fi aglarini listeleyemez (satirin kendi
+        # uyarisi: "Wi-Fi'li dizustunde dikkat"). Wi-Fi'li dizustunde profile girmez; elle yine uygulanabilir.
+        if ($ProfileKey -eq "Gizlilik" -and $hw.HasWiFi -and $hw.IsLaptop) { $profileTweakNames = @($profileTweakNames | Where-Object { $_ -ne "Konum Hizmetlerini Tamamen Kapat" }) }
     } catch {}
+    # v2.0.3 (§162, kullanici karari): Hiz profili Debloat "Servisler — Güvenli" satirlarinin hepsini alir (ad listesi
+    # tutulmaz; o alt basliga eklenen satir kendiliginden girer). Bu bilgisayarda olmayan servisler asagida elenir (Requires).
+    if ($ProfileKey -eq "Hiz") {
+        foreach ($cat in $global:TweakList.Keys) {
+            foreach ($tweak in $global:TweakList[$cat]) { if ("$($tweak.SubCategory)" -eq "Servisler — Güvenli") { $profileTweakNames += "$($tweak.Name)" } }
+        }
+    }
     $result = @()
 
     # Sadece $global:TweakList'te gercekten var olan tweak'leri don — broken refs filtrelenir.
@@ -24225,8 +24307,8 @@ function Get-BenchMetricToTweakMap {
             Direction = "Düşük = İyi"
             Affects   = @(
                 "UAC Bildirimini Kapat (Never Notify)",
-                "Arka Plan Uygulamalarını Kapat (Sistem Politikası)",
-                "Microsoft GameInput Servisini El Ile Al",
+                "Arka Plan Uygulamalarını Kapat (Tüm Kullanıcılar — İlke)",
+                "Microsoft GameInput Servisini El ile Başlat",
                 "Copilot Tamamen Kapat (Uninstall + Policy)",
                 "Microsoft Update Health Tools Kaldır"
             )
@@ -24249,7 +24331,7 @@ function Get-BenchMetricToTweakMap {
             Metric    = "💾 Boş RAM (MB)"
             Direction = "Yüksek = İyi"
             Affects   = @(
-                "Arka Plan Uygulamalarını Kapat (Sistem Politikası)",
+                "Arka Plan Uygulamalarını Kapat (Tüm Kullanıcılar — İlke)",
                 "Windows Tanılama Verileri Kapat",
                 "Bloatware kaldırma (Update Health)",
                 "Copilot Tamamen Kapat",
@@ -24285,7 +24367,7 @@ function Get-BenchMetricToTweakMap {
                 "İşlemci Minimum Durumu %100 — Yalnız Oyun Açıkken (Prizde)",
                 "Nihai Performans Güç Planını Aktif Et",
                 "Bellek Bütünlüğü (HVCI / Çekirdek Yalıtımı) Kapat - Oyun FPS",
-                "CPU Core Parking Devre Dışı (Tüm Çekirdekler Aktif)"
+                "Çekirdek Park Etmeyi Kapat (Core Parking — Tüm Çekirdekler Aktif)"
             )
             Note = "Ölçüm: işlemci min %100 ile CS2 benzeri 1% low +%14, BF6 benzeri +%11; Dengeli plan −%7. SysMain açık/kapalı fark yok."
         }
