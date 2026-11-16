@@ -11631,7 +11631,12 @@ function Load-All-Settings {
             "Keyboard Data Queue Size (Tamponu Artır)",
             "TCP NoDelay ve AckFrequency (Nagle Algoritmasını Kapat)",
             "TSC Sync Policy: Enhanced (Multi-CPU)",
-            "MMCSS Oyun Görevi Önceliği (Games: High)"
+            "MMCSS Oyun Görevi Önceliği (Games: High)",
+            # §166: yalniz gelistirme surumlerinde gorunen NVIDIA deneme satirlari (§156–§158). Ayar dosyasinda kalmissa
+            # "kullanicinin kendi ayari" sanilip geri geliyor, komutu da silinmis islevi cagiriyordu.
+            "[TEST] NVIDIA Dinamik Güç Durumunu Kapat",
+            "[TEST] NVIDIA Düşük Gecikme = Açık (Ultra yerine)",
+            "[TEST] NVIDIA Threaded Optimization = Kapalı"
         )
         $currentOfficialNames = New-Object 'System.Collections.Generic.HashSet[string]'
         foreach ($dcat in $defaults.Keys) {
@@ -19068,7 +19073,26 @@ function Get-RetiredTweakDefs {
     )
 }
 
+# §166: NVIDIA deneme satirlarinin kalintilari (uygulanan listesindeki adlar + NvTest isaretleri). Surucu profiline dokunmaz:
+# satirlar profili Update-MrCleanNvidiaProfile ile yaziyordu, o islev §158'de silindi. Kalinti yoksa hicbir sey yapmaz.
+function Clear-MrCleanNvTestLeftovers {
+    $root = "HKCU:\Software\MrClean"
+    $names = @("[TEST] NVIDIA Dinamik Güç Durumunu Kapat", "[TEST] NVIDIA Düşük Gecikme = Açık (Ultra yerine)", "[TEST] NVIDIA Threaded Optimization = Kapalı")
+    $n = 0
+    try {
+        $applied = @((Get-ItemProperty -Path $root -Name "AppliedTweaks" -ErrorAction SilentlyContinue).AppliedTweaks)
+        $found = @($names | Where-Object { $applied -contains $_ })
+        if ($found.Count -gt 0) {
+            Update-MrCleanAppliedList -Enabled @() -Disabled @($found | ForEach-Object { @{ Name = $_ } })
+            $n += $found.Count
+        }
+    } catch {}
+    try { if (Test-Path "$root\NvTest") { Remove-Item -Path "$root\NvTest" -Recurse -Force -ErrorAction Stop; $n++ } } catch {}
+    if ($n -gt 0) { try { WpfLog "[Emekli] NVIDIA deneme satirlarinin kalintilari temizlendi ($n kayit); surucu profiline dokunulmadi." } catch {} }
+}
+
 function Invoke-RetiredTweakCleanup {
+    try { Clear-MrCleanNvTestLeftovers } catch {}
     $root = "HKCU:\Software\MrClean"; $ver = "r12b"
     try { if ("$((Get-ItemProperty -Path $root -Name "RetiredCleanup" -ErrorAction SilentlyContinue).RetiredCleanup)" -eq $ver) { return } } catch {}
     try { Refresh-BcdEdit-Cache } catch {}
