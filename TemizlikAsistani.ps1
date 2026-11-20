@@ -18908,6 +18908,34 @@ function Convert-MrCleanAppliedAliases {
     } catch {}
 }
 
+# §174: v2.0.3 ve oncesinde "Sensor Servislerini Kapat" SensorService'i de kapatiyordu; kapaliyken Ayarlar > Guc sayfasi
+# cokuyordu (§170). Satir yeni adiyla "aktif" gorundugu icin yeniden Uygula bunu duzeltmez. SensorService'i MrClean
+# kapattiysa (ValueBackup'ta yedegi var) ve hala Devre disiysa eski ayarina dondurulur; baska bir aracla kapatildiysa
+# dokunulmaz. Geri alma yedegi siler, bu yuzden yalniz bir kez calisir. Diger iki sensor servisi kapali kalir.
+function Repair-MrCleanSensorService($Applied) {
+    if (-not (@($Applied) | Where-Object { "$_" -like "Sensör Servislerini Kapat*" })) { return }
+    $bk = (Get-ItemProperty -Path 'HKLM:\SOFTWARE\MrClean\ValueBackup' -Name 'SvcStart_SensorService' -ErrorAction SilentlyContinue).SvcStart_SensorService
+    if (-not $bk) { return }
+    $p = 'HKLM:\SYSTEM\CurrentControlSet\Services\SensorService'
+    if ("$((Get-ItemProperty -LiteralPath $p -Name Start -ErrorAction SilentlyContinue).Start)" -ne '4') { return }
+    # Write-Host ciktisi (6) kayda alinir; -NoConsole EXE'de ileti kutusu acmasin
+    & { Restore-MrCleanServicesStart @("SensorService") } 6>&1 | ForEach-Object { WpfLog "[Denetim] $_" }
+    $now = "$((Get-ItemProperty -LiteralPath $p -Name Start -ErrorAction SilentlyContinue).Start)"
+    if ($now -ne '4') {
+        WpfLog "[Denetim] SensorService eski ayarina donduruldu (Start=$now) — eski surumdeki 'Sensor Servislerini Kapat' Ayarlar > Guc sayfasini cokertiyordu."
+        if ($null -ne $script:DriftFixNotes) { $script:DriftFixNotes.Add("'Sensör Servislerini Kapat' eski sürümde SensorService'i de kapatıyordu; Windows Ayarlar > Sistem > Güç sayfası bu yüzden çöküyordu. SensorService eski ayarına döndürüldü (diğer iki sensör servisi kapalı kalır).") }
+    } else { WpfLog "[Denetim] SensorService geri alinamadi (hala Devre disi)." }
+}
+
+# §174: guncellemeden sonra denetlenecek pasif ayar yoksa, yapilan onarimlar (ornek: SensorService) ayri bir iletiyle bildirilir.
+function Show-MrCleanDriftFixNotes {
+    if ($null -eq $script:DriftFixNotes) { return }   # @($null) bir elemanli dizi olur
+    $n = @($script:DriftFixNotes); $script:DriftFixNotes = $null
+    if ($n.Count -eq 0) { return }
+    $head = if ($script:DriftUpdateFrom) { "MrClean v$($global:AppVersion) sürümüne güncellendi.`n`n" } else { "" }
+    [void](Show-MrCleanMessage -Text ($head + ($n -join "`n`n")) -Title "Ayar Denetimi" -Icon Info)
+}
+
 function Start-MrCleanDriftCheck {
     try {
         $root = "HKCU:\Software\MrClean"
@@ -18916,6 +18944,16 @@ function Start-MrCleanDriftCheck {
         $old = Get-ItemProperty -Path $root -ErrorAction SilentlyContinue
         $fp = Get-MrCleanEnvFingerprint
         $applied = @(@($old.AppliedTweaks) | Where-Object { $_ })
+        # §174: program surumu kaydedilir. Kayittaki surum farkliysa program guncellenmistir (v2.0.3 ve oncesi bu degeri
+        # yazmazdi: bos + EnvWin var = eski surumden guncelleme). Yeni kurulumda (EnvWin yok) yalniz surum yazilir.
+        $lastVer = "$($old.LastRunVersion)"
+        $script:DriftUpdateFrom = $null
+        $script:DriftFixNotes = New-Object System.Collections.Generic.List[string]
+        if ($lastVer -ne "$($global:AppVersion)") {
+            if ($old.EnvWin) { $script:DriftUpdateFrom = if ($lastVer) { "v$lastVer" } else { "önceki sürüm" } }
+            Set-ItemProperty -Path $root -Name "LastRunVersion" -Value "$($global:AppVersion)" -Type String -Force
+        }
+        if ($old.EnvWin) { try { Repair-MrCleanSensorService $applied } catch { WpfLog "[Denetim] SensorService onarimi: $($_.Exception.Message)" } }
         $saveFp = {
             Set-ItemProperty -Path $root -Name "EnvWin" -Value $fp.Win -Type String -Force
             Set-ItemProperty -Path $root -Name "EnvGpu" -Value $fp.Gpu -Type String -Force
@@ -18945,10 +18983,14 @@ function Start-MrCleanDriftCheck {
         if ("$($old.EnvWin)" -ne $fp.Win) { WpfLog "[Denetim] Windows: '$($old.EnvWin)' -> '$($fp.Win)'" }
         if ("$($old.EnvGpu)" -ne $fp.Gpu) { WpfLog "[Denetim] Ekran karti: '$($old.EnvGpu)' -> '$($fp.Gpu)'" }
         if ("$($old.EnvNic)" -ne $fp.Nic) { WpfLog "[Denetim] Ag karti: '$($old.EnvNic)' -> '$($fp.Nic)'" }
+        if ($script:DriftUpdateFrom) {
+            $changes.Insert(0, "MrClean güncellemesi ($($script:DriftUpdateFrom) → v$($global:AppVersion))")
+            WpfLog "[Denetim] Program guncellendi: $($script:DriftUpdateFrom) -> v$($global:AppVersion)"
+        }
         $stale = $true
         try { $stale = ((Get-Date) - [datetime]$old.EnvCheckedAt).TotalDays -ge 7 } catch {}
         & $saveFp
-        if ($applied.Count -eq 0 -or ($changes.Count -eq 0 -and -not $stale)) { return }
+        if ($applied.Count -eq 0 -or ($changes.Count -eq 0 -and -not $stale)) { Show-MrCleanDriftFixNotes; return }
         if ($changes.Count -eq 0) { $changes.Add("haftalık denetim") }
 
         $byName = @{}
@@ -18956,7 +18998,7 @@ function Start-MrCleanDriftCheck {
         # v2.0.3 (§159): DNS ve guc plani "birini sec" ayarlari; baskasini kullanmak kullanicinin tercihi, guncellemenin
         # bozdugu bir sey degil (ornek: CleanBrowsing kullanirken Cloudflare soruluyordu) — denetime girmez.
         $queue = @($applied | Where-Object { $byName.ContainsKey("$_") } | ForEach-Object { $byName["$_"] } | Where-Object { @("DNS", "PowerPlan") -notcontains "$($_.Group)" } | Where-Object { Test-TweakBuildCompatible $_ })
-        if ($queue.Count -eq 0) { return }
+        if ($queue.Count -eq 0) { Show-MrCleanDriftFixNotes; return }
         try { Refresh-PowerCfg-Cache; Refresh-BcdEdit-Cache; Refresh-NetshTcp-Cache } catch {}
         $script:DriftQueue = $queue; $script:DriftIdx = 0; $script:DriftChanges = @($changes)
         $script:DriftReverted = New-Object System.Collections.Generic.List[string]
@@ -18973,13 +19015,21 @@ function Start-MrCleanDriftCheck {
             if ($script:DriftIdx -lt $script:DriftQueue.Count) { return }
             $script:DriftTimer.Stop()
             $rev = @($script:DriftReverted)
-            if ($rev.Count -eq 0) { WpfLog "[Denetim] $($script:DriftChanges -join ", ") sonrasi ayarlariniz yerinde ($($script:DriftQueue.Count) kontrol edildi)."; return }
+            if ($rev.Count -eq 0) { WpfLog "[Denetim] $($script:DriftChanges -join ", ") sonrasi ayarlariniz yerinde ($($script:DriftQueue.Count) kontrol edildi)."; Show-MrCleanDriftFixNotes; return }
             WpfLog "[Denetim] $($rev.Count) ayar varsayilana donmus: $($rev -join " | ")"
             $list = ($rev | Select-Object -First 15 | ForEach-Object { "  • $_" }) -join "`n"
             if ($rev.Count -gt 15) { $list += "`n  … +$($rev.Count - 15)" }
             # v2.0.2 (§151): metin sebebi degisiklige baglamiyor (ornek: surucu guncellemesinde DNS / guc plani soruluyordu);
             # "Hayir" denen ayarlar uygulanan listeden cikarilir, bir sonraki denetimde ayni soru tekrar gelmez.
-            $msg = "Bir değişiklik algılandı: $($script:DriftChanges -join ", "). Daha önce uyguladığınız ayarlar kontrol edildi; şu $($rev.Count) ayar şu an uygulanmış değil:`n`n$list`n`nBunların bu değişiklikle ilgisi olmayabilir: ör. güç planını ya da DNS'i sonradan kendiniz değiştirdiyseniz de burada görünür.`n`nEvet: Tweaks sekmesinde işaretlenir, UYGULA ile geri getirirsiniz.`nHayır: bu ayarlar 'uyguladıklarım' listesinden çıkarılır, bir daha sorulmaz."
+            # §174: program guncellemesinde ayri metin — pasif gorunmenin nedeni cogunlukla yeni surumde degisen denetimdir
+            $notes = if ($null -ne $script:DriftFixNotes) { @($script:DriftFixNotes) } else { @() }; $script:DriftFixNotes = $null
+            $extra = if ($notes.Count -gt 0) { ($notes -join "`n`n") + "`n`n" } else { "" }
+            $tail = "Evet: Tweaks sekmesinde işaretlenir, UYGULA ile geri getirirsiniz.`nHayır: bu ayarlar 'uyguladıklarım' listesinden çıkarılır, bir daha sorulmaz."
+            if ($script:DriftUpdateFrom) {
+                $msg = "MrClean v$($global:AppVersion) sürümüne güncellendi. Daha önce uyguladığınız şu $($rev.Count) ayar şu an uygulanmış görünmüyor, yeniden uygulanmalı:`n`n$list`n`nNeden: bu sürümde ayarın denetimi değişmiş olabilir ya da ayar bir Windows / sürücü güncellemesiyle geri alınmış olabilir.`n`n$extra$tail"
+            } else {
+                $msg = "Bir değişiklik algılandı: $($script:DriftChanges -join ", "). Daha önce uyguladığınız ayarlar kontrol edildi; şu $($rev.Count) ayar şu an uygulanmış değil:`n`n$list`n`nBunların bu değişiklikle ilgisi olmayabilir: ör. güç planını ya da DNS'i sonradan kendiniz değiştirdiyseniz de burada görünür.`n`n$extra$tail"
+            }
             $r = Show-MrCleanMessage -Text $msg -Title "Ayar Denetimi" -Buttons YesNo -Icon Question
             if ($r -eq 'Yes') {
                 $script:PendingReapply = $rev
