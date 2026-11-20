@@ -1,5 +1,5 @@
 @echo off
-REM MrClean baslatici (v2.0.5) - cift tiklayin. UAC ister, siyah cmd birakmaz.
+REM MrClean baslatici (v2.0.6) - cift tiklayin. UAC ister, siyah cmd birakmaz.
 REM ASCII only (cmd Turkce / ozel karakterleri bozar).
 REM
 REM Neden bazi PC'lerde siyah pencere vardi:
