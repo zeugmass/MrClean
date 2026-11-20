@@ -1,433 +1,204 @@
-# MrClean — Kod Haritası (v1.3.0)
+# MrClean — Kod Haritası (v2.0.3 + §167)
 
-**Dosya:** `TemizlikAsistani.ps1` · **20.437 satır** · ~1 MB · PowerShell 5.1 + WPF · PS2EXE ile derlenir.
-**Amaç:** Değişiklik yapmadan önce buraya bak → fonksiyonu/bölümü satır no ile bul → sadece ilgili ±30 satırı oku → Edit. Tüm dosyayı okuma.
-**Not:** Satır numaraları büyük edit'lerden sonra kayar; yapısal değişiklikte bu haritayı güncelle.
-
----
-
-## 1. BÖLÜM (REGION) HARİTASI
-
-| # | Satır | Bölüm | İçerik |
-|---|-------|-------|--------|
-| 1 | 49–406 | C# INTEROP | Native sınıflar (aşağıda) + `Add-Type` (394) + konsol gizleme |
-| 2 | 411–475 | YÖNETİCİ / POOL / TEMA | Admin check + RunAs relaunch, PS2EXE output susturma, `MrCleanPool` runspace pool (1-5) |
-| 3 | 478–743 | GLOBAL DEĞİŞKENLER & YOLLAR | AppData yolları, tüm `$global:*` (aşağıda) |
-| 4 | 748–3022 | VARSAYILAN VERİLER | Tweak DB, Winget DB, Onarım ağacı (VERİ — çok uzun) |
-| 5 | 3027–4666 | XAML TANIMLARI | Ana pencere + 14 alt pencere here-string (aşağıda) |
-| 6 | 4671–4892 | XAML YÜKLEME & FINDNAME | `$Win = XamlReader.Load` + tüm `$btn*/$tv*/$txt*` bağlamaları |
-| 7 | 4898–4948 | ÇEKİRDEK HELPER | `Do-Events`(4901), `WpfLog`(4913), `Format-Size`(4940) |
-| 8 | 4953–5331 | AYAR YÖNETİMİ | Config save/load/restore |
-| 9 | 5337–8538 | TWEAK SİSTEMİ | Apply/Check/Manager + Benchmark + Timer + Update kontrol |
-| 10 | 8543–9391 | TEMİZLİK MOTORU | Winapp2, Resolve-ComplexPath, Process-Tree |
-| 11 | 9396–9698 | WORKER & KOMUT | `Start-Worker-Process` + Winget detection |
-| 12 | 9704–9919 | BAŞLANGIÇ YÖNETİCİSİ | `Refresh-StartupView` |
-| 13 | 9921–17280 | UI / MODAL FONKSİYONLARI | Tools, Profiller, Dashboard, tüm dialog'lar (en büyük bölüm) |
-| 14 | 17288–19941 | EVENT HANDLERS | Buton click'leri, context menu, tab değişimi, çökme tarama |
-| 15 | 19946–20436 | PENCERE YAŞAM DÖNGÜSÜ | `Add_Loaded`, `Add_Closing`, `ShowDialog` |
+**Dosya:** `TemizlikAsistani.ps1` · **33.072 satır** · 4,2 MB · 458 üst düzey fonksiyon · PowerShell 5.1 + WPF · PS2EXE (`-NoConsole -RequireAdmin`) ile tek EXE.
+**Üretim:** 16 Kasım 2026, v2.0.3 Release kaynağı (SHA256 doğrulandı) + §167 düzeltmeleri üzerinden AST ile çıkarıldı. Fonksiyon dizini (§4) otomatiktir; satır numaraları bu andaki dosyaya aittir.
+**Kullanım:** buradan bölümü / fonksiyonu bul → konumu `Grep "function Ad"` ile teyit et (satırlar her düzenlemede kayar) → yalnız ilgili ±30–60 satırı oku → Edit. Tüm dosyayı okuma.
+**Güncelleme:** yapısal değişiklikten sonra §4 yeniden üretilir: `Parser::ParseFile` → üst düzey `FunctionDefinitionAst` → `# #region N --` satırlarına göre gruplanır.
 
 ---
 
-## 2. C# NATIVE SINIFLAR (Region 1, satır 52–392)
+## 1. GENEL AKIŞ
 
-| Sınıf | Ne yapar |
-|-------|----------|
-| `NativeMethods` | ShowWindow, GetConsoleWindow, AllocConsole/FreeConsole, SendMessageTimeout (tema refresh), SystemParametersInfo (wallpaper), SHChangeNotify |
-| `FileSelector` | `Select(path)` → Explorer'da dosya seçili aç (SHOpenFolderAndSelectItems) |
-| `SecureWiper` | `WipeFile(path, passes)` → güvenli üzerine yazma silme |
-| `RamCleaner` | `CleanAll()` → EmptyWorkingSet + NtSetSystemInformation (Standby/Modified purge, RAMMap tarzı) |
-| `RamInfo` | `GetRamUsageGB()` → GlobalMemoryStatusEx (total/used/percent) |
-| `ProcessMonitor` | `GetProcessTotalIo(pid)` → IO counters |
-| `TimerRes` | NtSetTimerResolution + QPC. `Set/Release/QueryMs/QueryMaxMs/MeasureOnce/SetRealtime/High/NormalPriority` |
-| `CpuStress` | Native tight-loop CPU stress (`Start/Stop`, volatile flag) |
+```
+Açılış:  Region 1–3 (interop, yönetici, globaller) → Region 4 veri tanımları → Region 5 XAML here-string'leri
+         → Region 6 XamlReader.Load + FindName → Region 7–13 fonksiyon tanımları → Region 14 olay bağlamaları
+         → Region 15: $Win.Add_Loaded (32941) → Resume-MrCleanBoot (32909) → $Win.ShowDialog() (33067)
+Add_Loaded: Load-Tweak-Tree (ilk ziyarette), Start-Winapp2-Process, Test-AppUpdate (arka plan),
+            DriftStartTimer 6 sn sonra: Update-MrCleanAdminLauncherCopy, Start-MrCleanDriftCheck, Invoke-MrCleanAudioMaintain …
+Kapanış: $Win.Add_Closing (32564) — runspace havuzu / zamanlayıcılar / ajanlar temizlenir, ayar kaydı
+```
 
----
-
-## 3. GLOBAL DEĞİŞKENLER & YOLLAR (Region 3)
-
-**Yollar:**
-- `$AppDataPath` = `%APPDATA%\MrClean` (489) — eski `GeminiCare`'den migrasyon (481-487)
-- `$UserConfigPath` = `...\user_config.json` (493)
-- `$CachePath` = `...\app_cache.json` (495) — uygulama tarama önbelleği
-- `$Winapp2Path` = `...\Winapp2.ini` (492)
-- `$Winapp2Sources` (517) = jsdelivr CDN + raw.githubusercontent (MoscaDotTo/Winapp2)
-- `$NoCacheFlag` (514) → `$global:IsCacheDisabled` (515)
-- `$global:UpdateSkippedFile` (498/568), `$global:UpdateStagingDir` (499), `$global:BenchDir` (538), `$global:TweakStatusCachePath` (8322)
-
-**Durum/veri globalleri:** `Winapp2Rules`(522), `ShowPrivacyWarning`(523), `Blacklist`(524), `PathOverrides`(525), `CustomRules`(526), `AppLayout`(527), `CustomAppx`(528), `MyProfile`(529), `AppCounter`(530), `StopOperation`(531), `TweaksLoaded`(532), `RestorePointMode`(534), `LastTweakOperation`(535), `ConfigDirty`(539), `DashResult/DashCache/DashCacheTime`(540-542), `ActiveRunspaces`(544), `DetectedGpuVendors`(552), `TweakList`(739), `WingetApps`(2960), `ToolDownloadPath`(config'den).
-
-**Kimlik/sürüm:** `$global:AppVersion="1.2.28"`(558), `$global:AppRepo="zeugmass/MrClean"`(561), `$global:UpdateAvailable`(565), `$global:FeedbackWebhookUrl` (Discord, 573).
-
-**Gömülü kaynaklar:** `NvidiaInspectorOptimizedNip`(581)/`EmptyNip`(625) NIP profilleri, `Win11Start2BinBase64`(639) Başlat menü layout.
+**Tweak yaşam döngüsü (en sık dokunulan yol):**
+`Get-Default-Tweaks` (veri) → `Set-MrCleanTweakLayout` (kategori düzeni) → `Load-All-Settings` (user_config.json ile birleştirme, `$retiredOfficialTweaks`) → `Load-Tweak-Tree` / `Create-Tweak-Item` (arayüz) → `Check-Tweak-Status` (önbellekli, parça parça tarama) → `Get-Tweak-IsActive` (tespit; `DetectScript` öncelikli) → **Uygula:** `btnApplyTweaks` → `Apply-System-Tweaks` (onay kartı `Show-ApplyConfirm`, ilerleme `Show-ApplyOverlay`, Inspector ön indirme, `Invoke-MrCleanPowerPlanFirst`, iç fonksiyon `Process-TweakItem` → `Invoke-TweakCommand`) → `Update-TweakStatusAfterApply` (canlı doğrulama, `[DOĞRULAMA]` satırları) → `Update-MrCleanAppliedList` + `Write-TweakAuditLog`.
+**Geri al:** `Invoke-QuickUndo` (iç `Invoke-TweakAction` — Process-TweakItem'in kopyası), Aktivite Log'dan `Invoke-SingleActivityReverse`.
 
 ---
 
-## 4. FONKSİYON DİZİNİ (bölüm bölüm)
+## 2. REGION HARİTASI
 
-**Region 2:** `Refresh-WindowsTheme`(414)
-
-**Region 4 — Veri:** `Get-Default-Tweaks`(751, DEV — tüm tweak DB), `Get-Default-WingetApps`(2961), `Load-Repair-Tree`(2985, onarım ağacı + SFC/WinHTTP)
-
-**Region 6:** `Load-EmbeddedImage`(4857)
-
-**Region 7:** `Do-Events`(4901), `WpfLog`(4913), `Format-Size`(4940)
-
-**Region 8 — Config:** `Save-App-State`(4956), `Show-ConfigRecoveryDialog`(4980), `Load-All-Settings`(5045), `Save-User-Config`(5205), `Mark-ConfigDirty`(5305), `Restore-Checkboxes`(5310)
-
-**Region 9 — Tweak + Update + Benchmark + Timer:**
-- GPU/NVIDIA: `Get-System-Gpu-Vendors`(5346), `Get-NvidiaInspectorPath`(5375), `Invoke-StartMenuLayoutImport`(5461)
-- **Program güncelleme:** `Compare-Version`(5602), `Get-AppExeDirectory`(5620), `Cleanup-OldUpdateFiles`(5640), `Test-AppUpdate`(5664, GitHub release async), `Invoke-AppUpdate`(5816, indir+SHA256+swap), `Add-SkippedVersion`(5933)
-- Shell/restore: `Invoke-ShellSoftRefresh`(5952), `Invoke-ExplorerHardRestart`(5968), `Test-VssServiceRunning`(6025), `Get-LastRestorePointDate`(6035), `Create-Restore-Point`(6050), `Invoke-RestorePointAsync`(6112)
-- Timer resolution: `Invoke-HiddenCommand`(6232), `Get/Save-TRTSettings`(6267/6291), `Invoke-TimerResHelperSetup`(6307), `Remove-TimerResHelper`(6387)
-- Cache refresh: `Refresh-PowerCfg-Cache`(6419), `Refresh-BcdEdit-Cache`(6423), `Refresh-NetshTcp-Cache`(6427)
-- **Tweak çekirdek:** `Get-Tweak-IsActive`(6431, tweak durum tespiti — DetectScript'ler burada), `Load-Tweak-Tree`(6643), `Attach-ToolTip`(6716), `Sync-Children`(6744), `New-TreeItem`(6746), `Get-CheckFromItem`(6765), `Get-TweakDisplayName`(6774), `Create-Tweak-Item`(6788), `Show-Privacy-Warning`(6862), `Apply-System-Tweaks`(6885, ana apply motoru), `Show-TweakManager`(7178), `Write-TweakAuditLog`(7710)
-- **Benchmark:** `Test-TimerPrecision`(7752), `Test-LoopbackPing`(7776), `Test-GatewayPing`(7809), `Test-DnsResolve`(7844), `Test-Disk4kRead`(7869), `Test-ProcessStartLatency`(7915), `Test-DpcTime`(7942), `Get-SystemSnapshot`(7973), `Get-Median`(8000), `Merge-BenchRuns`(8010), `Get-BenchSnapshot`(8053), `Save/Get/Remove-BenchSnapshot`(8113/8131/8144), `Set-BenchSnapshotLabel`(8152), `Get-BenchMetricCatalog`(8167), `Compare-BenchSnapshots`(8188)
-- **Quick undo + tweak durum cache:** `Invoke-QuickUndo`(8234), `Get-TweakStatusCachePath`(8327), `Load/Save-TweakStatusCache`(8333/8352), `Get-AllTweakItems`(8365), `Test-TweakApplied`(8382), `Set-TweakItemUI`(8396), `Update-Parent-Headers-Recursive`(8435), `Check-Tweak-Status`(8455)
-
-**Region 10 — Temizlik motoru:**
-- `Check-And-Close-Browsers`(8546), `Check-Browser-Safety`(8558), `Get-AppEnvFingerprint`(8575, tarayıcı imza — cache geçersizleştirme), `Update-Cache`(8595), `Test-BrowserInstalled`(8613, v1.2.27 kalıntı tespiti), `Flush-Buffers-To-Tree`(8643), `Add-To-Buffer`(8669), `Load-System-Tree`(8676)
-- **`Start-Winapp2-Process`(8707)** — winapp2 yükle (cache/disk/indir) + **`$CheckUpdateBlock`(8715-8771) açılış otomatik güncelleme kontrolü** (ilk satır kıyas → `txtWinappStatus`)
-- `Parse-Winapp2`(8836), `Load-Winget-Tree`(8957), `Remove-Empty-Folders-Recursive`(9043), `Secure-Remove-Item`(9048), `Resolve-ComplexPath`(9068), `Run-CMD-Realtime`(9184), `Process-Tree`(9339, ana temizlik yürütücü)
-
-**Region 11 — Worker:** `Start-Worker-Process`(9399, async+timeout+stop), `Get-InstalledAppRegistry`(9570, Winget tespit registry), `Normalize-AppNameForMatch`(9611), `Refresh-Winget-Status`(9617)
-
-**Region 12:** `Refresh-StartupView`(9707, başlangıç öğeleri: registry+WMI+klasör)
-
-**Region 13 — UI/Modal (en büyük):**
-- `Get-WebLink`, `Refresh-Tools-Menu`, `Show-ToolManager` §77–§78'de kaldırıldı; sürücü yedeği `$script:ExportDriversBlock` → Araçlar sayfası `btnDriverBackup`.
-- Profiller: `Get-ProfileTweaks`(10583), `Show-RecommendedProfiles`(10692), `Show-ExportSourceDialog`(11132), `Show-ImportConfirmDialog`(11173), `Show-ProfileManager`(11263)
-- `Check-BlackBoxStatus`(11713), `Start-ShutdownCountdown`(11762), `Show-Winapp2Editor`(11803)
-- Feedback: `Send-Feedback`(11927, Discord webhook), `Show-FeedbackWindow`(12020)
-- **Güncelleme pencereleri:** `Show-AppUpdateWindow`(12172, PROGRAM), **`Show-UpdateWindow`(12384, WINAPP2 — btnRefreshApp buna gider)**, `Show-RestartDialog`(12636)
-- `Show-HardwareDetail`(12697), `Load-DashboardData`(13140, Genel Bakış + 5dk cache)
-- Bench görsel: `Show-BenchDiffModal`(13528), `Show-BenchDiffChart`(13666, WPF Canvas bar), `Get-BenchMetricToTweakMap`(13907), `Show-BenchMetricGuide`(14017), `Show-BenchmarkPanel`(14124)
-- Aktivite log: `Find-TweakByName`(14439), `Get-ActivityLogEntries`(14454), `Invoke-SingleActivityReverse`(14523), `Show-ActivityLog`(15710)
-- `Show-SystemSecurityDetail`(14573, Sistem&Güvenlik detay — async lazy load)
-- DNS: `Get-DnsServersToTest`(14778), `Get-IspDns`(14794), `Test-DnsServer`(14811), `Set-PreferredDns`(14852), `Show-DnsBenchmark`(14876, paralel runspace)
-- Oyun/Defender: `Get-SteamGames`(15190), `Get-EpicGames`(15226), `Get-EADesktopGames`(15244), `Get-RiotGames`(15280), `Get-BattleNetGames`(15299), `Get-UbisoftGames`(15344), `Get-GogGames`(15374), `Get-AllDetectedGames`(15394), `Get/Add/Remove-DefenderExclusion`(15409/15413/15418), `Show-DefenderExclusionManager`(15425)
-- `Show-TimerResolutionSettings`(16124), `Show-TimerResolutionTest`(16371), `Show-BloatwareManager`(17003), `Start-LargeFileScan`(17125)
-
-**Region 14 — Event handlers:** Butonların `.Add_Click` bağlamaları (17288+). `btnRefreshApp.Add_Click → Show-UpdateWindow`(18763). `Apply-CrashFilter`(18239, canlı filtre). **Çökme tarama handler'ı (btnScanCrashes) ~17913-18220** (Event log parse).
-
-**Region 15:** `Add_Loaded`(içinde `Start-Winapp2-Process` 20342 vb.), `Add_Closing`, `ShowDialog`.
+| Region | Satır | İçerik |
+|---|---|---|
+| 1 C# INTEROP | 49–423 | `Add-Type` sınıfları: NativeMethods (ShowWindow, SendMessageTimeout, SystemParametersInfo, SHChangeNotify, FindWindow/PostMessage), FileSelector, SecureWiper, RamCleaner, RamInfo, ProcessMonitor, TimerRes, CpuStress. Konsol gizleme, PS2EXE `Out-Default`/`Write-Host` susturma |
+| 2 YÖNETİCİ / POOL / TEMA | 424–502 | Yönetici denetimi + RunAs yeniden başlatma, `MrCleanPool` runspace havuzu, `Refresh-WindowsTheme` |
+| 3 GLOBALLER & YOLLAR | 503–822 | `$AppDataPath` = `%APPDATA%\MrClean`, `Migrate-AppDataLayout`, kapsam kuralları (588), `AppVersion` (633), `AppRepo` (646), NVIDIA NIP (668), Start2.bin base64 (716) |
+| 3B DİL / i18n | 823–1262 | TR/EN/FR dil tablosu, `Initialize-Language`, `T` (anahtar → metin), `Localize-Xaml` |
+| 4 VARSAYILAN VERİLER | 1263–6361 | `Set-MrCleanTweakLayout` (1269), **`Get-Default-Tweaks` (1308–6285, ~4.980 satır)**, `Get-Default-WingetApps`, `Load-Repair-Tree` |
+| 5 XAML | 6362–9757 | Ana pencere `$xaml` (6368) + 12 alt pencere here-string'i (§5) |
+| 6 XAML YÜKLEME & SAYFALAR | 9758–11285 | Yazı tipi, `Initialize-SubWindow`, `Show-MrCleanMessage`/`Show-MrCleanInput`, FindName bağlamaları, **tasarım E sayfa yardımcıları**: Temizlik (`*-Clean*`), Onarım, Winget, Başlangıç, Dosya Boyutu (`*-Lf*`) |
+| 7 ÇEKİRDEK | 11286–11417 | `Do-Events`, `WpfLog`, `Format-Size`, açılış ölçümü (`Measure-BootStep`, `Start/Stop-MrCleanMeasure`) |
+| 8 AYAR | 11418–11870 | `Load-All-Settings` (birleştirme + `$retiredOfficialTweaks` 11627), `Save-User-Config`, `Invoke-TweakCommand` (Command çalıştırıcı, Write-Host → kayıt) |
+| 9 TWEAK SİSTEMİ | 11871–19426 | En büyük mantık bölgesi: geri alma yardımcıları, servis / görev / ağ / DNS / Wi-Fi, oyun ajanları, NVIDIA Inspector, güncelleme, geri yükleme noktası, timer, `Get-Tweak-IsActive`, ağaç + filtre + rozet, Uygula / katman, Tweak Yöneticisi, benchmark, AMD yonga seti onarımı, Hızlı Geri Al, sürüm sonrası denetim, emekli tweak'ler, durum önbelleği |
+| 10 TEMİZLİK MOTORU | 19427–20363 | Tarayıcı güvenliği, Winapp2 indir / ayrıştır (`Start-Winapp2-Process`, `Parse-Winapp2`), Appx, `Load-Winget-Tree`, `Resolve-ComplexPath`, `Run-CMD-Realtime`, `Process-Tree` (temizlik yürütücü) |
+| 11 WORKER | 20364–20674 | `Start-Worker-Process` (async + zaman aşımı + durdur), kurulu uygulama tespiti, `Refresh-Winget-Status` |
+| 12 BAŞLANGIÇ | 20675–20879 | `Refresh-StartupView` (kayıt defteri + WMI + klasör + görev + UWP) |
+| 13 UI / MODAL | 20880–29997 | Profiller, Winapp2 editörü, geri bildirim, güncelleme penceresi, donanım detayı, Genel Bakış (`Load-DashboardData`), benchmark pencereleri, Aktivite Log, Sistem & Güvenlik, DNS benchmark, Ağ Kalite Testi, **Otomatik Ses + mikrofon zinciri** (26117–27775), oyun algılama + Defender istisnaları, Timer pencereleri, Bloatware, Dosya Boyutu tarayıcı |
+| 14 OLAY BAĞLAMALARI | 29998–32560 | Başlangıç sağ tık, Çökme Analizi tarama motoru (`btnScanCrashes` 30445), Onarım düğmeleri, araç düğmeleri, Tweaks düğmeleri (31271–31299), Winget, Ayarlar (`btnSettings` 31935), RAM temizle, Temizlik Analiz / Çalıştır (32349 / 32415) |
+| 15 YAŞAM DÖNGÜSÜ | 32561–33072 | `Add_Closing`, sekme değişimi (32639), Gece Modu, Dosya Boyutu olayları, `Resume-MrCleanBoot`, `Add_Loaded`, `ShowDialog` |
 
 ---
 
-## 5. XAML PENCERELERİ (15 here-string)
+## 3. VERİ: TWEAK VERİTABANI (`Get-Default-Tweaks`, 1308–6285)
 
-| Değişken | Satır | Pencere |
-|----------|-------|---------|
-| `$xaml` | 3033 | **ANA PENCERE** (tüm sekmeler) |
-| `$xamlToolMgr` | 3805 | Araç Yöneticisi |
-| `$xamlSettings` | 3810 | Ayarlar |
-| `$xamlNightMode` | 3933 | Gece Modu / Kapatma zamanlayıcı |
-| `$xamlCountdown` | 4064 | Geri sayım |
-| `$xamlExport` | 4106 | Dışa aktar |
-| `$xamlWingetMgr` | 4131 | Winget Yöneticisi |
-| `$xamlTweakMgr` | 4187 | Tweak Yöneticisi |
-| `$xamlPrivacyWarn` | 4408 | Gizlilik uyarısı |
-| `$xamlBlacklist` | 4430 | Kara liste |
-| `$xamlCustomMgr` | 4450 | Özel kural yöneticisi |
-| `$xamlFeedback` | 4473 | Geri bildirim |
-| `$xamlAddCustom` | 4606 | Özel kural ekle |
-| `$xamlPathEdit` | 4641 | Yol düzenle |
+Kaynaktaki kategori anahtarları (satır = anahtarın başı). Arayüzdeki son düzen `Set-MrCleanTweakLayout` (1269, 38 adlık tablo) ile oluşur: bazı satırlar başka kategoriye taşınır ve `SubCategory` alır.
 
-**Ayrıca fonksiyon-içi inline XAML** (modallar): `$xamlVersionSelect`(10129), profil(10702/11135/11185/11291), Winapp2Editor(11804), Feedback(12020 içi), AppUpdate(12179), UpdateWindow(12386), Restart(12637), HardwareDetail(12701), BenchDiff(13531/13705), BenchGuide(14018), Benchmark(14125), SystemSecurity(14575), DNS(14923), DefenderExc(15426), ActivityLog(15711), TimerRes(16125/16387), Bloatware(17006), RestorePoint(6116), CrashDesc(17693).
+| Satır | Kategori | Satır | Kategori |
+|---|---|---|---|
+| 1311 | Görsel Performans | 3620 | 🧹 Debloat (servisler — Güvenli / Riskli) |
+| 1466 | Kişiselleştirme (görev çubuğu, Başlat, arama) | 4323 | 🧩 Uygulamalar (Discord, Chrome, çevre birimi) |
+| 1960 | Oyun | 4392 | Uygulama Kaldırma |
+| 1982 | Gizlilik ve Telemetri | 4460 | Ağ ve DNS Ayarları |
+| 2689 | 🤖 Windows AI | 4604 | Gelişmiş Sistem (Windows Update, Güvenlik Sıkılaştırma) |
+| 2857 | Windows Gezgini | 4904 | 🎮 Low Latency (Ağ ve Ping, Wi-Fi, Ses, Giriş ve İşlemci, Depolama) |
+| 3073 | Sistem | 5961 | 🎮 GPU Ayarları (NVIDIA / AMD; NVIDIA Optimizasyonu 6125) |
+| 3509 | Güç Planı | | |
+
+Tweak alanları ve kurallar: `CLAUDE.md` › "Tweak tanımları". Ek tablolar: `$script:MrCleanSvcDefaults` (11951, servis varsayılanları), `$script:PlanBoundPowerTweaks` (15338), `$script:TweakSideEffects` (15351), `Get-RetiredTweakDefs` (emekli tweak tanımları), `Get-ProfileTweaks` (20941, önerilen profiller).
 
 ---
 
-## 6. ANA PENCERE SEKMELERİ (`$xaml`, 3286 `tabControl`)
+## 4. FONKSİYON DİZİNİ (otomatik)
 
-| Sekme | x:Name | Satır | İçerik |
-|-------|--------|-------|--------|
-| Genel Bakış | `tabDashboard` | 3288 | Dashboard kartları |
-| Tarayıcılar | `tabBrowsers` / `tvBrowser` | 3427 | |
-| Uygulamalar | `tabApps` / `tvApps` | 3428 | |
-| Sistem | `tabSystem` / `tvSystem` | 3429 | |
-| ShellBags | `tabShellBags` | 3430 | |
-| Onarım | `tabRepair` | 3439 | |
-| Araçlar | `tabTools` | 3461 | Benchmark/Timer/Log/Defender |
-| Winget | `tabWinget` | 3479 | |
-| Tweaks | `tabTweaks` | 3493 | `tvTweaks` |
-| Başlangıç | `tabStartup` | 3515 | |
-| Dosya Boyutu | `tabLargeFiles` | 3568 | |
-| Çökme Analizi | `tabCrash` | 3637 | `lvCrashes`, `txtCrashFilter` |
+Biçim: `Ad` başlangıç satırı; **kalın** = 150+ satır (parantezde uzunluk). İç içe fonksiyonlar listelenmez (ör. `Apply-System-Tweaks` › `Process-TweakItem` 16294, `Scan-Nodes`; `Invoke-QuickUndo` › `Invoke-TweakAction`; `Show-NetworkQualityTest` › `LoadTest`, `Probe`, `TcpRtt`).
 
----
+### Region 1 — C# INTEROP (Native Methods, SecureWiper, RamCleaner, vb.) · satır 49–423 · 0 fonksiyon
 
-## 7. 🌍 LOKALE / DİL-DUYARLI NOKTALAR (#3 Fransızca + #4 için KRİTİK)
+### Region 2 — YONETICI KONTROL, RUNSPACE POOL, TEMA · satır 424–502 · 1 fonksiyon
 
-### 🔴 Fransızca'da GERÇEKTEN KIRILAN (Windows'un lokalize metnini ayrıştıran)
-- **17925-17931** — Çökme Analizi Event 1000 mesaj parse: `'Hatalı uygulama adı'` / `'Faulting application name'` (TR+EN). **FR mesaj tutmaz → app/modül "Bilinmiyor", RAM/CPU deseni kaçar.** Çökmez, sonuç boşalır. → FR kalıpları eklenmeli veya event'in dil-bağımsız alanları kullanılmalı.
-- **17913-18220 çökme tarama bloğu** — aynı riskli metin-ayrıştırma bölgesi (Event 1000/1002/TDR).
+`Refresh-WindowsTheme` 427
 
-### 🟡 Türkçe-"i" tuzağı (`.ToLower()`/`.ToUpper()` — FR'de DAHA güvenli, TR'de riskli)
-- 8614 (browser vendor), 9093 & 15591 (path karşılaştırma), 9614 (Normalize-AppNameForMatch), 13064-13094 (GPU isim eşleştirme), 15963-15970 & 17810 & 18242-18248 (arama/filtre). → İdeal: `ToLowerInvariant`. FR'de patlamaz.
-- 5844, 13005 = hex `.ToUpper()` → güvenli.
+### Region 3 — GLOBAL DEGISKENLER & DOSYA YOLLARI · satır 503–822 · 1 fonksiyon
 
-### 🟢 Doğru yapılmış (dokunma)
-- **14468** — `[DateTime]::ParseExact(..., InvariantCulture)` (activity log ts) ✓
-- 14719-14722 — HotFix `InstalledOn.ToString('dd.MM.yyyy')` sabit format ✓
-- 14654 — `(Get-Culture).DisplayName` sadece gösterim ✓
-- Get-Tweak-IsActive DetectScript'leri, enum karşılaştırmaları (`Status -eq "Up"`, `"Running"`, `"Disabled"`), registry/CIM/WMI → dil-bağımsız ✓
-- Winapp2 → tamamen evrensel ✓
+`Migrate-AppDataLayout` 524
 
-**#3 SONUÇ:** Fransızca'da program AÇILIR ve ÇALIŞIR. Tek zayıflayan: Çökme Analizi (17913-18220). Düzeltmesi = FR event kalıpları eklemek (#4 kapsamında).
+### Region 3B — DIL / i18n (FR/TR/EN) — Faz 1 · satır 823–1262 · 3 fonksiyon
 
----
+`Initialize-Language` 1215 · `T` 1237 · `Localize-Xaml` 1247
 
-## 8. 🈳 i18n (#4) — KULLANICI METNİ NEREDE?
+### Region 4 — VARSAYILAN VERILER (Tweak DB, Winget DB, Repair Tree) · satır 1263–6361 · 4 fonksiyon
 
-- **XAML statik metin** (~486 `Content=`/`Header=`/`Text=`/`ToolTip=`): Region 5 (3033-4666) + fonksiyon-içi inline XAML'ler (Bölüm 5 listesi). → token-replace (`@key@`) `XamlReader.Load` öncesi.
-- **MessageBox** (~110 `[Windows.MessageBox]::Show`): kod içine dağılmış (özellikle Apply-System-Tweaks, config, güncelleme). → `$L.key` / `-f` placeholder.
-- **Tweak Name/Description** (~80, UZUN teknik metin): Region 4 `Get-Default-Tweaks`(751+). → çeviri emeği en yüksek burada (Faz 2).
-- **WpfLog mesajları + dinamik string** ("Sistemde X program…") → `$L.key -f ...`.
-- **Varsayılan dil:** `Get-UICulture` ile otomatik (FR→fr, TR→tr, diğer→en), Ayarlar'dan override, config'e kaydet.
+`Set-MrCleanTweakLayout` 1269 · **`Get-Default-Tweaks`** 1308 (4978) · `Get-Default-WingetApps` 6295 · `Load-Repair-Tree` 6320
 
----
+### Region 5 — XAML TANIMLARI (Ana pencere + Alt pencereler) · satır 6362–9757 · 0 fonksiyon
 
-## 9. GÜNCELLEME SİSTEMİ ÖZETİ (iki ayrı sistem — karıştırma!)
+### Region 6 — XAML YUKLEME & FINDNAME BAGLAMALARI · satır 9758–11285 · 63 fonksiyon
 
-**A) PROGRAM güncellemesi** (EXE, GitHub release tag):
-`Test-AppUpdate`(5664, açılış async) → `$global:UpdateAvailable` → (Ayarlar "Şimdi Kontrol Et" kendi kodunu kullanır) → `Show-AppUpdateWindow`(12172) → `Invoke-AppUpdate`(5816: indir+SHA256+`update_runner.ps1` swap+restart).
+`Initialize-UiFont` 9762 · `Set-UiFont` 9781 · `Initialize-SubWindow` 9800 · `Get-MrCleanMsgOwner` 9841 · `Show-MrCleanMessage` 9853 · `Show-MrCleanInput` 9926 · `Sync-NavToTab` 10030 · `Set-LogPanelVisible` 10052 · `Set-LogUnread` 10071 · `Update-PageChrome` 10080 · `New-ClBrush` 10314 · `Get-CleanSections` 10322 · `Format-CleanSize` 10331 · `Format-CleanAge` 10337 · `Get-CleanItemPath` 10346 · `Convert-CleanRow` 10362 · `Update-CleanRowWidths` 10409 · `Add-TreeWheelForward` 10418 · `Update-CleanRows` 10430 · `Get-CleanSizeBlock` 10435 · `Set-CleanBadge` 10444 · `Set-CleanItemMeasure` 10455 · `Reset-CleanSizeText` 10463 · `Reset-CleanMeasures` 10471 · `Measure-CleanItems` 10477 · `Update-CleanSubtitle` 10503 · `Update-CleanSummary` 10512 · `Get-CleanHistory` 10572 · `Update-CleanHistoryView` 10580 · `Add-CleanHistory` 10612 · `Filter-CleanNodes` 10623 · `Reset-CleanNodes` 10641 · `Apply-CleanView` 10646 · `Set-CleanChecks` 10657 · `Set-CleanChecksVisible` 10665 · `Sync-CleanDelMethod` 10672 · `Update-CleanPage` 10684 · `Set-RepairNotes` 10741 · `Update-RepairRows` 10756 · `Get-RepairChecked` 10763 · `Update-RepairSummary` 10771 · `Update-RepairPage` 10797 · `Test-WingetInstalled` 10824 · `Set-WingetNotes` 10826 · `Update-WingetRows` 10851 · `Update-WingetSummary` 10863 · `Apply-WingetView` 10880 · `Update-WingetPage` 10903 · `Get-StartupSourceText` 10935 · `Get-StartupDelayText` 10948 · `Set-StartupItemDisplay` 10955 · `Update-StartupSummary` 10966 · `Update-StartupSelection` 10974 · `Apply-StartupView` 11001 · `Set-StartupList` 11019 · `Switch-StartupItem` 11026 · `Test-LfVisible` 11103 · `Update-LfSummary` 11109 · `Update-LfSelection` 11131 · `Apply-LfSort` 11147 · `Apply-LfView` 11155 · `Set-LfList` 11169 · `Load-EmbeddedImage` 11249
 
-**B) WINAPP2 (temizlik veritabanı) güncellemesi:**
-- Açılış otomatik kontrol: `Start-Winapp2-Process`(8707) içindeki `$CheckUpdateBlock`(8715-8771) — yerel+uzak **sadece ilk satırı** okur, kıyaslar, `txtWinappStatus`(3775) yazısını "Yeni Sürüm Mevcut!" yapar (silik gri etiket → görünürlük zayıf).
-- Manuel: `btnRefreshApp`(♻ Güncelle, XAML 3258) `.Add_Click`(18763) → `Show-UpdateWindow`(12384): ilk-satır sürüm kıyas + GÜNCELLE butonu (`.old` yedek → indir → cache sil → yeniden yükle, 12578-12612).
+### Region 7 — CEKIRDEK HELPERLAR (Do-Events, WpfLog, Format-Size) · satır 11286–11417 · 10 fonksiyon
 
----
+`Pump-BootUi` 11289 · `Do-Events` 11313 · `Set-BootProgress` 11333 · `Test-BootOverlayVisible` 11340 · `Start-MrCleanMeasure` 11348 · `Stop-MrCleanMeasure` 11349 · `Measure-BootStep` 11358 · `Complete-TweakTreeFirstVisit` 11367 · `WpfLog` 11376 · `Format-Size` 11405
 
-## 10. v1.2.29 DEĞİŞİKLİKLERİ (LOKAL — winapp2 görünürlük + diff)
+### Region 8 — AYAR YONETIMI (Config Save/Load/Restore) · satır 11418–11870 · 8 fonksiyon
 
-**⚠️ Satır kayması:** `Show-UpdateWindow` öncesine ~62 satır (2 fonksiyon) + birkaç küçük ekleme yapıldı → bu bölümden SONRAKİ satır no'ları ~+60-70 kaymış olabilir. Kesin konum için Grep kullan.
+`Save-App-State` 11421 · `Show-ConfigRecoveryDialog` 11445 · `Get-TweakField` 11504 · `Invoke-TweakCommand` 11514 · **`Load-All-Settings`** 11523 (215) · `Save-User-Config` 11741 · `Mark-ConfigDirty` 11839 · `Restore-Checkboxes` 11844
 
-- **#1 Buton görünürlüğü:** `Start-Winapp2-Process`→`$CheckUpdateBlock` tick'inde açılış güncelleme tespiti artık `btnRefreshApp`'i değiştiriyor: güncelleme varsa "🔔 Güncelle (Yeni!)" + yeşil #137333 + tooltip; güncelse "♻ Güncelle" + #4f0707'ye döner. `$btnRef = $btnRefreshApp` closure'a eklendi (~8720). `$global:Winapp2UpdateAvailable` bayrağı (init satır 566).
-- **#2 Diff:** Yeni fonksiyonlar `Show-UpdateWindow` ÖNCESİNDE: `Get-Winapp2Diff($OldPath,$NewPath)` ([Section] bazlı Added/Removed/Changed) + `New-Winapp2DiffReport($OldPath,$NewPath,$OnlineVer)` (txt yazar → `%APPDATA%\MrClean\winapp2_diff_<stamp>.txt`, döner @{Path;Added;Changed;Removed}). `Show-UpdateWindow` GÜNCELLE handler'ı başarı dalında (btnUpd) `.old` silinmeden diff üretir, txt'yi `Invoke-Item` ile açar, eski sürümü `Winapp2.prev.ini` olarak saklar, `$script:LastWinapp2DiffPath` set eder, durum metnine sayaç yazar.
-- Grep anahtarları: `Get-Winapp2Diff`, `New-Winapp2DiffReport`, `Winapp2UpdateAvailable`, `LastWinapp2DiffPath`, `btnRef`.
+### Region 9 — TWEAK SISTEMI (IsActive, Apply, Check, Manager) · satır 11871–19426 · 220 fonksiyon
+
+`Get-System-Gpu-Vendors` 11880 · `Backup-TweakRegValue` 11906 · `Restore-TweakRegValue` 11925 · `Test-MrCleanServicesExist` 11964 · `Test-MrCleanServicesStart` 11969 · `Set-MrCleanSvcStartSc` 11983 · `Set-MrCleanServicesStart` 11997 · `Restore-MrCleanServicesStart` 12019 · `Get-MrCleanSvcMode` 12051 · `Set-MrCleanSvcMode` 12056 · `Test-MrCleanAppInstalled` 12063 · `Close-MrCleanApp` 12073 · `Start-MrCleanApp` 12088 · `Test-MrCleanDiscordSetting` 12095 · `Set-MrCleanDiscordSetting` 12101 · `Get-MrCleanHwWarnings` 12129 · `Get-TweakHwWarning` 12174 · `Get-PowerSettingIndex` 12198 · `Backup-PowerSettingIndex` 12207 · `Restore-PowerSettingIndex` 12216 · `Test-IsLaptop` 12229 · `Get-MrCleanPhysicalAdapters` 12247 · `Get-MrCleanNicFast` 12264 · `Get-MrCleanNicAdvancedFast` 12282 · `Get-MrCleanNicParamsFast` 12293 · `Get-MrCleanServicesFast` 12311 · `Test-MrCleanTasksDisabled` 12314 · `Set-MrCleanTasksEnabled` 12333 · `Get-MrCleanTasksDenied` 12365 · `Get-MrCleanVendorTelemetry` 12374 · `Get-MrCleanVpnState` 12404 · `Get-MrCleanDnsGuard` 12433 · `Test-MrCleanDnsBlocked` 12471 · `Backup-MrCleanDnsStatic` 12480 · `Restore-MrCleanDnsStatic` 12494 · `Set-MrCleanDnsPreset` 12517 · `Set-MrCleanWifiProperty` 12534 · `Restore-MrCleanWifiProperties` 12558 · `Test-MrCleanWifiProperty` 12576 · `Invoke-MrCleanNicRestartAsync` 12597 · `Restart-MrCleanWifi` 12614 · `Set-MrCleanEthProperty` 12620 · `Restart-MrCleanEthernet` 12639 · `Restart-MrCleanNicsAndWait` 12646 · `Measure-MrCleanRtt` 12672 · `Test-IsAmdCpu` 12683 · `Get-MrCleanVirtContent` 12693 · `Get-MrCleanVirtFeatures` 12730 · `Confirm-VirtHeavyTweak` 12738 · `Confirm-IdleDisableTweak` 12760 · `Confirm-WuLockTweak` 12774 · `Get-MrCleanGameExeNames` 12797 · `Test-MrCleanGameCpuAgent` 12805 · `Install-MrCleanGameCpuAgent` 12813 · `Stop-MrCleanGameCpuAgentProcess` 12874 · `Remove-MrCleanGameCpuAgent` 12878 · `Set-MrCleanGamePriority` 12905 · `Remove-MrCleanGamePriority` 12921 · `Test-MrCleanGamePriority` 12944 · `Test-MrCleanCs2Cpu0` 12967 · `Stop-MrCleanCs2Cpu0AgentProcess` 12975 · `Install-MrCleanCs2Cpu0` 12979 · `Remove-MrCleanCs2Cpu0` 13020 · `Convert-MrCleanLegacyProcMin` 13033 · `Confirm-LaptopPowerTweak` 13048 · `Get-DualCcdX3DName` 13062 · `Confirm-DualCcdX3DPowerTweak` 13074 · `Get-NvidiaInspectorPath` 13096 · `Invoke-NvidiaInspector` 13178 · `Backup-NvidiaProfiles` 13201 · `Compare-NvidiaBaseProfile` 13216 · `Test-NvidiaProfileApplied` 13230 · `Get-NvidiaDriverVersion` 13252 · `Test-NvidiaTweakCurrent` 13267 · `Complete-NvidiaTweakCheck` 13325 · `Open-NvidiaSettingsApp` 13362 · `Invoke-StartMenuLayoutImport` 13376 · `Compare-Version` 13517 · `Get-AppExeDirectory` 13535 · `Cleanup-OldUpdateFiles` 13555 · `Get-Winapp2LocalVersion` 13580 · `Get-Winapp2OnlineVersion` 13591 · `Invoke-Winapp2Download` 13604 · `Set-MrCleanAppUpdateButton` 13637 · `Invoke-MrCleanAppUpdateButton` 13657 · `Test-AppUpdate` 13677 · `Invoke-AppUpdate` 13831 · `Add-SkippedVersion` 13948 · `Get-MrCleanDesktopView` 13968 · `Invoke-ShellSoftRefresh` 13985 · `Invoke-ExplorerHardRestart` 14007 · `Test-VssServiceRunning` 14064 · `Get-LastRestorePointDate` 14074 · `Create-Restore-Point` 14089 · `Test-RestorePointWillAsk` 14154 · `Invoke-RestorePointAsync` 14164 · `Invoke-HiddenCommand` 14298 · `Get-TRTSettings` 14333 · `Save-TRTSettings` 14357 · `Invoke-TimerResHelperSetup` 14369 · `Remove-TimerResHelper` 14459 · `Get-MrCleanTimerTarget` 14490 · `Enable-MrCleanTimerResolution` 14497 · `Disable-MrCleanTimerResolution` 14517 · `Refresh-PowerCfg-Cache` 14540 · `Refresh-BcdEdit-Cache` 14544 · `Refresh-NetshTcp-Cache` 14548 · **`Get-Tweak-IsActive`** 14552 (210) · `Load-Tweak-Tree` 14764 · `Attach-ToolTip` 14879 · `Sync-Children` 14963 · `New-TreeItem` 14965 · `Get-CheckFromItem` 14984 · `Get-TweakDisplayName` 14993 · `Find-TweakNameBlock` 15011 · `Get-WinReleaseLabel` 15029 · `Get-MrCleanHwProfile` 15041 · `Get-MrCleanHwSummary` 15100 · `Get-TweakHardwareReason` 15110 · `Test-TweakBuildCompatible` 15141 · `Get-TweakBuildRequirement` 15151 · `Test-TweakNeedsReboot` 15175 · `Get-TweakSummaryLine` 15183 · `Test-TweakIsNew` 15192 · `Normalize-SearchText` 15199 · `Apply-TweakFilter` 15208 · `Update-TweakCategoryList` 15275 · `Test-TweakLeafActive` 15311 · `Get-TweakAppliedForApply` 15318 · `Get-MrCleanPlanBoundAppliedNames` 15369 · `Get-MrCleanActiveSchemeGuid` 15380 · `Sync-MrCleanPlanBoundPower` 15388 · `Invoke-MrCleanPowerPlanFirst` 15407 · `Get-MrCleanTweakDependents` 15430 · `Update-TweakStatusAfterApply` 15442 · `Update-TweakSummary` 15504 · `New-TweakBadge` 15536 · `Get-TweakPendingBadge` 15555 · `Update-TweakApplyCount` 15560 · `Set-TweakPendingState` 15566 · `Update-TweakPendingMark` 15573 · `Set-TweakModePill` 15586 · `Invoke-TweakModePillClick` 15600 · `New-TweakModePill` 15611 · **`Create-Tweak-Item`** 15645 (189) · `Show-Privacy-Warning` 15835 · `Get-ApovBrush` 15865 · `Invoke-ApplyOverlayRender` 15871 · `Get-ApovBarMax` 15876 · `Test-TweakNeedsRebootFlag` 15881 · `Show-ApplyConfirm` 15889 · `Test-TweakRestartsNic` 16021 · `Show-ApplyOverlay` 16027 · `Set-ApplyOverlayStep` 16059 · `Set-ApplyOverlayStepDone` 16074 · `Set-ApplyOverlayVerifying` 16086 · `Hide-ApplyOverlay` 16091 · `Complete-ApplyOverlay` 16101 · **`Apply-System-Tweaks`** 16158 (368) · **`Show-TweakManager`** 16527 (549) · `Write-TweakAuditLog` 17082 · `Test-TimerPrecision` 17124 · `Test-LoopbackPing` 17148 · `Test-GatewayPing` 17181 · `Test-DnsResolve` 17216 · `Test-Disk4kRead` 17241 · `Test-ProcessStartLatency` 17287 · `Test-DpcTime` 17314 · `Get-SystemSnapshot` 17345 · `Get-MrCleanBenchTool` 17628 · `Invoke-MrCleanBenchProcess` 17651 · `Test-SystemLatency` 17676 · `Test-GameLoad` 17682 · `Get-MrCleanBenchGpuTools` 17701 · `Test-GpuFrameTime` 17725 · `ConvertTo-MsiPackedGuid` 17769 · `Get-AmdChipsetInstallState` 17778 · `Get-AmdChipsetStaleFolders` 17808 · `Get-AmdChipsetStaleStateKey` 17827 · `Get-AmdOrphanComponentRefs` 17839 · `Invoke-AmdChipsetRepair` 17858 · `Compare-AmdVersion` 17941 · `Get-AmdChipsetPackage` 17952 · `Expand-AmdChipsetPackage` 17963 · `Install-AmdDriverPlan` 17972 · `Get-AmdInstallerSummary` 17995 · `Get-AmdChipsetDevices` 18003 · `Get-AmdDriverPlan` 18023 · **`Show-AmdChipsetRepair`** 18052 (169) · `Get-Median` 18227 · `Merge-BenchRuns` 18237 · `Get-BenchSnapshot` 18280 · `Format-BenchTime` 18346 · `Save-BenchSnapshot` 18356 · `Get-BenchSnapshots` 18374 · `Remove-BenchSnapshot` 18387 · `Set-BenchSnapshotLabel` 18395 · `Get-BenchMetricCatalog` 18410 · `Compare-BenchSnapshots` 18447 · `Invoke-QuickUndo` 18493 · `Get-MrCleanEnvFingerprint` 18635 · `Update-MrCleanAppliedList` 18643 · `Get-MrCleanAdminLauncherState` 18665 · `Enable-MrCleanAdminLauncher` 18672 · `Disable-MrCleanAdminLauncher` 18708 · `Update-MrCleanAdminLauncherCopy` 18721 · `Request-MrCleanAdminLauncherOnce` 18735 · `Convert-MrCleanAppliedAliases` 18750 · `Start-MrCleanDriftCheck` 18770 · `Set-MrCleanPendingReapply` 18857 · `Get-TweakStatusCachePath` 18883 · `Load-TweakStatusCache` 18889 · `Save-TweakStatusCache` 18910 · `Get-AllTweakItems` 18923 · **`Get-RetiredTweakDefs`** 18945 (236) · `Invoke-RetiredTweakCleanup` 19182 · `Test-TweakApplied` 19245 · `Set-TweakItemUI` 19259 · `Update-Parent-Headers-Recursive` 19278 · `Check-Tweak-Status` 19298
+
+### Region 10 — TEMIZLIK MOTORU (Winapp2, Resolve-ComplexPath, Process-Tree) · satır 19427–20363 · 18 fonksiyon
+
+`Check-And-Close-Browsers` 19430 · `Check-Browser-Safety` 19442 · `Get-AppEnvFingerprint` 19460 · `Update-Cache` 19480 · `Test-BrowserInstalled` 19498 · `Flush-Buffers-To-Tree` 19528 · `Add-To-Buffer` 19555 · `Load-System-Tree` 19562 · `Start-Winapp2-Process` 19594 · `Parse-Winapp2` 19725 · `Get-AppxPackageForTree` 19846 · `Ensure-WingetAppxLoaded` 19898 · `Load-Winget-Tree` 19905 · `Remove-Empty-Folders-Recursive` 20002 · `Secure-Remove-Item` 20007 · `Resolve-ComplexPath` 20027 · **`Run-CMD-Realtime`** 20145 (160) · `Process-Tree` 20306
+
+### Region 11 — WORKER & KOMUT CALISTIRMA (Start-Worker-Process) · satır 20364–20674 · 4 fonksiyon
+
+**`Start-Worker-Process`** 20367 (167) · `Get-InstalledAppRegistry` 20540 · `Normalize-AppNameForMatch` 20581 · `Refresh-Winget-Status` 20587
+
+### Region 12 — BASLANGIC YONETICISI (Refresh-StartupView) · satır 20675–20879 · 1 fonksiyon
+
+**`Refresh-StartupView`** 20678 (197)
+
+### Region 13 — UI / MODAL FONKSIYONLARI · satır 20880–29997 · 106 fonksiyon
+
+**`Get-ProfileTweaks`** 20941 (177) · **`Show-RecommendedProfiles`** 21119 (383) · `Show-ExportSourceDialog` 21514 · `Show-ImportConfirmDialog` 21567 · **`Show-ProfileManager`** 21660 (404) · `Check-BlackBoxStatus` 22066 · `Start-ShutdownCountdown` 22119 · `Show-Winapp2Editor` 22161 · `Send-Feedback` 22289 · **`Show-FeedbackWindow`** 22382 (151) · **`Show-AppUpdateWindow`** 22535 (186) · `Get-Winapp2Diff` 22723 · `New-Winapp2DiffReport` 22758 · `Show-RestartDialog` 22786 · **`Show-HardwareDetail`** 22855 (442) · `Get-DashBrush` 23300 · `Get-DashBarBrush` 23301 · **`Load-DashboardData`** 23303 (396) · `Get-DashAgeText` 23701 · `Get-DashStartupEnabledCount` 23708 · `Read-WingetUpdateCache` 23747 · `Save-WingetUpdateCache` 23759 · `Start-WingetUpdateCheck` 23767 · `Open-DashTarget` 23812 · `Add-DashRecRow` 23820 · `Get-DashHistoryItems` 23875 · `Update-DashHistory` 23903 · `Update-DashRecommendations` 23936 · `Show-BenchDiffModal` 24002 · **`Show-BenchDiffChart`** 24135 (239) · **`Get-BenchMetricToTweakMap`** 24380 (155) · `Show-BenchMetricGuide` 24536 · **`Show-BenchmarkPanel`** 24647 (313) · `Find-TweakByName` 24970 · `Get-ActivityLogEntries` 24987 · `Invoke-SingleActivityReverse` 25056 · **`Show-SystemSecurityDetail`** 25106 (202) · `Get-DnsServersToTest` 25315 · `Get-IspDns` 25332 · `Test-DnsServer` 25349 · `Set-PreferredDns` 25390 · `Test-PreferredDnsApplied` 25416 · **`Show-DnsBenchmark`** 25433 (286) · **`Show-NetworkQualityTest`** 25728 (379) · `Install-MrCleanZipMember` 26195 · `Install-MrCleanMicComponents` 26244 · `Get-MrCleanEndpointFormat` 26254 · `Get-MrCleanMicType` 26264 · `Get-MrCleanDfnChunk` 26272 · `Measure-MrCleanMicEnvironment` 26282 · `ConvertTo-MrCleanFloatChunk` 26301 · `Get-MrCleanMicChainLines` 26308 · `Write-MrCleanAudioLog` 26332 · `Get-MrCleanEapoInstallDir` 26336 · `Get-MrCleanEapoConfigDir` 26344 · `Initialize-MrCleanAudioNative` 26352 · `Get-MrCleanSpatialFormat` 26454 · `Get-MrCleanAudioDevices` 26469 · `Get-MrCleanAutoEqIndex` 26523 · `Find-MrCleanAutoEqMatch` 26545 · `Get-MrCleanAutoEqFilters` 26564 · `Get-MrCleanAudioCurve` 26590 · `Format-MrCleanEqFilter` 26627 · `Set-MrCleanFxValue` 26638 · `Install-MrCleanEapoDevice` 26645 · `Test-MrCleanApoClsid` 26713 · `Repair-MrCleanAudioEndpoints` 26726 · `Restart-MrCleanAudioService` 26755 · `Uninstall-MrCleanEapoDevice` 26761 · `Test-MrCleanEapoDevices` 26785 · `Install-MrCleanEapoPackage` 26803 · `Install-MrCleanClipOnly` 26846 · `Get-MrCleanAudioSettings` 26898 · `Get-MrCleanAudioDevicePref` 26919 · `Set-MrCleanAudioDevicePref` 26925 · `Test-MrCleanGhubPresent` 26935 · `Get-MrCleanAudioDevicePlan` 26940 · `Write-MrCleanAudioConfig` 26969 · `Register-MrCleanAudioModeTask` 27078 · `Unregister-MrCleanAudioModeTask` 27162 · `Invoke-MrCleanAudioSetup` 27168 · `Remove-MrCleanAudioAll` 27242 · `Invoke-MrCleanAudioMaintain` 27280 · `ConvertFrom-MrCleanEqLine` 27299 · `Measure-MrCleanEqPeak` 27310 · **`Show-AudioProfileTool`** 27336 (440) · `Get-SteamGames` 27786 · `Get-EpicGames` 27822 · `Get-EADesktopGames` 27840 · `Get-RiotGames` 27876 · `Get-BattleNetGames` 27895 · `Get-UbisoftGames` 27940 · `Get-GogGames` 27970 · `Get-AllDetectedGames` 27990 · `Get-MrCleanGameExes` 28012 · `Set-MrCleanGameGpuPreference` 28029 · `Remove-MrCleanGameGpuPreference` 28051 · `Get-DefenderExclusions` 28069 · `Add-DefenderExclusion` 28073 · `Remove-DefenderExclusion` 28078 · **`Show-DefenderExclusionManager`** 28085 (267) · **`Show-ActivityLog`** 28353 (342) · **`Show-TimerResolutionSettings`** 28700 (222) · **`Show-TimerResolutionTest`** 28924 (620) · **`Show-BloatwareManager`** 29546 (155) · **`Start-LargeFileScan`** 29703 (286)
+
+### Region 14 — EVENT HANDLERS (Butonlar, Context Menus, Tab Selection) · satır 29998–32560 · 14 fonksiyon
+
+`Get-DumpPath` 30485 · `New-Row` 30493 · `Get-Prop` 30498 · `Get-Raw` 30500 · `Set-CrashDisplay` 30845 · `Test-CrashVisible` 30858 · `Apply-CrashFilter` 30877 · `Update-CrashEmpty` 30894 · `Get-CrashCopyText` 30903 · `Update-CrashSelection` 30916 · `Ping-IP` 31336 · `Find` 31443 · `Find` 31507 · `Refresh-FileList` 32224
+
+### Region 15 — PENCERE YASAM DONGUSU (Add_Closing, Add_Loaded, ShowDialog) · satır 32561–33072 · 1 fonksiyon
+
+`Resume-MrCleanBoot` 32909
 
 ---
 
-## 11. v1.3.0 DEĞİŞİKLİKLERİ — Windows 11 24H2 / 25H2 / 26H2 Tweaks güncellemesi
+## 5. XAML PENCERELERİ
 
-**⚠️ Satır kayması:** Dosya ~21.777 satır. Aşağıdaki numaralar v1.3.0 anına göredir; kesin konum için Grep kullan.
+**Region 5 (genel):** `$xaml` 6368 ana pencere (tüm sayfalar) · `$xamlSettings` 8965 · `$xamlNightMode` 9104 · `$xamlCountdown` 9214 · `$xamlExport` 9234 · `$xamlWingetMgr` 9261 · `$xamlTweakMgr` 9309 · `$xamlPrivacyWarn` 9523 · `$xamlBlacklist` 9548 · `$xamlCustomMgr` 9571 · `$xamlFeedback` 9597 · `$xamlAddCustom` 9687 · `$xamlPathEdit` 9725.
 
-### Yeni tweak alanları (hepsi opsiyonel)
-| Alan | Örnek | Etki |
-|------|-------|------|
-| `MinBuild` | `26100` | Bu build'den eski Windows'ta tweak gri + tıklanamaz + kırmızı "24H2+" rozeti; `Apply-System-Tweaks`→`Scan-Nodes` ayrıca atlar (profil/import ile işaretlense bile) |
-| `MaxBuild` | `22631` | Bu build'den YENİ Windows'ta pasif (kaldırılmış özellikler için) |
-| `Since` | `"1.3.0"` | `AppVersion` ile aynı major.minor ise yeşil "YENİ" rozeti (bir sonraki minor sürümde kendiliğinden kaybolur) |
+**Fonksiyon içi:** geri yükleme noktası `$xamlRP` 14168 · AMD yonga seti 18053 · önerilen profiller 21126 · dışa / içe aktar `$xamlEx` 21520 / `$xamlIm` 21580 · Profil Yöneticisi 21688 · Winapp2 editörü `$xamlEdit` 22162 · program güncelleme `$xamlAU` 22542 · yeniden başlatma `$xamlRestart` 22787 · donanım `$xamlHW` 22859 · bench fark `$xamlD` 24005 / grafik `$xamlC` 24174 / rehber `$xamlG` 24537 / panel `$xamlB` 24648 · Sistem & Güvenlik `$xamlSS` 25108 · DNS `$xamlDns` 25479 · Ağ Testi `$xamlNq` 25729 · Otomatik Ses `$xamlAs` 27337 / okuma `$xamlRead` 27476 · Defender `$xamlDE` 28086 · Aktivite Log `$xamlAL` 28354 · Timer ayar `$xamlTRS` 28701 / test `$xamlTRT` 28940 · Bloatware `$xamlBloat` 29549 · açıklama editörü `$xamlDesc` 30359.
 
-Build referansı: 22621=22H2, 22631=23H2, **26100=24H2, 26200=25H2, 26300=26H2** (24H2/25H2/26H2 ortak servis dalı, eKB).
+Alt pencereler `Initialize-SubWindow` ile ortak temayı (`$global:SubTheme`) alır. Ana `$xaml`'e dokunulursa `XamlReader.Parse` ile gerçekten yüklenip denenir (parse / AMSI XAML hatasını yakalamaz).
 
-### Yeni globaller / fonksiyonlar
-- `$global:WinBuild`, `$global:WinUBR`, `$global:WinDisplayVersion` (~594, AppVersion'ın hemen altında, açılışta 1 kez okunur)
-- Region 9, `Create-Tweak-Item` öncesi (~7784-7908): `Get-WinReleaseLabel`, `Test-TweakBuildCompatible`, `Get-TweakBuildRequirement`, `Test-TweakIsNew`, `Normalize-SearchText` (Türkçe katlama: sifre→Şifresiz), `Apply-TweakFilter`, `Update-TweakSummary`, `New-TweakBadge`
-- Rozetler isim TextBlock'unun SAĞINA **Border** içinde eklenir → `Get-TweakDisplayName` / `Set-TweakItemUI` (ilk TextBlock = isim) etkilenmez.
+**Tweaks sekmesi satır hiyerarşisi (dokunmadan önce):** `TreeViewItem.Header = StackPanel(yatay) → CheckBox(.Content = dikey StackPanel → [yatay StackPanel{nokta, isim TextBlock Tag=TweakName, rozetler…}, özet TextBlock Tag=TweakSub])`. İsim okumak / yazmak için `Find-TweakNameBlock`.
 
-### Tweaks sekmesi UI (XAML ~4455)
-- Üst bant: `txtTweakSearch` (canlı filtre, Esc temizler) + `btnTweakSearchClear` + `txtTweakFilterCount` + `txtTweakWinInfo` ("🪟 Windows 11 25H2 · 26200.x  ✅ X / Y aktif  ⛔ Z pasif")
-- Grid satırları: 0=bant, 1=`tvTweaks`, 2=butonlar
-- Handler'lar: `btnCheckTweaks.Add_Click` hemen altında (~20030)
-- Alt kategori onay kutusu artık sadece **görünen + uyumlu** çocukları değiştirir
-- `Check-Tweak-Status` bitince ve cache ön-yüklemesinde `Update-TweakSummary` çağrılır; `Load-Tweak-Tree` sonunda bant + aktif filtre yeniden uygulanır
-- Dil anahtarları (TR/EN/FR): `tw_filter`, `tw_filter_tip`, `tw_filter_clear`, `tw_filter_count`, `tw_active_count`, `tw_incompat_count`, `tw_badge_new`, `tw_incompat_tip`
+---
 
-### Yeni / değişen tweak'ler (39 yeni, Grep: `Since="1.3.0"`)
-- **Yeni kategori** `🤖 Windows AI (24H2 / 25H2 / 26H2)` (~2081): Recall, Click to Do, Gezgin AI Eylemleri, WSAIFabricSvc, Notepad AI, Paint AI, Edge AI, Chrome AI
-- Kişiselleştirme: End Task, saniyeli saat, asla birleştirme, Web/Bing policy, Arama Vurguları, Başlat Phone Link paneli, kilit ekranı widget kartları
-- Gizlilik: Reklam/Öneri paketi (10 değer), M365 reklamları, Ayarlar Home gizle (`SettingsPageVisibility` birleştirmeli), Etkinlik geçmişi, Mürekkep/Yazma, Geri bildirim, Telemetri zamanlanmış görevleri
-- Gezgin: Bu Bilgisayar ile aç, Galeri/Home gizle, Compact, LongPaths
-- Sistem ve Oyun: Pencereli oyun optimizasyonu (`DirectXUserGlobalSettings` birleştirmeli), Fast Startup, Startup Delay, Edge arka plan, Ayrılmış Depolama, BitLocker oto-şifreleme, HVCI (High risk)
-- Gelişmiş Sistem → `Windows Update` alt kategorisi: **Sürüm Kilidi** (TargetReleaseVersion, mevcut DisplayVersion'ı okur), Erken Erişim kapat, oto-restart engelle, Teslim İyileştirme, sürücü hariç tut
-- **Düzeltme:** "Kilit Ekranında Eğlenceli Bilgileri Kapat" yanlış değeri (RotatingLockScreenEnabled = Spotlight döngüsü) yazıyordu → artık `RotatingLockScreenOverlayEnabled` + `SubscribedContent-338387Enabled`
-- **Güncelleme:** "Copilot Tamamen Kapat" → 25H2 `RemoveMicrosoftCopilotApp` policy (HKCU\...\WindowsAI) + provisioned paket silme + ShowCopilotButton=0; Undo WindowsAI anahtarını silmez (Recall/ClickToDo orada)
-- Önerilen profiller (`Get-ProfileTweaks`) yeni tweak'lerle genişletildi (HVCI hariç)
+## 6. TEMA ALANLARINA GÖRE "NEREDE?" (Grep anahtarları)
 
-### ⚠️ Yeni tweak eklerken
-- Mevcut tweak **isimlerini değiştirme** — profiller, config ve aktivite logu isimle eşleşir.
-- `Command`/`Batch` tweak'lerinde `DetectScript` yoksa `Get-Tweak-IsActive` isim-tabanlı sezgiselleri dener (`Widget`, `Tanılama`, `OneDrive`, `Nihai`, `HPET`, `TCP`...). Bu kelimeleri isimde kullanma ya da `DetectScript` ver. Process-TweakItem'da isimde `TCP`/`Win32`/`HPET` yeniden başlatma diyaloğunu tetikler.
-- 26H2'de **WMIC tamamen kaldırıldı** — kodda WMIC yok, ekleme (CIM kullan).
-
-### 11b. v1.3.0 — İkinci tur (tweaqas incelemesi + topluluk araştırması, hata düzeltmeleri)
-
-Ayrıntılı gerekçeler, reddedilen tweak'ler ve kaynaklar için: **`DEGISIKLIKLER_v1.3.0.md`**. Dosya ~21.998 satır.
-
-| Ne | Nerede (yaklaşık satır) |
-|----|------|
-| `SystemParametersInfoInts` (SPI_SETMOUSE, int[] overload) | C# `NativeMethods` (~77) |
-| NVIDIA NIP — G-SYNC/V-Sync/OpenGL GPU satırları çıkarıldı | `$global:NvidiaInspectorOptimizedNip` (~629) |
-| `Get-DualCcdX3DName`, `Confirm-DualCcdX3DPowerTweak` (çift CCD X3D uyarısı) | Region 9, `Get-System-Gpu-Vendors` altı (~6537) |
-| Gereksiz servisler → El ile (yedekli) | "Sistem ve Oyun" (~2435) |
-| Güvenlik Sıkılaştırma alt kategorisi | "Gelişmiş Sistem (Batch)" (~2962) |
-| Ağ kartı güç tasarrufu (yedek/geri yükleme) | Low Latency → Ağ ve Ping (~3202) |
-| Offload (LSO kapalı, RSS/Checksum açık) | (~3287) |
-| MMCSS Games görevi | Low Latency → Ses (~3659) |
-| NVIDIA Telemetri | GPU → NVIDIA (~4059) |
-
-**Yeni kayıt defteri yedek konumları** (tweak'ler geri alınırken orijinali geri yükler):
-`HKLM\SOFTWARE\MrClean\NicPowerBackup\<0000..>` · `HKLM\SOFTWARE\MrClean\ServiceStartBackup` · `HKLM\SOFTWARE\MrClean\UsbPowerMgmtDisabled` (MultiString)
-
-**Kural (yeni hata dersi):** `Command='...'` / `UndoCommand='...'` / `DetectScript='...'` tek tırnaklı dizelerdir — içlerindeki yorumlarda bile **kesme işareti (') kullanma** (ör. `Undo'daki`) → tüm dosya parse hatası verir.
-
-### 11c. v1.3.0 — Üçüncü tur (13 aracın kaynak kodu denetimi, GPU profilleri, sekme yeniden tasarımı)
-
-Gerekçeler için: **`DEGISIKLIKLER_v1.3.0.md` §13–15**. Dosya ~22.574 satır, 153 tweak (`Since="1.3.0"`: 60).
-
-| Ne | Nerede (yaklaşık satır) |
-|----|------|
-| NVIDIA NIP (AF/MSAA → uygulama kontrolü; Threaded Opt / Present Method kaldırıldı) | `$global:NvidiaInspectorOptimizedNip` (~629) |
-| `Get-NvidiaInspectorPath` (önce resmi Orbmu2k v3 zip, sonra FR33THY; önbellek `%APPDATA%\MrClean\nvidiaProfileInspector\`) | Region 9 (~6950) |
-| `Invoke-NvidiaInspector` (60 sn zaman aşımı + Kill), `Backup-NvidiaProfiles` (`-exportCustomized`), `Open-NvidiaSettingsApp` (NVIDIA App → NVCP) | ~7036 / ~7054 / ~7068 |
-| Geri yükleme noktası: `SystemRestorePointCreationFrequency` geçici olarak 0 | `Invoke-RestorePointAsync` runspace bloğu (~7785) |
-| UAC (EnableLUA=1 + ConsentPromptBehaviorAdmin=0) | "Sistem ve Oyun" (~2394) |
-| Power Throttling (doğru yol `SYSTEM\CurrentControlSet\Control\Power\PowerThrottling`) | (~2479) |
-| Edge reklam paketi | "Windows AI" → Tarayıcılar (~2282) |
-| Güvenlik Sıkılaştırma (+WPBT, Device Metadata, RegBack) | "Gelişmiş Sistem" (~3119) |
-| Ses Kartı güç tasarrufu (`AudioPowerBackup`) + Ducking | Low Latency → Ses (~3840–3910) |
-| AMD profil işareti / NVIDIA profil işareti | `HKCU\Software\MrClean\AppliedMarkers` → `AmdProfileVer` / `NvidiaProfileVer` = 130 |
-
-**Sekme UI (yeniden tasarım):**
-| Ne | Nerede |
-|----|------|
-| `ChipStyle` (RadioButton pill), `TweakCatHeaderTemplate` (DataTemplate), modern `ToggleSwitch` | Window.Resources (~4480–4560) |
-| Bant: arama + çipler `chipTwAll/Active/Passive/New/Risky/Reboot` + `bdTweakProgressTrack/Fill` | Tweaks TabItem XAML (~4958–5003) |
-| Buton çubuğu (6 kolon, Uygula 1.6*) | aynı TabItem `Grid.Row="2"` |
-| FindName + `TweakSubMaxWidth` kaynağı + ilerleme `SizeChanged` + `$script:TweakChips` | `$tvTweaks = $Win.FindName('tvTweaks')` altı (~6302) |
-| `Find-TweakNameBlock` (isim TextBlock'u `Tag="TweakName"`) | `Get-TweakDisplayName` altı (~8444) |
-| `$script:TweakRowHoverBrush/SubBrush/SubCatBrush`, `$script:TweakChipMode`, `Test-TweakNeedsReboot`, `Get-TweakSummaryLine` | ~8487–8515 |
-| `Apply-TweakFilter` (`$chipFn`), `Test-TweakLeafActive`, `Update-TweakSummary` (animasyonlu dolgu, `$script:TweakActiveRatio`) | ~8532 / ~8597 / ~8606 |
-| `Create-Tweak-Item` (iki satırlı satır, hover, ↻ rozeti) | ~8653 |
-| `Load-Tweak-Tree` (HeaderTemplate, alt kategori stili, fade-in) | ~8274 |
-| Çip işleyicileri | `btnTweakSearchClear` işleyicisinin altı (~20830) |
-| Tarama bitince Aktif/Pasif çipini yenileme | `Save-TweakStatusCache` çağrısının hemen altı |
-
-**Başlık hiyerarşisi (DOKUNMADAN önce oku):** `TreeViewItem.Header = StackPanel(yatay) → CheckBox(.Content = dikey StackPanel → [yatay StackPanel{nokta, isim TextBlock Tag=TweakName, rozetler...}, özet TextBlock Tag=TweakSub])`. Tıklama işleyicisi `$me.Parent.Parent` ile TreeViewItem'a ulaşır. İsim okumak/yazmak için her zaman `Find-TweakNameBlock` kullan.
-
-**Yeni yedek konumu:** `HKLM\SOFTWARE\MrClean\AudioPowerBackup\<0000..>` (ConservationIdleTime / IdlePowerState / PerformanceIdleTime, Binary).
-
-### 11d. v1.3.0 — Dördüncü tur (derin tarama: 153 → 213 tweak, geri alma yardımcıları)
-
-Gerekçeler için bkz. **`DEGISIKLIKLER_v1.3.0.md` §16**. Dosya ~23.900 satır.
-
-| Ne | Nerede (yaklaşık satır) |
-|----|------|
-| Geri alma yardımcıları: `Backup/Restore-TweakRegValue` (`HKLM\SOFTWARE\MrClean\ValueBackup`) | ~7923 |
-| Güç planı dizini: `Get/Backup/Restore-PowerSettingIndex` (dil bağımsız; `…\PowerBackup`; yedek yoksa fallback -1 = dokunma) | ~7966 |
-| `Test-IsLaptop`, `Test-IsAmdCpu`, `Confirm-LaptopPowerTweak` | ~7995 / ~8182 |
-| `Get-MrCleanPhysicalAdapters` (Ethernet/Wi-Fi, durumdan bağımsız, sanal/VPN/Tailscale hariç) | ~8008 |
-| DNS: `Backup/Restore-MrCleanDnsStatic`, `Set-MrCleanDnsPreset` (`…\DnsBackup`) | ~8020-8065 |
-| Wi-Fi/Ethernet gelişmiş ayar: `Set/Restore/Test-MrCleanWifiProperty` (görünen ada göre), `Set-MrCleanEthProperty`, `Restart-MrCleanWifi/Ethernet` (`…\WifiBackup`) | ~8070-8160 |
-| `Measure-MrCleanRtt` (IPv4 tercihi ölçümü) | ~8162 |
-| Timer yardımcısı: conhost --headless başlatıcı + IGNORE_TIMER_RESOLUTION | `Invoke-TimerResHelperSetup` (~9203) |
-| Profiller: AMD/dizüstünde Nihai plan atlanır | `Get-ProfileTweaks` (~13811) |
-| Debloat paket desenleri + `$neverRemove` + "Tümünü seç" sadece Sponsorlu | ~20380-20440 |
-| Yeni tweak'ler (örnek konumlar) | Sanal Makine Platformu (~2832), DoH (~3493), RSS (~4145), Wi-Fi (~4297), USB3 LPM (~4637) |
-
-**Yeni alt kategori:** Low Latency → `Wi-Fi (Kablosuz)`.
-
-**Yeni yedek konumları:** `HKLM\SOFTWARE\MrClean\ValueBackup`, `…\PowerBackup`, `…\DnsBackup`, `…\WifiBackup` (Wi-Fi + Ethernet; değer adı `Id|ArayüzGUID|Anahtar`, `*` yerine `~`).
-
-**Kurallar (4. tur dersleri):**
-- Sürücü / güç / servis değeri değiştiren tweak'te **sabit "varsayılan" yazma**; yukarıdaki yardımcılarla yedekle ve geri yükle.
-- Ağ ayarlarını `Get-NetAdapter | Where Status -eq Up` ile değil `Get-MrCleanPhysicalAdapters` ile seç. Up filtresi VPN'e dokunur ve kopuk Wi-Fi'yi atlar.
-- Wi-Fi sürücü ayarı anahtar adları üreticiye göre değişir: `RegistryKeyword` sabitleme, görünen ad regex'i kullan (TR + EN).
-- DNS ön ayar Command'ında `address=x.x.x.x` yorumu kalmalı; `Get-Tweak-IsActive` DNS sezgiseli bu metni okuyor.
-- Yeni tweak isminde `TCP` / `Win32` / `HPET` kullanma (sezgisel tespit + reboot diyaloğu tetiklenir); gerekiyorsa `DetectScript` + `SkipRebootDialog`.
-
-### 11e. v1.3.0 — Beşinci tur (kullanıcı geri bildirimi)
-Gerekçeler için bkz. `DEGISIKLIKLER_v1.3.0.md` §17. Konum bulmak için Grep kullanın:
-
-| Grep | Ne |
+| Konu | Fonksiyon / anahtar |
 |---|---|
-| `function Get-MrCleanDnsGuard` / `Test-MrCleanDnsBlocked` | 3. parti DNS/DPI araç algılama + DNS komutlarında koruma |
-| `function Get-MrCleanHwProfile` / `Get-TweakHardwareReason` / `Get-MrCleanHwSummary` | Donanım profili + `Requires` / `Vendor` gerekçesi (Test-TweakBuildCompatible bunu da kontrol eder) |
-| `function Enable-MrCleanTimerResolution` / `Disable-…` / `Get-MrCleanTimerTarget` | Timer'ın tam kurulumu (Araçlar > Timer Testi) |
-| `function Get-MrCleanGameExes` / `Set-MrCleanGameGpuPreference` / `Remove-…` | Oyunlara yüksek performans GPU (UserGpuPreferences; `HKCU\Software\MrClean\GpuPrefAdded`) |
+| Tweak tespiti | `Get-Tweak-IsActive` (DetectScript → NetProfile → registry/servis/komut sezgileri), `Test-TweakApplied` |
+| Uygula / doğrulama | `Apply-System-Tweaks`, `Show-ApplyConfirm`, `Show-ApplyOverlay`, `Complete-ApplyOverlay`, `Update-TweakStatusAfterApply`, `Get-MrCleanTweakDependents` |
+| Güç planı | `Invoke-MrCleanPowerPlanFirst`, `Sync-MrCleanPlanBoundPower`, `Get/Backup/Restore-PowerSettingIndex` |
+| Geri alma yedekleri | `Backup/Restore-TweakRegValue` (HKLM\SOFTWARE\MrClean\ValueBackup) |
+| Servisler | `Set/Restore/Test-MrCleanServicesStart`, `Set-MrCleanSvcStartSc` (korumalı anahtar → sc.exe), `Get/Set-MrCleanSvcMode` |
+| Zamanlanmış görevler | `Test-MrCleanTasksDisabled -Skip`, `Set-MrCleanTasksEnabled`, `Get-MrCleanTasksDenied` |
+| Ağ / DNS / Wi-Fi | `Get-MrCleanPhysicalAdapters`, `Get-MrCleanNicFast`, `Restart-MrCleanNicsAndWait`, `Get-MrCleanDnsGuard`, `Test-MrCleanDnsBlocked`, `Set-MrCleanDnsPreset`, `Set/Restore/Test-MrCleanWifiProperty`, `Get-MrCleanVpnState` |
+| Donanım uygunluğu | `Get-MrCleanHwProfile`, `Get-TweakHardwareReason` (`Requires`), `Test-TweakBuildCompatible` (`MinBuild`/`MaxBuild`), `Get-MrCleanHwWarnings` |
+| Oyun | `Get-MrCleanGameExeNames`, `Install/Remove/Test-MrCleanGameCpuAgent` (görev MrClean-OyunIslemci), `Set/Remove/Test-MrCleanGamePriority` (IFEO), `Install/Remove/Test-MrCleanCs2Cpu0`, `Get-AllDetectedGames`, `Set-MrCleanGameGpuPreference` |
+| NVIDIA | `Get-NvidiaInspectorPath` (v3.0.2.1 sabit + SHA256, ağ beklemeli yeniden deneme), `Invoke-NvidiaInspector`, `Backup-NvidiaProfiles`, `Test-NvidiaProfileApplied`, `Test-NvidiaTweakCurrent` / `Complete-NvidiaTweakCheck` (sürücü değişince doğrulama) |
+| AMD | `Show-AmdChipsetRepair`, `Invoke-AmdChipsetRepair`, `Get-AmdDriverPlan`, `Test-IsAmdCpu`, `Confirm-DualCcdX3DPowerTweak` |
+| Timer resolution | `Invoke-TimerResHelperSetup`, `Enable/Disable-MrCleanTimerResolution`, `Show-TimerResolutionSettings/Test` (görev MrClean-TimerRes) |
+| Güncelleme sonrası denetim | `Start-MrCleanDriftCheck`, `Get-MrCleanEnvFingerprint`, `Set-MrCleanPendingReapply`, `Update-MrCleanAppliedList` |
+| Emekli tweak'ler | `Get-RetiredTweakDefs`, `Invoke-RetiredTweakCleanup`, `$retiredOfficialTweaks`, `Convert-MrCleanAppliedAliases` (`Aliases`) |
+| Yönetici başlatıcı | `Get/Enable/Disable-MrCleanAdminLauncher`, `Update-MrCleanAdminLauncherCopy` (kopya `C:\Program Files\MrClean\`) |
+| Program güncelleme | `Test-AppUpdate` → `Show-AppUpdateWindow` → `Invoke-AppUpdate` (indir + SHA256 + `update_runner.ps1` takası), `Set-MrCleanAppUpdateButton` |
+| Winapp2 güncelleme | `Get-Winapp2Local/OnlineVersion`, `Invoke-Winapp2Download`, `Get-Winapp2Diff`, `New-Winapp2DiffReport` (Ayarlar › Temizlik Veritabanı kartı) |
+| Geri yükleme noktası | `Create-Restore-Point`, `Invoke-RestorePointAsync`, `Test-RestorePointWillAsk` |
+| Gezgin yenileme | `Invoke-ShellSoftRefresh` (Soft), `Invoke-ExplorerHardRestart` (Hard) |
+| Benchmark | `Get-BenchSnapshot`, `Test-*` metrikleri, `Test-GameLoad`, `Test-GpuFrameTime` (FurMark 2 + PresentMon), `Compare-BenchSnapshots`, `Show-BenchmarkPanel` |
+| Otomatik Ses / mikrofon | `$global:MrCleanEapoConst` (26117), `$global:MrCleanMicConst` (26172), `Initialize-MrCleanAudioNative`, `Invoke-MrCleanAudioSetup` (worker), `Write-MrCleanAudioConfig`, `Register-MrCleanAudioModeTask` (görev "MrClean Ses Modu"), `Show-AudioProfileTool` — worker'a yeni yardımcı eklenirse `$runWorker` listesine de |
+| Ağ Kalite Testi | `Show-NetworkQualityTest` (iç: `LoadTest`, `Probe`, `TcpRtt`), geçmiş HKCU\Software\MrClean NetTestHistory |
+| Ortak pencereler | `Show-MrCleanMessage`, `Show-MrCleanInput`, `Initialize-SubWindow`, `Get-MrCleanMsgOwner` |
 
-**Yeni tweak alanı:** `Requires=@(...)` — değerler: `WiFi`, `Ethernet`, `Laptop`, `HDD`, `SSD`, `Cores4`, `NoDnsTool`, `WiFiBand`, `WiFiAdv`, `VendorTel`, `CABC`.
+---
 
-**Kural:**
-- Tek tırnaklı PS dizelerinde tipografik kesme işareti (’) de tırnak sayılır. Dil tablosunda `''` kullanın.
-- DNS'e dokunan yeni kod `Test-MrCleanDnsBlocked` ile başlamalı.
+## 7. KALICI DURUM: KAYIT DEFTERİ, DOSYALAR, GÖREVLER
 
-### 11f. v1.3.0 — Altıncı tur
-| Grep | Ne |
-|---|---|
-| `function Start-MrCleanDriftCheck` / `Get-MrCleanEnvFingerprint` / `Update-MrCleanAppliedList` / `Set-MrCleanPendingReapply` | Güncelleme sonrası denetim (`$Win.Add_Loaded` → 6 sn gecikmeli `DriftStartTimer`) |
-| `function Show-NetworkQualityTest` | Ağ Kalite Testi (Araçlar > `btnNetQuality`) |
-| `WifiBandPref` / `WifiAdv` | Wi-Fi sürücü yetenekleri (`Requires`: `WiFiBand`, `WiFiAdv`) |
+**HKCU\Software\MrClean:** `AppliedTweaks` (MultiString), `Env*` (sürüm sonrası denetim parmak izi), `AudioPreset` / `AudioAutoEq*`, `NetTestHistory`; alt anahtarlar `AppliedMarkers` (NvidiaProfileVer, NvidiaDriverVer, AmdProfileVer, TelemetryTasksDenied …), `Audio` (+ `\Devices\{guid}`), `SvcMode`, `GpuPrefAdded`.
+**HKLM\SOFTWARE\MrClean (geri alma yedekleri):** `ValueBackup`, `PowerBackup`, `ServiceStartBackup`, `NicPowerBackup`, `AudioPowerBackup`, `DnsBackup`, `WifiBackup`, `GamePriorityBackup`, `GameInputStartBackup`, `VendorTelBackup`.
+**%APPDATA%\MrClean:** `config\user_config.json`, `cache\` (tweak_status_cache.json 30 dk, app_cache.json, wg_upgrade.json), `database\Winapp2.ini`, `logs\` (session.log, tweak_history.log), `benchmarks\` (+ `tools\`), `nvidiaProfileInspector\`, `GameCpu\`, `Cs2Cpu0\`, `fonts\`, `update_runner.ps1`. Ses: `%LOCALAPPDATA%\MrClean\autoeq\` + EAPO config klasöründeki `MrClean-*.txt`.
+**Zamanlanmış görevler:** `MrClean-App` (yönetici başlatıcı), `MrClean-OyunIslemci`, `MrClean-CS2Cpu0`, `MrClean-TimerRes`, `MrClean Ses Modu`.
 
-Kayıt defteri: `HKCU\Software\MrClean` → `AppliedTweaks` (MultiString), `EnvWin` / `EnvGpu` / `EnvNic` / `EnvCheckedAt`.
+---
 
+## 8. 🌍 DİL / KÜLTÜR DUYARLI NOKTALAR
 
-### 11g. v1.3.0 — Yedinci tur (VPN uyumu, Ağ Testi v2, Ses Profili, üretici telemetrisi)
-- `Get-MrCleanVpnState` → `@{ Installed; Connected }`. Konumu: `Get-MrCleanPhysicalAdapters`'ın hemen altı. Kullanan: `Get-MrCleanDnsGuard` (bağlı tünel = DNS'e dokunma) ve Ağ Testi.
-- `Get-MrCleanVendorTelemetry [-Fresh]` → üretici telemetri bileşenleri. `$global:MrCleanVendorTel` önbelleğinde tutulur. `Requires="VendorTel"` → `tw_hw_vendortel`.
-- **Ağ Testi v2** (`Show-NetworkQualityTest`):
-  - Worker'daki fonksiyonlar `Med`, `Jit`, `TcpRtt`, `Probe` (ICMP veya `-Tcp`) ve `LoadTest(urls, mode, streams, maxSec, capBytes, pingIp)`.
-  - Sonuçlar `$script:NqSync` içinde: Colo, Idle, Regions, Dom, Intl, Up.
-  - Geçmiş `HKCU\Software\MrClean\NetTestHistory` (JSON, son 6).
-  - Sunucu URL'leri worker içinde `$srv` altında. Değiştirmeden önce User-Agent ile `Range` isteğinin 206 döndüğünü test edin.
-  - Cloudflare `__down`: tek istekte en fazla 25 MB (100 MB ve üstü 403 döner).
-- **Ses Profili:**
-  - Fonksiyonlar: `Get-MrCleanEapoConfigDir`, `Get-MrCleanAudioEndpoints` (CoreAudio COM sınıfı `MrCleanDefAudio`), `ConvertFrom-MrCleanEqLine`, `Measure-MrCleanEqPeak` (RBJ biquad), `Get-MrCleanEqPreset(id, bass, hasAutoEq)`, `Show-AudioProfileTool`.
-  - Kayıt: `HKCU\Software\MrClean` altında `AudioPreset`, `AudioAutoEqName`, `AudioAutoEqUrl`.
-  - Dosyalar: EAPO config klasöründe `MrClean-Ses.txt`, `config.txt` ve `config.mrclean-yedek.txt`.
-  - Düğme `btnAudioProfile`; dil anahtarı `btn_audio` (TR/EN/FR).
-- **Ağ Sıfırlama:** `$s` betiğindeki `__SKIPDNS__` / `__DNSTOOLS__` yer tutucuları, worker başlamadan önce click handler'da doldurulur.
-- **Kural:** EAPO / AutoEq filtre sayıları her zaman `[Globalization.CultureInfo]::InvariantCulture` ile yazılır ve okunur.
+- **Çökme Analizi** (`btnScanCrashes` olayı, Region 14 ~30445–30940): tarama motoru olay özelliklerini ve `$L.cr_*` dil anahtarlarını kullanır (eski "Hatalı uygulama adı" metin ayrıştırması yok). Kalan tek metin eşleşmesi GPU TDR yedeği: `$e.Message -match 'yanıt vermeyi kesti|stopped responding'` (~30574; asıl koşul `Id -eq 4101`, FR'de yalnız bu yedek kaçar).
+- **Türkçe-i tuzağı:** `.ToLower()` / `.ToUpper()` ve kültüre duyarlı `-match` (ör. "inspector" — Get-NvidiaInspectorPath bu yüzden dosya filtresi kullanır). Karşılaştırmada `ToLowerInvariant`; arama için `Normalize-SearchText`.
+- **Doğru yapılmış:** DetectScript'ler, enum karşılaştırmaları, registry / CIM, `ParseExact(…, InvariantCulture)`, EAPO / AutoEq sayıları `InvariantCulture`.
+- **i18n:** arayüz metinleri `T 'anahtar'` + `Localize-Xaml` (Region 3B); tweak Ad / Açıklama yalnız Türkçe.
 
+---
 
-### 11h. v1.3.0 — Sekizinci tur (Otomatik Ses)
-- **Bölüm başlığı:** `v1.3.0 (8. tur): OTOMATIK SES SISTEMI`.
-- **Sabitler:** `$global:MrCleanEapoConst` içinde CLSID'ler, yuva / PKEY adları, URL'ler, SHA-256, görev adı ve ayar anahtarı (`HKCU\Software\MrClean\Audio`; aygıtlar `\Devices\{guid}`).
-- **Native (C#):** `MrCleanAudioV2.Native`
-  - `DefaultId(flow)`
-  - `OpenShared(fullId)`: paylaşımlı modda `Initialize` → APO yüklenir.
-  - `ProbeEapo(pipe, ids, ms)`: EAPO test kanalı dinleyicisi.
-- **Aygıt ve model:** `Get-MrCleanAudioDevices`, `Get-MrCleanAutoEqIndex [-Offline]`, `Find-MrCleanAutoEqMatch`, `Get-MrCleanAutoEqFilters`.
-  - Filtre önbelleği: `%LOCALAPPDATA%\MrClean\autoeq\`.
-- **Kurulum:** `Install-MrCleanEapoDevice` / `Uninstall-MrCleanEapoDevice` (EAPO `DeviceAPOInfo` ile uyumlu biçim), `Test-MrCleanEapoDevices`, `Install-MrCleanEapoPackage`, `Install-MrCleanClipOnly`.
-- **Ses dengeleyici (10. tur):** sabitler `LevUrl/LevMember/LevFile/LevSha/LevFull/LevLight` (`$global:MrCleanEapoConst`), ayar `Leveler` (auto/full/light/off). İndirme `Invoke-MrCleanAudioSetup` içinde (`Install-MrCleanZipMember`); satır `Write-MrCleanAudioConfig` içinde, `MrClean-user.txt` ile ClipOnly2 arasında. Arayüz: `cbAsLev`.
-- **Ayar dosyaları:** `Get-MrCleanAudioCurve`, `Format-MrCleanEqFilter`, `Write-MrCleanAudioConfig`.
-  - EAPO config klasöründeki dosyalar: `MrClean-dev-<guid>.txt`, `MrClean-hp-{balanced,music,game,active}.txt`, `MrClean-default-mode.txt`, `MrClean-games.txt`, `MrClean-AudioMode.ps1`.
-- **Akış:** `Invoke-MrCleanAudioSetup` (worker), `Remove-MrCleanAudioAll`, `Invoke-MrCleanAudioMaintain` (açılışta, DriftStartTimer içinde).
-- **Arayüz:** `Show-AudioProfileTool`. Satırlar `$script:AsRows` listesinde (Plan / Chk / Kind / Info / ModelBtn).
-  - Worker, `InitialSessionState` + `SessionStateFunctionEntry` ile kurulur. Yeni bir yardımcı fonksiyon eklerseniz `$runWorker` içindeki listeye de ekleyin.
-- **Kurallar:**
-  - EAPO dosyalarına yalnızca ASCII ve InvariantCulture sayılar yazılır.
-  - Audiosrv'yi yeniden başlatırken bağımlı servisler de yeniden başlatılır.
-  - Varsayılan olmayan HDMI/DP aygıtı otomatik seçilmez.
-- **Ağ testi:**
-  - Cloudflare isteklerine `Referer` / `Origin` başlıkları eklenir. 429 / 403 gelen akış durur.
-  - Yurt dışı karar ortanca tabanlı; `Get-ProfileTweaks`'te Wi-Fi kartı varsa Wi-Fi tweak'leri eklenir.
-- **8. tur eki:**
-  - Ses türüne "Voice" (sohbet kanalı) eklendi; `MrCleanAudioV2.Native.DefaultIdRole(flow, role)` ile iletişim varsayılanı okunur.
-  - Tek seferlik yönetici izni:
-    - Fonksiyonlar `Get-MrCleanAdminLauncherState`, `Enable-` / `Disable-MrCleanAdminLauncher`, `Update-MrCleanAdminLauncherCopy`, `Request-MrCleanAdminLauncherOnce` (Start-MrCleanDriftCheck'in hemen üstünde).
-    - Açılıştaki yönetici kontrolünde görev denemesi var.
-    - Ayarlar > `chkAdminLauncher`; dil anahtarları `set_adminlauncher` / `set_adminlauncher_tip`.
-    - Görev adı `$global:MrCleanElevTask`.
-- **Mikrofon zinciri (8. tur):**
-  - `$global:MrCleanMicConst`: URL, zip üyesi, SHA-256, RNNoise / DFN ChunkData, Airwindows float parametreleri.
-  - Fonksiyonlar: `Install-MrCleanZipMember` (genel Range zip çıkarıcı), `Install-MrCleanMicComponents`, `Get-MrCleanEndpointFormat`, `Get-MrCleanMicType`, `ConvertTo-MrCleanFloatChunk`, `Get-MrCleanMicChainLines`.
-  - Eğriler `mic_headset`, `mic_desk`, `mic_laptop`.
-  - Planda `MicType` alanı var; tercih kaydında mikrofonlar için `Model` alanında saklanır.
-  - Ayarlar: `MicEngine` (rnnoise / dfn / off) ve `MicLevel`.
-  - Ölçüm düzeneği proje dışında, scratchpad `micbench` klasöründe: `MicBench.cs`, `bench.ps1`, `e2e.ps1`.
-- **Mikrofon zinciri (son durum):**
-  - Zincir: HP → DFN3 (gücü `MicAtten`, varsayılan 30; Mikrofon Testi odaya göre seçer) → hafif EQ → ADClip8 (kazanç 0, tavan -1).
-  - Kompresör ve DeEss YOK; seviye dengelemeyi Discord'un Otomatik Kazanç Kontrolü yapar.
-  - Fonksiyonlar `Get-MrCleanDfnChunk`, `Measure-MrCleanMicEnvironment`; C# sınıfı `MrCleanAudioV2.Capture` (RAW kayıt).
+## 9. İKİ AYRI GÜNCELLEME SİSTEMİ (karıştırma)
 
-> §96 (14 Ekim 2026): D1–D6 ölü kod temizliği — genel arama şeridi (`grdGlobalSearch`, `txtSearch`, Tümünü Seç / Sekme Seç / Tümünü Kaldır, `Select-SafeTweaks`, arama zamanlayıcısı), hiç çağrılmayan 5 fonksiyon, okunmayan 5 değişken, XAML'de olmayan 6 `FindName` + işleyicileri (eski SFC düğmesi dahil), `Set-TweakItemUI` eski "(Aktif)" dalı, Başlangıç `StatusColor` / `DelayColor`, 67 dil anahtarı silindi. Satır numaraları yaklaşık ~570 satır kaydı.
+- **Program (EXE):** açılışta `Test-AppUpdate` (GitHub Releases, async) → `$global:UpdateAvailable` → sol menü "Program Güncelle" (`Set-MrCleanAppUpdateButton`) → `Show-AppUpdateWindow` → `Invoke-AppUpdate` (indir, `SHA256SUMS.txt` ile doğrula, `update_runner.ps1` ile dosya takası, yeniden başlat). Sürüm atlama: `Add-SkippedVersion`.
+- **Winapp2 (temizlik veritabanı):** `Start-Winapp2-Process` açılışta yükler / denetler; güncelleme Ayarlar › Temizlik Veritabanı kartında (`Invoke-Winapp2Download`, fark raporu `New-Winapp2DiffReport` → `%APPDATA%\MrClean\winapp2_diff_<tarih>.txt`).
 
-> **15 Ekim 2026 eki (§93–§106) — satır numarası yerine `function` adıyla arayın:**
-> - Güç planı / doğrulama: `Invoke-MrCleanPowerPlanFirst`, `Sync-MrCleanPlanBoundPower`, `Get-MrCleanPlanBoundAppliedNames`, `Get-MrCleanActiveSchemeGuid`, `Get-MrCleanTweakDependents`, `Update-TweakStatusAfterApply` (Uygula sonrası canlı doğrulama); tablolar `$script:PlanBoundPowerTweaks`, `$script:PlanBoundBackupIds`, `$script:TweakSideEffects`.
-> - Uyumsuz ama aktif tweak: `$script:TweakIncompatNames` + `Set-TweakItemUI`.
-> - Gezgin yenileme: `Get-MrCleanDesktopView`, `Invoke-ShellSoftRefresh` (NativeMethods: FindWindow / FindWindowEx / PostMessage).
-> - Açıklama kutusu: `Attach-ToolTip` (Placement Bottom, `$script:TipTemplate`, `$script:TipBrushes`, 1 sn gecikme, `$script:TipWheelTimer` kaydırma sonrası açma).
-> - Oyun: `Get-MrCleanGameExeNames`; `Install / Remove / Test-MrCleanGameCpuAgent` (+ `Convert-MrCleanLegacyProcMin`); `Set / Remove / Test-MrCleanGamePriority` (IFEO); `Install / Remove / Test-MrCleanCs2Cpu0`.
-> - Dosya Boyutu: C# `MrCleanLf.Scanner` (`Start-LargeFileScan` içindeki `$lfScannerCs`).
-> - Winget: ilk ziyarette `Refresh-Winget-Status -Silent` (`$script:WingetStatusScanned`), `Open-DashTarget` "Kurulu" süzgeci.
+---
+
+## 10. GEÇMİŞ
+
+Eski sürüm notları (v1.2.29 – v1.3.0 turları, §57 raporu, §93–§106 ekleri) bu haritadan çıkarıldı; gerekçeler ve ayrıntı `DEGISIKLIKLER_v1.3.0.md` içinde `§NNN` ile aranır. Önceki harita: scratchpad `yedek73\KOD_HARITASI.md`.

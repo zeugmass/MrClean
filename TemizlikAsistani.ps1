@@ -1318,7 +1318,17 @@ function Get-Default-Tweaks {
                     $fs = (Get-ItemProperty "HKCU:\Control Panel\Desktop" -Name FontSmoothing -ErrorAction SilentlyContinue).FontSmoothing
                     $io = (Get-ItemProperty "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name IconsOnly -ErrorAction SilentlyContinue).IconsOnly
                     $ma = (Get-ItemProperty "HKCU:\Control Panel\Desktop\WindowMetrics" -Name MinAnimate -ErrorAction SilentlyContinue).MinAnimate
-                    return (("$fx" -eq "3") -and ("$fs" -eq "2") -and ("$io" -eq "0") -and ("$ma" -eq "0"))
+                    if (-not (("$fx" -eq "3") -and ("$fs" -eq "2") -and ("$io" -eq "0") -and ("$ma" -eq "0"))) { return $false }
+                    # §168: calisan oturumdaki gercek durum (Performans Secenekleri penceresi bunu gosterir). Kayit defteri dogru,
+                    # oturum eski kalmissa pasif gorunur: menu, acilan kutu, liste kaydirma, ipucu, denetim animasyonu, imlec / pencere golgesi.
+                    if (-not ("SpiFxQ" -as [type])) {
+                        Add-Type -TypeDefinition "using System; using System.Runtime.InteropServices; public class SpiFxQ { [DllImport(""user32.dll"")] public static extern bool SystemParametersInfo(uint a, uint b, ref bool c, uint d); }"
+                    }
+                    foreach ($g in @(0x1002, 0x1004, 0x1006, 0x1016, 0x1042, 0x101A, 0x1024)) {
+                        $v = $false
+                        if ([SpiFxQ]::SystemParametersInfo([uint32]$g, 0, [ref]$v, 0) -and $v) { return $false }
+                    }
+                    return $true
                 ';
                 Batch=@(
                     # 1. Modu "Özel" (Custom) yap
@@ -1374,6 +1384,12 @@ public class SpiFx {
                             $ai.cbSize = [System.Runtime.InteropServices.Marshal]::SizeOf($ai)
                             $ai.iMinAnimate = 0
                             [void][SpiFx]::SystemParametersInfo(0x0049, [uint32]$ai.cbSize, [ref]$ai, 3)
+                            # §168: UserPreferencesMask yalniz kayit defterine yazilinca calisan oturuma gecmiyor (yalniz oturum acilisinda
+                            # okunur) ve sonraki herhangi bir SPIF_UPDATEINIFILE cagrisi oturumdaki eski maskeyi kayit defterine geri yaziyordu.
+                            # Bu yuzden maskedeki her efekt SPI ile tek tek kapatilir: oturum + kayit defteri ayni olur.
+                            foreach ($a in @(0x1003, 0x1005, 0x1007, 0x1013, 0x1017, 0x1019, 0x1043)) {   # menu, acilan kutu, liste kaydirma, menu solma, ipucu animasyon / solma, denetim animasyonu
+                                [void][SpiFx]::SystemParametersInfo([uint32]$a, 0, $false, 3)
+                            }
                             [void][SpiFx]::SystemParametersInfo(0x1025, 0, $false, 3)
                             [void][SpiFx]::SystemParametersInfo(0x1015, 0, $false, 3)
                             [void][SpiFx]::SystemParametersInfo(0x101B, 0, $false, 3)
@@ -1401,6 +1417,8 @@ public class SpiFx {
                             $ai.cbSize = [System.Runtime.InteropServices.Marshal]::SizeOf($ai)
                             $ai.iMinAnimate = 1
                             [void][SpiFx]::SystemParametersInfo(0x0049, [uint32]$ai.cbSize, [ref]$ai, 3)
+                            # §168: geri almada da efektler SPI ile acilir (yalniz maske yazilinca oturum kapali kaliyordu)
+                            foreach ($a in @(0x1003, 0x1005, 0x1007, 0x1013, 0x1017, 0x1019, 0x1043)) { [void][SpiFx]::SystemParametersInfo([uint32]$a, 0, $true, 3) }
                             [void][SpiFx]::SystemParametersInfo(0x1025, 0, $true, 3)
                             [void][SpiFx]::SystemParametersInfo(0x1015, 0, $true, 3)
                             [void][SpiFx]::SystemParametersInfo(0x101B, 0, $true, 3)
@@ -1775,10 +1793,24 @@ public class SpiFx {
             @{
                 Name="Copilot ve Recall Görev Çubuğu Sabitlemelerini Kaldır"; SubCategory="Görev Çubuğu"; Since="2.0.0";
                 Risk="Low"; RestartExplorer="Soft";
-                Description="Windows'un görev çubuğuna kendiliğinden eklediği Copilot (web uygulaması) ve Recall sabitlemelerini kaldırır.`n📚 Kaynak: GTweak (Taskband AuxilliaryPins).";
+                Description="Windows'un görev çubuğuna kendiliğinden Copilot (web uygulaması) ve Recall sabitlemesi eklemesini engeller.`n`nℹ️ Zaten elle sabitlenmiş bir Copilot / Recall simgesi varsa satır pasif görünür: simgeye sağ tıklayıp 'Görev çubuğundan kaldır' deyin.`n📚 Kaynak: GTweak (Taskband AuxilliaryPins).";
+                # v2.0.x (§167): AuxilliaryPins degerleri "sabitli" degil, "Windows bu otomatik sabitlemeyi yapti / islemeyi bitirdi" isaretidir
+                # (olculdu, 26300 format sonrasi: MailPin=1 ve CopilotPWAPin=1 iken ikisi de gorev cubugunda yok). Eski surum 0 yaziyordu =
+                # "henuz islenmedi" → Explorer degeri hemen 1'e geri cevirdi, dogrulama "uygulandi ama etkin gorunmuyor" dedi; 0 ayrica
+                # Explorer'in sabitlemeyi yeniden denemesine yol acabilir. Dogru deger 1. Geri alma degeri siler (Windows yeniden karar verir).
+                DetectScript='
+                    $ap = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband\AuxilliaryPins" -ErrorAction SilentlyContinue
+                    if ("$($ap.CopilotPWAPin)" -ne "1" -or "$($ap.RecallPin)" -ne "1") { return $false }
+                    # Gorev cubugunda gercekten Copilot / Recall sabitli mi (Favorites ikili verisi UTF-16 AUMID / yol icerir)
+                    $fav = (Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband" -Name Favorites -ErrorAction SilentlyContinue).Favorites
+                    if ($fav) { $s = [Text.Encoding]::Unicode.GetString([byte[]]$fav); if ($s -match "(?i)Microsoft\.Copilot_|MicrosoftWindows\.Client\.AIX|Recall") { return $false } }
+                    # Copilot web uygulamasi (PWA) sabitlemesi kisayol dosyasi olarak durur
+                    if (Get-ChildItem -Path "$env:APPDATA\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar" -Filter "*Copilot*.lnk" -ErrorAction SilentlyContinue) { return $false }
+                    return $true
+                ';
                 Batch=@(
-                    @{ Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband\AuxilliaryPins"; ValueName="CopilotPWAPin"; Type="DWord"; Data=0; Undo="DELETE_VALUE" },
-                    @{ Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband\AuxilliaryPins"; ValueName="RecallPin"; Type="DWord"; Data=0; Undo="DELETE_VALUE" }
+                    @{ Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband\AuxilliaryPins"; ValueName="CopilotPWAPin"; Type="DWord"; Data=1; Undo="DELETE_VALUE" },
+                    @{ Key="HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Taskband\AuxilliaryPins"; ValueName="RecallPin"; Type="DWord"; Data=1; Undo="DELETE_VALUE" }
                 )
             },
 			@{
@@ -2588,7 +2620,7 @@ public class SpiFx {
                 Name="Telemetri Zamanlanmış Görevlerini Devre Dışı Bırak";
                 SubCategory="Telemetri"; Since="2.0.0";
                 Risk="Low"; RestartExplorer=$false;
-                Description="Arka planda periyodik çalışıp telemetri / uyumluluk verisi toplayan zamanlanmış görevleri devre dışı bırakır:`n• Microsoft Uyumluluk Değerlendiricisi, ProgramDataUpdater, PcaPatchDbTask, MareBackup`n• Müşteri Deneyimi Programı görevleri (Consolidator, UsbCeip, KernelCeipTask), SQM`n• Disk tanılama ve disk ayak izi toplayıcıları, Autochk Proxy`n• Geri bildirim (DmClient), ağ bilgisi toplayıcı, Kullanım ve Kalite Öngörüleri, güç verimliliği ve sürdürülebilirlik tanılamaları`n• Haritalar bildirim / güncelleme görevleri`n`nℹ️ Bilerek dokunulmayanlar: StartupAppTask (Görev Yöneticisi başlangıç etkisi), WER QueueReporting (Çökme Analizi). Sistemde olmayan görevler atlanır. Geri alma hepsini yeniden etkinleştirir.";
+                Description="Arka planda periyodik çalışıp telemetri / uyumluluk verisi toplayan zamanlanmış görevleri devre dışı bırakır:`n• Microsoft Uyumluluk Değerlendiricisi, ProgramDataUpdater, PcaPatchDbTask, MareBackup`n• Müşteri Deneyimi Programı görevleri (Consolidator, UsbCeip, KernelCeipTask), SQM`n• Disk tanılama ve disk ayak izi toplayıcıları, Autochk Proxy`n• Geri bildirim (DmClient), ağ bilgisi toplayıcı, güç verimliliği ve sürdürülebilirlik tanılamaları`n• Haritalar bildirim / güncelleme görevleri`n`nℹ️ Bilerek dokunulmayanlar: StartupAppTask (Görev Yöneticisi başlangıç etkisi), WER QueueReporting (Çökme Analizi). Kullanım ve Kalite Öngörüleri görevini Windows korur (yöneticiye bile kapattırmaz), listede yok. Sistemde olmayan görevler atlanır. Geri alma hepsini yeniden etkinleştirir.";
                 DetectScript='
                     $list = @(
                         @("\Microsoft\Windows\Application Experience\","Microsoft Compatibility Appraiser"),
@@ -2607,12 +2639,11 @@ public class SpiFx {
                         @("\Microsoft\Windows\Maps\","MapsUpdateTask"),
                         @("\Microsoft\Windows\PI\","Sqm-Tasks"),
                         @("\Microsoft\Windows\NetTrace\","GatherNetworkInfo"),
-                        @("\Microsoft\Windows\UsageAndQualityInsights\","UsageAndQualityInsights-MaintenanceTask"),
                         @("\Microsoft\Windows\Sustainability\","SustainabilityTelemetry"),
                         @("\Microsoft\Windows\DiskFootprint\","Diagnostics"),
                         @("\Microsoft\Windows\Power Efficiency Diagnostics\","AnalyzeSystem")
                     )
-                    return (Test-MrCleanTasksDisabled $list)   # v1.3.0 (§89): Görev Zamanlayıcı COM
+                    return (Test-MrCleanTasksDisabled $list (Get-MrCleanTasksDenied "TelemetryTasksDenied"))   # v1.3.0 (§89): Görev Zamanlayıcı COM; v2.0.x (§167): korunan görevler atlanır
                 ';
                 Command='
                     $list = @(
@@ -2632,15 +2663,11 @@ public class SpiFx {
                         @("\Microsoft\Windows\Maps\","MapsUpdateTask"),
                         @("\Microsoft\Windows\PI\","Sqm-Tasks"),
                         @("\Microsoft\Windows\NetTrace\","GatherNetworkInfo"),
-                        @("\Microsoft\Windows\UsageAndQualityInsights\","UsageAndQualityInsights-MaintenanceTask"),
                         @("\Microsoft\Windows\Sustainability\","SustainabilityTelemetry"),
                         @("\Microsoft\Windows\DiskFootprint\","Diagnostics"),
                         @("\Microsoft\Windows\Power Efficiency Diagnostics\","AnalyzeSystem")
                     )
-                    foreach ($t in $list) {
-                        $st = Get-ScheduledTask -TaskPath $t[0] -TaskName $t[1] -ErrorAction SilentlyContinue
-                        if ($st) { $st | Disable-ScheduledTask -ErrorAction SilentlyContinue | Out-Null }
-                    }
+                    Set-MrCleanTasksEnabled $list $false "TelemetryTasksDenied"
                 ';
                 UndoCommand='
                     $list = @(
@@ -2660,15 +2687,12 @@ public class SpiFx {
                         @("\Microsoft\Windows\Maps\","MapsUpdateTask"),
                         @("\Microsoft\Windows\PI\","Sqm-Tasks"),
                         @("\Microsoft\Windows\NetTrace\","GatherNetworkInfo"),
-                        @("\Microsoft\Windows\UsageAndQualityInsights\","UsageAndQualityInsights-MaintenanceTask"),
                         @("\Microsoft\Windows\Sustainability\","SustainabilityTelemetry"),
                         @("\Microsoft\Windows\DiskFootprint\","Diagnostics"),
                         @("\Microsoft\Windows\Power Efficiency Diagnostics\","AnalyzeSystem")
                     )
-                    foreach ($t in $list) {
-                        $st = Get-ScheduledTask -TaskPath $t[0] -TaskName $t[1] -ErrorAction SilentlyContinue
-                        if ($st) { $st | Enable-ScheduledTask -ErrorAction SilentlyContinue | Out-Null }
-                    }
+                    Set-MrCleanTasksEnabled $list $true
+                    Remove-ItemProperty -Path "HKCU:\Software\MrClean\AppliedMarkers" -Name "TelemetryTasksDenied" -Force -ErrorAction SilentlyContinue
                 '
             }
         )
@@ -3498,6 +3522,56 @@ public class SpiMenu {
         
         # --- 6. GÜÇ PLANLARI ---
         "Güç Planı" = @(
+            # §169: ekran / uyku / hazirda bekletme zaman asimlari — etkin planin VIDEOIDLE / STANDBYIDLE / HIBERNATEIDLE ayarlari
+            # (saniye, 0 = Hicbir zaman). Kayit defterinde HKLM\SYSTEM\CurrentControlSet\Control\Power\User\PowerSchemes\{plan}\{altgrup}\{ayar}
+            # ACSettingIndex; powercfg ile yazilir (Windows aninda uygular). Yalniz prizde (AC); pil (DC) degismez.
+            @{
+                Name="Uykuyu ve Hazırda Beklemeyi Kapat (Prizde: Asla)"; Since="2.0.4";
+                Risk="Low"; RestartExplorer=$false;
+                Description="Etkin güç planında prizdeyken 'Şu süre sonunda cihazımı uykuya geçir' ve 'hazırda bekletme durumuna al' ayarlarını Hiçbir zaman yapar (Ayarlar > Sistem > Güç > Ekran, uyku ve hazırda bekletme zaman aşımları ile aynı). Bilgisayar boşta kalınca uykuya geçmez; indirme, sunucu, uzun işlem sürerken kesilmez.`n`n⚠️ Bilgisayar açık kaldığı sürece güç tüketir. Ekranın kapanması ayrı tweak'tedir.`n✅ Güç planını değiştirmez. Önceki değerler yedeklenir, geri alma onlara döner. Pil (DC) ayarlarına dokunulmaz.";
+                DetectScript='
+                    $s = Get-PowerSettingIndex "238c9fa8-0aad-41ed-83f4-97be242c8f20" "29f6c1db-86da-48c5-9fdb-f2b67b1f44da"
+                    $h = Get-PowerSettingIndex "238c9fa8-0aad-41ed-83f4-97be242c8f20" "9d7815a6-7ee4-497e-8888-515a05f02364"
+                    return ($s -and $s.AC -eq 0 -and ((-not $h) -or $h.AC -eq 0))
+                ';
+                Command='
+                    $sub = "238c9fa8-0aad-41ed-83f4-97be242c8f20"
+                    foreach ($p in @(@("SleepIdle", "29f6c1db-86da-48c5-9fdb-f2b67b1f44da"), @("HibernateIdle", "9d7815a6-7ee4-497e-8888-515a05f02364"))) {
+                        Backup-PowerSettingIndex $p[0] $sub $p[1]
+                        & powercfg -setacvalueindex SCHEME_CURRENT $sub $p[1] 0 2>$null | Out-Null
+                    }
+                    & powercfg -setactive SCHEME_CURRENT 2>$null | Out-Null
+                    Write-Host "[Guc] Prizde uyku ve hazirda bekletme: Hicbir zaman"
+                ';
+                UndoCommand='
+                    $sub = "238c9fa8-0aad-41ed-83f4-97be242c8f20"
+                    foreach ($p in @(@("SleepIdle", "29f6c1db-86da-48c5-9fdb-f2b67b1f44da", 1800, 900), @("HibernateIdle", "9d7815a6-7ee4-497e-8888-515a05f02364", 0, 0))) {
+                        $d = Get-PowerSettingDefault $sub $p[1]
+                        if ($d) { Restore-PowerSettingIndex $p[0] $sub $p[1] $d.AC $d.DC } else { Restore-PowerSettingIndex $p[0] $sub $p[1] $p[2] $p[3] }
+                    }
+                '
+            },
+            @{
+                Name="Ekranın Kapanmasını Engelle (Prizde: Asla)"; Since="2.0.4";
+                Risk="Low"; RestartExplorer=$false;
+                Description="Etkin güç planında prizdeyken 'Şundan sonra ekranımı kapat' ayarını Hiçbir zaman yapar (Ayarlar > Sistem > Güç > Ekran, uyku ve hazırda bekletme zaman aşımları ile aynı). Ekran boşta kaldığında kararmaz.`n`n⚠️ OLED monitörde sabit görüntü uzun süre kalırsa iz bırakabilir; OLED kullanıyorsanız bu ayarı açmayın ya da ekran koruyucu kullanın. Ekran açık kaldığı sürece güç tüketir.`n✅ Güç planını değiştirmez. Önceki değer yedeklenir, geri alma ona döner. Pil (DC) ayarına dokunulmaz.";
+                DetectScript='
+                    $i = Get-PowerSettingIndex "7516b95f-f776-4464-8c53-06167f40cc99" "3c0bc021-c8a8-4e07-a973-6b14cbcb2b7e"
+                    return ($i -and $i.AC -eq 0)
+                ';
+                Command='
+                    $sub = "7516b95f-f776-4464-8c53-06167f40cc99"; $set = "3c0bc021-c8a8-4e07-a973-6b14cbcb2b7e"
+                    Backup-PowerSettingIndex "DisplayIdle" $sub $set
+                    & powercfg -setacvalueindex SCHEME_CURRENT $sub $set 0 2>$null | Out-Null
+                    & powercfg -setactive SCHEME_CURRENT 2>$null | Out-Null
+                    Write-Host "[Guc] Prizde ekrani kapatma: Hicbir zaman"
+                ';
+                UndoCommand='
+                    $sub = "7516b95f-f776-4464-8c53-06167f40cc99"; $set = "3c0bc021-c8a8-4e07-a973-6b14cbcb2b7e"
+                    $d = Get-PowerSettingDefault $sub $set
+                    if ($d) { Restore-PowerSettingIndex "DisplayIdle" $sub $set $d.AC $d.DC } else { Restore-PowerSettingIndex "DisplayIdle" $sub $set 600 300 }
+                '
+            },
             @{
                 Name="PCIe Bağlantı Güç Tasarrufunu Kapat (ASPM, Prizde)"; Since="2.0.0";
                 Risk="Low"; RestartExplorer=$false;
@@ -3523,7 +3597,7 @@ public class SpiMenu {
             @{
                 Name="İşlemci Minimum Durumu %100 — Yalnız Oyun Açıkken (Prizde)"; Since="2.0.0";
                 Risk="Low"; RestartExplorer=$false;
-                Description="Listedeki bir oyun açıldığında etkin güç planında 'En düşük işlemci durumu'nu prizdeyken %100 yapar; son oyun kapanınca önceki değere döner. Oyunda işlemci kareler arasındaki kısa boşluklarda saat hızını düşürmez, yeni iş geldiğinde yeniden hızlanmayı beklemez. Masaüstünde ve boştayken Windows'un normal güç yönetimi çalışır — gereksiz ısınma ve tüketim olmaz.`n`n📊 MrClean ölçümü (oyun yükü benzetimi, 3 tur, Ryzen 7 9850X3D): CS2 benzeri yükte 1% low +%14, BF6 benzeri yükte +%11, giriş gecikmesi (p99) 248 → 126 µs.`n`nℹ️ Oyunlar: bilinen rekabetçi oyunlar + Steam / Epic / EA / Riot / Battle.net / Ubisoft / GOG kütüphanelerinde bulunanlar. Yeni oyun kurduysanız tweak'i kapatıp yeniden uygulayın. Oyun en geç ~2 sn içinde algılanır. Yönetici yetkisi istemeyen küçük bir zamanlanmış görev ('MrClean-OyunIslemci') kurulur.`nℹ️ Yüksek / Nihai Performans planı bu değeri fabrika ayarında %100 getirir, ama yonga seti sürücüsü, Process Lasso gibi araçlar ya da başka optimizasyon programları düşürebilir (bu bilgisayarda ölçüm yapılırken etkin planda %0'dı). Tweak hangi plan seçili olursa olsun oyunda %100 yapar; plan zaten %100 ise hiçbir şey değiştirmez. Planı değiştirmez — çift CCD X3D (7950X3D / 9950X3D) için AMD'nin önerdiği Dengeli plan korunur.`n⚠️ Pilde (dizüstü) değiştirilmez.`n💾 Geri alma görevi kaldırır; oyun açıkken geri alınırsa önceki değer hemen yazılır.";
+                Description="Listedeki bir oyun açıldığında etkin güç planında prizdeyken 'En düşük işlemci durumu'nu %100, 'İşlemci enerji performansı tercihi'ni (EPP) 0 yapar; son oyun kapanınca ikisi de önceki değere döner. Oyunda işlemci kareler arasındaki kısa boşluklarda saat hızını düşürmez, yeni iş geldiğinde yeniden hızlanmayı beklemez. Masaüstünde ve boştayken Windows'un normal güç yönetimi çalışır — gereksiz ısınma ve tüketim olmaz.`n`n📊 MrClean ölçümü (oyun yükü benzetimi, 3 tur, Ryzen 7 9850X3D): CS2 benzeri yükte 1% low +%14, BF6 benzeri yükte +%11, giriş gecikmesi (p99) 248 → 126 µs.`n📊 EPP 0 eki (Ryzen 7 9800X3D, Windows 26H2, aynı oturumda 3'er tur, Dengeli plan, min %100): CS2 benzeri yük 798 → 903 FPS, 1% low 765 → 829. Bu tweak'i daha önce uyguladıysanız satır pasif görünür; yeniden Uygula EPP'li ajanı kurar.`nℹ️ Benchmark, bu tweak uygulanmışsa ölçüm süresince aynı oyun koşulunu kurar ve sonunda geri alır (karşılaştırma penceresinde 'oyun koşulu' yazar).`n`nℹ️ Oyunlar: bilinen rekabetçi oyunlar + Steam / Epic / EA / Riot / Battle.net / Ubisoft / GOG kütüphanelerinde bulunanlar. Yeni oyun kurduysanız tweak'i kapatıp yeniden uygulayın. Oyun en geç ~2 sn içinde algılanır. Yönetici yetkisi istemeyen küçük bir zamanlanmış görev ('MrClean-OyunIslemci') kurulur.`nℹ️ Yüksek / Nihai Performans planı bu değeri fabrika ayarında %100 getirir, ama yonga seti sürücüsü, Process Lasso gibi araçlar ya da başka optimizasyon programları düşürebilir (bu bilgisayarda ölçüm yapılırken etkin planda %0'dı). Tweak hangi plan seçili olursa olsun oyunda %100 yapar; plan zaten %100 ise hiçbir şey değiştirmez. Planı değiştirmez — çift CCD X3D (7950X3D / 9950X3D) için AMD'nin önerdiği Dengeli plan korunur.`n⚠️ Pilde (dizüstü) değiştirilmez.`n💾 Geri alma görevi kaldırır; oyun açıkken geri alınırsa önceki değer hemen yazılır.";
                 # v1.3.0 (§102): kalici %100 yerine oyun algilayan gorev (Install-MrCleanGameCpuAgent); tespit = gorev kurulu
                 DetectScript='
                     return (Test-MrCleanGameCpuAgent)
@@ -3539,11 +3613,12 @@ public class SpiMenu {
             },
             # v1.3.0 (15. tur): OLCUME DAYALI — bostan uyanma maliyetini sifirlar. 6 tur (Ryzen 7 9850X3D): giris gecikmesi p99 59-84 -> 40-45 us,
             # bostan sonra ilk is paketi 115 -> 100 us, CS2 benzeri 1% low ~810 -> ~877. Bedel: paket gucu bosta 30 -> 86 W, sicaklik 46 -> 60 C.
-            # "Yalniz C1" (IDLESTATEMAX=1) ve EPP=0 olculdu: kazanc yok. Bu yuzden profillere eklenmedi; uzman ayari.
+            # "Yalniz C1" (IDLESTATEMAX=1) olculdu: kazanc yok. Bu yuzden profillere eklenmedi; uzman ayari.
+            # §173: EPP=0 ilk olcumde (§24) 1% low 805 -> 806 idi; §171'de Dengeli + min %100 kosulunda EPP 25 -> 0 1% low 765 -> 829. EPP 0'i oyun ajani kurar; IDLEDISABLE ile birlikte olculmedi.
             @{
                 Name="İşlemci Boşta Durumlarını Kapat (Rekabetçi, Uzman, Prizde)"; Since="2.0.0";
                 Risk="Medium"; RestartExplorer=$false;
-                Description="İşlemci çekirdeklerinin boştayken uyku durumlarına (C-state) girmesini prizdeyken kapatır; çekirdekler her an hazır bekler. Böylece boştan uyanma gecikmesi tamamen kalkar.`n`n📊 MrClean ölçümü (Ryzen 7 9850X3D, 6 tur, Benchmark oyun yükü):`n• Giriş gecikmesi en kötü %1: 59-84 µs → 40-45 µs (ve turdan tura oynamıyor)`n• Boştan sonra hızlanma: 115 µs → 100 µs (kayıp sıfır)`n• CS2 benzeri yük 1% low: ~810 → ~877 (+%8)`n`n⚠️ BEDEL: İşlemci boşta da tam çalışır — ölçülen paket gücü 30 W → 86 W, sıcaklık 46 °C → 60 °C (oyunda 64 °C). Fan sesi ve elektrik tüketimi artar. Dosya/süreç işlemleri ~%20 yavaşlar (SMT kardeş iş parçacığı boşta da döner).`n⚠️ Görev Yöneticisi CPU'yu genelde %100 gösterir — çekirdekler uyumadığı için; bu bir kilitlenme değildir.`nℹ️ 'Yalnız C1' ve 'EPP=0' gibi hafif seçenekler de ölçüldü: kazanç yok, bu yüzden eklenmedi.`n💡 Rekabetçi oyuncular için. İstemezseniz Geri Al ile Windows varsayılanına (boşta kalma açık) döner. Pil (DC) ayarına dokunulmaz.`n🔒 Masaüstü ve dizüstünde Apply öncesi onay istenir. Önerilen profillerde YOKTUR.`n📚 Microsoft güç ayarı: Processor idle disable (IDLEDISABLE).";
+                Description="İşlemci çekirdeklerinin boştayken uyku durumlarına (C-state) girmesini prizdeyken kapatır; çekirdekler her an hazır bekler. Böylece boştan uyanma gecikmesi tamamen kalkar.`n`n📊 MrClean ölçümü (Ryzen 7 9850X3D, 6 tur, Benchmark oyun yükü):`n• Giriş gecikmesi en kötü %1: 59-84 µs → 40-45 µs (ve turdan tura oynamıyor)`n• Boştan sonra hızlanma: 115 µs → 100 µs (kayıp sıfır)`n• CS2 benzeri yük 1% low: ~810 → ~877 (+%8)`n`n⚠️ BEDEL: İşlemci boşta da tam çalışır — ölçülen paket gücü 30 W → 86 W, sıcaklık 46 °C → 60 °C (oyunda 64 °C). Fan sesi ve elektrik tüketimi artar. Dosya/süreç işlemleri ~%20 yavaşlar (SMT kardeş iş parçacığı boşta da döner).`n⚠️ Görev Yöneticisi CPU'yu genelde %100 gösterir — çekirdekler uyumadığı için; bu bir kilitlenme değildir.`nℹ️ Daha hafif 'Yalnız C1' seçeneği de ölçüldü: kazanç yok, bu yüzden eklenmedi.`nℹ️ EPP (işlemci enerji performansı tercihi) koşula bağlı çıktı: ilk ölçümde EPP 0 CS2 benzeri yük 1% low değerini değiştirmedi (805 → 806); Dengeli planda minimum %100 iken EPP 25 → 0 ise 765 → 829 getirdi (Ryzen 7 9800X3D). Oyunda EPP 0'ı 'İşlemci Minimum Durumu %100 — Yalnız Oyun Açıkken' tweak'i kurar; bu tweak ile birlikte ölçülmedi.`n💡 Rekabetçi oyuncular için. İstemezseniz Geri Al ile Windows varsayılanına (boşta kalma açık) döner. Pil (DC) ayarına dokunulmaz.`n🔒 Masaüstü ve dizüstünde Apply öncesi onay istenir. Önerilen profillerde YOKTUR.`n📚 Microsoft güç ayarı: Processor idle disable (IDLEDISABLE).";
                 DetectScript='
                     $i = Get-PowerSettingIndex "54533251-82be-4824-96c1-47b60b740d00" "5d76a2ca-e8c0-402f-a133-2158492d58ad"
                     return ($i -and $i.AC -eq 1)
@@ -3603,7 +3678,7 @@ public class SpiMenu {
                 RestartExplorer=$false 
             },
             @{ Name="Yüksek Performans Güç Planını Aktif Et"; Risk="Medium"; Group="PowerPlan";
-               Description="Windows 'Yüksek Performans' güç planını etkinleştirir: fabrika ayarında işlemci prizdeyken minimum %100'de çalışır, disk / PCIe güç tasarrufu kapalıdır ve bilgisayar uykuya geçmez.`n`n⚠️ Çift CCD'li X3D işlemcilerde (7950X3D / 9950X3D vb.) AMD 'Dengeli' planı önerir — uygulamadan önce uyarı gösterilir.";
+               Description="Windows 'Yüksek Performans' güç planını etkinleştirir: Windows'un temel ayarında işlemci prizdeyken minimum %100 ve EPP 0'da çalışır, disk / PCIe güç tasarrufu kapalıdır ve bilgisayar uykuya geçmez.`n`nℹ️ Bazı sistemlerde yonga seti sürücüsünün güç profili bu değerleri değiştirir. Ryzen 7 9800X3D'de (Windows 26H2) plan seçilince minimum %0, EPP 10 geldi — yani plan tek başına oyunun istediği koşulu kurmaz.`n📊 MrClean ölçümü (aynı bilgisayar, CS2 benzeri yük, 3'er tur): Dengeli 735 FPS / 1% low 589 · Yüksek Performans 849 / 640 · oyun koşulu (min %100 + EPP 0) 903 / 829.`n💡 Oyunda min %100 + EPP 0'ı, hangi plan seçili olursa olsun, 'İşlemci Minimum Durumu %100 — Yalnız Oyun Açıkken' tweak'i kurar ve oyun kapanınca geri alır. O tweak uygulanmışken bu planın oyunda ek bir fark getirip getirmediği ölçülmedi.`n`n⚠️ Çift CCD'li X3D işlemcilerde (7950X3D / 9950X3D vb.) AMD 'Dengeli' planı önerir — uygulamadan önce uyarı gösterilir.";
                Command='if (-not (Confirm-DualCcdX3DPowerTweak "Yuksek Performans Guc Plani")) { return }; powercfg -setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'; UndoCommand='powercfg -setactive 381b4222-f694-41f0-9685-ff5bb260df2e 2>$null; if ($LASTEXITCODE -ne 0) { powercfg -duplicatescheme 381b4222-f694-41f0-9685-ff5bb260df2e 381b4222-f694-41f0-9685-ff5bb260df2e | Out-Null; powercfg -setactive 381b4222-f694-41f0-9685-ff5bb260df2e }'; RestartExplorer=$false }
         )
         
@@ -4023,12 +4098,12 @@ public class SpiMenu {
                 UndoCommand='Restore-MrCleanServicesStart @("BcastDVRUserService")'
             },
             @{
-                Name="Sensör Servislerini Kapat (SensorService / SensrSvc / SensorDataService)";
+                Name="Sensör Servislerini Kapat (SensrSvc / SensorDataService)"; Aliases=@("Sensör Servislerini Kapat (SensorService / SensrSvc / SensorDataService)");
                 SubCategory="Servisler — Güvenli"; Since="2.0.1";
-                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:SensorService|SensrSvc|SensorDataService"); HwWarn=@("Sensor");
-                Description="Ekran döndürme, ortam ışığı (otomatik parlaklık) ve kapak / hareket sensörlerini yöneten üç servisi Devre dışı yapar.`n`nTemiz Windows'ta üçü de zaten 'El ile' başlar; sensörü olmayan masaüstü bilgisayarda kullanılmaz.`n`nKapatınca: otomatik ekran döndürme ve otomatik parlaklık çalışmaz. Dizüstü bilgisayarda ya da sensör aygıtı algılanırsa satır kırmızı uyarılıdır. Geri Al, önceki başlangıç ayarlarını aynen geri yazar.";
-                DetectScript='Test-MrCleanServicesStart @("SensorService","SensrSvc","SensorDataService") 4';
-                Command='Set-MrCleanServicesStart @("SensorService","SensrSvc","SensorDataService") 4';
+                Risk="Low"; RestartExplorer=$false; Requires=@("Svc:SensrSvc|SensorDataService"); HwWarn=@("Sensor");
+                Description="Sensör izleme (SensrSvc) ve sensör veri (SensorDataService) servislerini Devre dışı yapar.`n`nTemiz Windows'ta ikisi de zaten 'El ile' başlar; sensörü olmayan masaüstü bilgisayarda kullanılmaz.`n`nSensorService (Sensör Servisi) bilerek dahil değildir: kapalıyken Windows Ayarlar > Sistem > Güç sayfası açılır açılmaz kapanır (sensörsüz masaüstünde de). Geri Al, bu satırın eski sürümüyle kapatılmış SensorService'i de geri açar.`n`nKapatınca: otomatik ekran döndürme ve otomatik parlaklık çalışmayabilir. Dizüstü bilgisayarda ya da sensör aygıtı algılanırsa satır kırmızı uyarılıdır. Geri Al, önceki başlangıç ayarlarını aynen geri yazar.";
+                DetectScript='Test-MrCleanServicesStart @("SensrSvc","SensorDataService") 4';
+                Command='Set-MrCleanServicesStart @("SensrSvc","SensorDataService") 4';
                 UndoCommand='Restore-MrCleanServicesStart @("SensorService","SensrSvc","SensorDataService")'
             },
             @{
@@ -11973,6 +12048,23 @@ function Test-MrCleanServicesStart([string[]]$Names, [int]$Start) {
     }
     return $any
 }
+# v2.0.x (§167): bazi servislerin kayit anahtari yoneticiye salt-okunur (26300: WdiServiceHost, WdiSystemHost, DPS —
+# Administrators yalniz ReadKey). Servisin kendi guvenlik tanimi ise yoneticiye SERVICE_CHANGE_CONFIG veriyor; bu yuzden
+# kayit defterine yazilamazsa baslangic turu servis yoneticisi uzerinden (sc.exe config) degistirilir.
+function Set-MrCleanSvcStartSc([string]$Name, [int]$Start, $Delayed = $null) {
+    $tur = switch ($Start) { 2 { if ("$Delayed" -eq '1') { 'delayed-auto' } else { 'auto' } } 3 { 'demand' } 4 { 'disabled' } default { $null } }
+    if (-not $tur) { return $false }
+    try {
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = "$env:SystemRoot\System32\sc.exe"; $psi.Arguments = "config `"$Name`" start= $tur"
+        $psi.UseShellExecute = $false; $psi.CreateNoWindow = $true; $psi.RedirectStandardOutput = $true; $psi.RedirectStandardError = $true
+        $p = [System.Diagnostics.Process]::Start($psi)
+        $null = $p.StandardOutput.ReadToEnd(); $null = $p.StandardError.ReadToEnd(); $p.WaitForExit()
+        if ($p.ExitCode -ne 0) { return $false }
+    } catch { return $false }
+    $now = (Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Services\$Name" -Name Start -ErrorAction SilentlyContinue).Start
+    return ("$now" -eq "$Start")
+}
 function Set-MrCleanServicesStart([string[]]$Names, [int]$Start) {
     $fail = @()
     foreach ($n in $Names) {
@@ -11987,7 +12079,11 @@ function Set-MrCleanServicesStart([string[]]$Names, [int]$Start) {
         try {
             Set-ItemProperty -LiteralPath $p -Name Start -Value $Start -Type DWord -Force -ErrorAction Stop
             Write-Host "[Servis] $n → $(if ($Start -eq 4) { 'Devre dışı' } else { 'El ile' })"
-        } catch { $fail += $n; Write-Host "[Servis] $n değiştirilemedi: $($_.Exception.Message)" }
+        } catch {
+            $err = $_.Exception.Message
+            if (Set-MrCleanSvcStartSc $n $Start) { Write-Host "[Servis] $n → $(if ($Start -eq 4) { 'Devre dışı' } else { 'El ile' }) (korumalı anahtar, servis yöneticisi ile)" }
+            else { $fail += $n; Write-Host "[Servis] $n değiştirilemedi: $err" }
+        }
     }
     if ($fail.Count) { throw "Servis değiştirilemedi: $($fail -join ', ')" }
 }
@@ -11998,9 +12094,19 @@ function Restore-MrCleanServicesStart([string[]]$Names) {
         $def = "$($script:MrCleanSvcDefaults[$n])"; if (-not $def) { $def = '3|' }
         $parts = $def.Split('|')
         $delay = $null; if ($parts.Count -gt 1 -and $parts[1] -ne '') { $delay = [int]$parts[1] }
+        # §167: hedef deger yedekten once okunur (Restore yedegi siler): korumali anahtarda yazma sessizce basarisiz olursa sc.exe'ye gecilir
+        $bk = 'HKLM:\SOFTWARE\MrClean\ValueBackup'
+        $recS = (Get-ItemProperty -Path $bk -Name "SvcStart_$n" -ErrorAction SilentlyContinue)."SvcStart_$n"
+        $recD = (Get-ItemProperty -Path $bk -Name "SvcDelay_$n" -ErrorAction SilentlyContinue)."SvcDelay_$n"
+        $want = if ($recS -and $recS -ne 'absent') { [int]("$recS".Split('|', 2)[1]) } elseif (-not $recS) { [int]$parts[0] } else { $null }
+        $wantDelay = if ($recD -and $recD -ne 'absent') { "$("$recD".Split('|', 2)[1])" } elseif (-not $recD) { "$delay" } else { '' }
         Restore-TweakRegValue "SvcStart_$n" $p "Start" ([int]$parts[0]) "DWord"
         Restore-TweakRegValue "SvcDelay_$n" $p "DelayedAutostart" $delay "DWord"
         $now = (Get-ItemProperty -LiteralPath $p -Name Start -ErrorAction SilentlyContinue).Start
+        if ($null -ne $want -and "$now" -ne "$want") {
+            if (Set-MrCleanSvcStartSc $n $want $wantDelay) { Write-Host "[Servis] $n korumalı anahtar — servis yöneticisi ile geri alındı." }
+            $now = (Get-ItemProperty -LiteralPath $p -Name Start -ErrorAction SilentlyContinue).Start
+        }
         # v2.0.2 (§150): kayit defterine yazilan baslangic turu servis yoneticisine hemen yansimayabiliyor (WSearch geri
         # alininca "Otomatik" ama durmus kaldi). sc config ile servis yoneticisi de guncellenir; baslatma hatasi kayda yazilir.
         $scTur = switch ("$now") { '2' { if ("$((Get-ItemProperty -LiteralPath $p -Name DelayedAutostart -ErrorAction SilentlyContinue).DelayedAutostart)" -eq '1') { 'delayed-auto' } else { 'auto' } } '3' { 'demand' } '4' { 'disabled' } default { $null } }
@@ -12177,6 +12283,17 @@ function Backup-PowerSettingIndex([string]$Id, [string]$Sub, [string]$Setting) {
     if ($cur) { Set-ItemProperty -Path $root -Name $Id -Value "$($cur.AC)|$($cur.DC)" -Type String -Force }
 }
 
+# §169: etkin planin bir ayardaki Windows varsayilani (PowerSettings\{altgrup}\{ayar}\DefaultPowerSchemeValues\{plan}). Yoksa $null.
+# Geri almada yedek yoksa sabit sayi yerine planin kendi varsayilanina donmek icin.
+function Get-PowerSettingDefault([string]$Sub, [string]$Setting) {
+    $g = $null
+    if ("$(& powercfg /getactivescheme 2>$null)" -match '([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})') { $g = $Matches[1] }
+    if (-not $g) { return $null }
+    $p = Get-ItemProperty -LiteralPath "HKLM:\SYSTEM\CurrentControlSet\Control\Power\PowerSettings\$Sub\$Setting\DefaultPowerSchemeValues\$g" -ErrorAction SilentlyContinue
+    if (-not $p -or $null -eq $p.ACSettingIndex -or $null -eq $p.DCSettingIndex) { return $null }
+    return @{ AC = [int]$p.ACSettingIndex; DC = [int]$p.DCSettingIndex }
+}
+
 # Yedegi (yoksa Fallback AC/DC) etkin plana yazar ve plani yeniden etkinlestirir.
 function Restore-PowerSettingIndex([string]$Id, [string]$Sub, [string]$Setting, [int]$FallbackAc, [int]$FallbackDc) {
     $root = "HKLM:\SOFTWARE\MrClean\PowerBackup"
@@ -12276,10 +12393,11 @@ function Get-MrCleanNicParamsFast([string]$RegPath) {
 function Get-MrCleanServicesFast { try { return @([System.ServiceProcess.ServiceController]::GetServices()) } catch { return @() } }
 # v1.3.0 (§89, §57 P6): verilen görevlerin hepsi kapalı mı (yok olan görev sayılmaz) — Get-ScheduledTask yerine Görev Zamanlayıcı
 # COM (20 görev: ~5 sn -> ~35 ms). COM açılamazsa eski yol. $List: @(@("\Klasör\","GörevAdı"), ...)
-function Test-MrCleanTasksDisabled($List) {
+function Test-MrCleanTasksDisabled($List, [string[]]$Skip = @()) {
     $ts = $null
     try { $ts = New-Object -ComObject Schedule.Service; $ts.Connect() } catch { $ts = $null }
     foreach ($t in @($List)) {
+        if ($Skip -contains "$($t[0])$($t[1])") { continue }   # §167: Windows'un kapatilmasina izin vermedigi gorev (uygulamada kaydedildi)
         if ($ts) {
             $k = $null
             try { $k = $ts.GetFolder("$($t[0])".TrimEnd("\")).GetTask("$($t[1])") } catch {}
@@ -12290,6 +12408,44 @@ function Test-MrCleanTasksDisabled($List) {
         }
     }
     return $true
+}
+# v2.0.x (§167): zamanlanmis gorevleri tek tek kapatir / acar; hata artik yutulmaz. Windows'un korudugu (yoneticiye bile "Erisim
+# engellendi" donen) gorevler kayda yazilir ve HKCU\...\AppliedMarkers\<MarkerName> listesine eklenir; algilama bunlari atlar.
+# Test (26300, format sonrasi): kapatilamayan gorev sessizce acik kaliyor, tweak "uygulandi ama etkin gorunmuyor" diyordu.
+function Set-MrCleanTasksEnabled($List, [bool]$Enable, [string]$MarkerName = "") {
+    $mk = "HKCU:\Software\MrClean\AppliedMarkers"
+    $ts = $null; try { $ts = New-Object -ComObject Schedule.Service; $ts.Connect() } catch { $ts = $null }
+    $denied = @(); $done = 0
+    foreach ($t in @($List)) {
+        $id = "$($t[0])$($t[1])"
+        $k = $null
+        if ($ts) { try { $k = $ts.GetFolder("$($t[0])".TrimEnd("\")).GetTask("$($t[1])") } catch { $k = $null } }
+        else { $k = Get-ScheduledTask -TaskPath $t[0] -TaskName $t[1] -ErrorAction SilentlyContinue }
+        if (-not $k) { continue }   # bu Windows'ta yok
+        $isOff = if ($ts) { [int]$k.State -eq 1 } else { "$($k.State)" -eq "Disabled" }
+        if ($isOff -ne $Enable) { continue }   # zaten istenen durumda
+        $err = $null
+        try {
+            if ($Enable) { Enable-ScheduledTask -TaskPath $t[0] -TaskName $t[1] -ErrorAction Stop | Out-Null }
+            else         { Disable-ScheduledTask -TaskPath $t[0] -TaskName $t[1] -ErrorAction Stop | Out-Null }
+            $done++
+        } catch { $err = $_.Exception.Message }
+        if ($err) {
+            Write-Host "[Görev] $id $(if ($Enable) { 'açılamadı' } else { 'kapatılamadı' }): $err"
+            if (-not $Enable) { $denied += $id }
+        }
+    }
+    if ($MarkerName) {
+        if ($denied.Count) {
+            if (-not (Test-Path $mk)) { New-Item -Path $mk -Force | Out-Null }
+            Set-ItemProperty -Path $mk -Name $MarkerName -Value ([string[]]$denied) -Type MultiString -Force
+            Write-Host "[Görev] Windows $($denied.Count) görevin kapatılmasına izin vermedi; bunlar denetimde atlanacak."
+        } else { Remove-ItemProperty -Path $mk -Name $MarkerName -Force -ErrorAction SilentlyContinue }
+    }
+    Write-Host "[Görev] $done görev $(if ($Enable) { 'yeniden etkinleştirildi' } else { 'devre dışı bırakıldı' })."
+}
+function Get-MrCleanTasksDenied([string]$MarkerName) {
+    return @((Get-ItemProperty -Path "HKCU:\Software\MrClean\AppliedMarkers" -Name $MarkerName -ErrorAction SilentlyContinue).$MarkerName | Where-Object { $_ })
 }
 
 # v1.3.0 (7. tur): Donanim ureticisi telemetrisi — SADECE telemetri olan bilesenler (2026-10 arastirmasi, kaynakli):
@@ -12732,7 +12888,9 @@ function Test-MrCleanGameCpuAgent {
     try {
         $svc = New-Object -ComObject Schedule.Service; $svc.Connect()
         $t = $svc.GetFolder("\").GetTask($global:MrCleanGameCpuTask)
-        return ($t -and $t.Enabled -and (Test-Path (Join-Path $global:MrCleanGameCpuDir "GameCpuAgent.ps1")))
+        $sp = Join-Path $global:MrCleanGameCpuDir "GameCpuAgent.ps1"
+        # §171: EPP icermeyen eski ajan "pasif" gorunur — yeniden Uygula yeni betigi kurar
+        return ($t -and $t.Enabled -and (Test-Path $sp) -and ([IO.File]::ReadAllText($sp) -match "36687f9e"))
     } catch { return $false }
 }
 
@@ -12742,30 +12900,40 @@ function Install-MrCleanGameCpuAgent {
     $games = @(Get-MrCleanGameExeNames)
     [IO.File]::WriteAllLines((Join-Path $dir "games.txt"), [string[]]$games)
     $agent = @'
-# MrClean — oyunda islemci minimum %100 (prizde). Oyun acilinca %100, son oyun kapaninca onceki deger. Yonetici gerektirmez.
+# MrClean — oyunda islemci minimum %100 + EPP 0 (prizde). Oyun acilinca ikisi de yazilir, son oyun kapaninca onceki degerler. Yonetici gerektirmez.
+# §171: EPP (islemci enerji performansi tercihi, 36687f9e) eklendi; state.txt = plan|min|epp (eski surum: plan|min).
 $ErrorActionPreference = "SilentlyContinue"
 $dir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $games = @(Get-Content (Join-Path $dir "games.txt") | ForEach-Object { $_.Trim().ToLower() } | Where-Object { $_ })
-$sub = "54533251-82be-4824-96c1-47b60b740d00"; $set = "893dee8e-2bef-41e0-89c6-b55d0929964c"
+$sub = "54533251-82be-4824-96c1-47b60b740d00"; $set = "893dee8e-2bef-41e0-89c6-b55d0929964c"; $epp = "36687f9e-e3a5-4dbf-b1dc-15eb381c6863"
 $state = Join-Path $dir "state.txt"
 function Get-Scheme { $o = "$(& powercfg /getactivescheme)"; if ($o -match "([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})") { $Matches[1].ToLower() } }
-function Get-Ac([string]$g) {
-    $h = @(& powercfg /qh $g $sub $set | ForEach-Object { if ("$_" -match ":\s*0x([0-9a-fA-F]+)\s*$") { [Convert]::ToInt32($Matches[1], 16) } })
+function Get-Ac([string]$g, [string]$s = $set) {
+    $h = @(& powercfg /qh $g $sub $s | ForEach-Object { if ("$_" -match ":\s*0x([0-9a-fA-F]+)\s*$") { [Convert]::ToInt32($Matches[1], 16) } })
     if ($h.Count -ge 2) { $h[$h.Count - 2] }
 }
 function Up {
     if (Test-Path $state) { return }
     $g = Get-Scheme; if (-not $g) { return }
     $cur = Get-Ac $g; if ($null -eq $cur) { return }
-    Set-Content -LiteralPath $state -Value "$g|$cur"
-    if ($cur -ne 100) { & powercfg -setacvalueindex $g $sub $set 100 | Out-Null; & powercfg -setactive SCHEME_CURRENT | Out-Null }
+    $ce = Get-Ac $g $epp
+    Set-Content -LiteralPath $state -Value "$g|$cur|$ce"
+    $ch = $false
+    if ($cur -ne 100) { & powercfg -setacvalueindex $g $sub $set 100 | Out-Null; $ch = $true }
+    if ($null -ne $ce -and $ce -ne 0) { & powercfg -setacvalueindex $g $sub $epp 0 | Out-Null; $ch = $true }
+    if ($ch) { & powercfg -setactive SCHEME_CURRENT | Out-Null }
 }
 function Down {
     if (-not (Test-Path $state)) { return }
     $p = "$(Get-Content -LiteralPath $state -TotalCount 1)".Split("|")
-    if ($p.Count -eq 2 -and $p[1] -match '^\d+$' -and [int]$p[1] -ne 100 -and (Get-Ac $p[0]) -eq 100) {
-        & powercfg -setacvalueindex $p[0] $sub $set ([int]$p[1]) | Out-Null; & powercfg -setactive SCHEME_CURRENT | Out-Null
+    $ch = $false
+    if ($p.Count -ge 2 -and $p[1] -match '^\d+$' -and [int]$p[1] -ne 100 -and (Get-Ac $p[0]) -eq 100) {
+        & powercfg -setacvalueindex $p[0] $sub $set ([int]$p[1]) | Out-Null; $ch = $true
     }
+    if ($p.Count -ge 3 -and $p[2] -match '^\d+$' -and [int]$p[2] -ne 0 -and (Get-Ac $p[0] $epp) -eq 0) {
+        & powercfg -setacvalueindex $p[0] $sub $epp ([int]$p[2]) | Out-Null; $ch = $true
+    }
+    if ($ch) { & powercfg -setactive SCHEME_CURRENT | Out-Null }
     Remove-Item -LiteralPath $state -Force
 }
 $run = @{}
@@ -12794,7 +12962,7 @@ while ($true) {
     $principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType Interactive -RunLevel Limited
     Register-ScheduledTask -TaskName $global:MrCleanGameCpuTask -Action $action -Trigger $trigger -Settings $settings -Principal $principal -Force | Out-Null
     Start-ScheduledTask -TaskName $global:MrCleanGameCpuTask -ErrorAction SilentlyContinue
-    Write-Host "[Oyun / islemci] Gorev kuruldu: $($games.Count) oyun exe izleniyor (oyun acikken prizde islemci minimum %100)."
+    Write-Host "[Oyun / islemci] Gorev kuruldu: $($games.Count) oyun exe izleniyor (oyun acikken prizde islemci minimum %100 + EPP 0)."
 }
 
 function Stop-MrCleanGameCpuAgentProcess {
@@ -12808,13 +12976,50 @@ function Remove-MrCleanGameCpuAgent {
     $st = Join-Path $global:MrCleanGameCpuDir "state.txt"
     if (Test-Path $st) {
         $p = "$(Get-Content -LiteralPath $st -TotalCount 1)".Split("|")
-        if ($p.Count -eq 2 -and $p[1] -match '^\d+$') {
+        if ($p.Count -ge 2 -and $p[1] -match '^\d+$') {
             & powercfg -setacvalueindex $p[0] "54533251-82be-4824-96c1-47b60b740d00" "893dee8e-2bef-41e0-89c6-b55d0929964c" ([int]$p[1]) 2>$null | Out-Null
+            if ($p.Count -ge 3 -and $p[2] -match '^\d+$') { & powercfg -setacvalueindex $p[0] "54533251-82be-4824-96c1-47b60b740d00" $global:MrCleanEppSet ([int]$p[2]) 2>$null | Out-Null }
             & powercfg -setactive SCHEME_CURRENT 2>$null | Out-Null
         }
     }
     Remove-Item -LiteralPath $global:MrCleanGameCpuDir -Recurse -Force -ErrorAction SilentlyContinue
-    Write-Host "[Oyun / islemci] Gorev kaldirildi; islemci minimum durumu planin kendi degerinde."
+    Write-Host "[Oyun / islemci] Gorev kaldirildi; islemci minimum durumu ve EPP planin kendi degerinde."
+}
+
+# §171: OYUN KOSULU — ajanin oyunda yaptigi (islemci minimum %100 + EPP 0, prizde). Benchmark olcum suresince ayni kosulu kurar;
+# yoksa ajan benchmark aracini oyun saymadigi icin olcum min %0 / plan EPP'siyle yapilir ve gercek oyundan dusuk cikar.
+$global:MrCleanEppSet = "36687f9e-e3a5-4dbf-b1dc-15eb381c6863"
+function Get-MrCleanProcAc([string]$Scheme, [string]$Setting) {
+    $h = @(& powercfg /qh $Scheme "54533251-82be-4824-96c1-47b60b740d00" $Setting 2>$null | ForEach-Object { if ("$_" -match ":\s*0x([0-9a-fA-F]+)\s*$") { [Convert]::ToInt32($Matches[1], 16) } })
+    if ($h.Count -ge 2) { return $h[$h.Count - 2] }
+    return $null
+}
+function Enter-MrCleanBenchGameCondition {
+    if (-not (Test-MrCleanGameCpuAgent)) { return $null }
+    if (Test-Path (Join-Path $global:MrCleanGameCpuDir "state.txt")) { return $null }   # oyun acik: kosulu ajan yonetiyor
+    $o = "$(& powercfg /getactivescheme)"
+    if ($o -notmatch "([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})") { return $null }
+    $g = $Matches[1].ToLowerInvariant()
+    $min = Get-MrCleanProcAc $g "893dee8e-2bef-41e0-89c6-b55d0929964c"
+    $epp = Get-MrCleanProcAc $g $global:MrCleanEppSet
+    if ($null -eq $min) { return $null }
+    & powercfg -setacvalueindex $g "54533251-82be-4824-96c1-47b60b740d00" "893dee8e-2bef-41e0-89c6-b55d0929964c" 100 2>$null | Out-Null
+    if ($null -ne $epp) { & powercfg -setacvalueindex $g "54533251-82be-4824-96c1-47b60b740d00" $global:MrCleanEppSet 0 2>$null | Out-Null }
+    & powercfg -setactive SCHEME_CURRENT 2>$null | Out-Null
+    WpfLog ("[Bench] Oyun kosulu: islemci minimum {0} -> 100, EPP {1} -> 0 (olcum suresince)" -f $min, $(if ($null -ne $epp) { $epp } else { "-" }))
+    return @{ Scheme = $g; Min = $min; Epp = $epp }
+}
+function Exit-MrCleanBenchGameCondition($St) {
+    if (-not $St) { return }
+    $g = $St.Scheme
+    if ($St.Min -ne 100 -and (Get-MrCleanProcAc $g "893dee8e-2bef-41e0-89c6-b55d0929964c") -eq 100) {
+        & powercfg -setacvalueindex $g "54533251-82be-4824-96c1-47b60b740d00" "893dee8e-2bef-41e0-89c6-b55d0929964c" ([int]$St.Min) 2>$null | Out-Null
+    }
+    if ($null -ne $St.Epp -and $St.Epp -ne 0 -and (Get-MrCleanProcAc $g $global:MrCleanEppSet) -eq 0) {
+        & powercfg -setacvalueindex $g "54533251-82be-4824-96c1-47b60b740d00" $global:MrCleanEppSet ([int]$St.Epp) 2>$null | Out-Null
+    }
+    & powercfg -setactive SCHEME_CURRENT 2>$null | Out-Null
+    WpfLog ("[Bench] Oyun kosulu geri alindi: islemci minimum {0}, EPP {1}" -f $St.Min, $(if ($null -ne $St.Epp) { $St.Epp } else { "-" }))
 }
 
 # Eski surum (kalici %100) uygulanmissa: etkin planin prizdeki degeri Windows fabrika degerine doner (Dengeli %5, Yuksek %100 ...)
@@ -13033,6 +13238,9 @@ function Get-NvidiaInspectorPath {
     $npiUrl = "https://github.com/Orbmu2k/nvidiaProfileInspector/releases/download/v3.0.2.1/nvidiaProfileInspector.zip"
     $npiSha = "88dcf3514111e8de630688467c03c36d8c2a8ad9ebc8073f27c069f82b75bb40"
 
+    # §167: bu oturumda ozeti dogrulanarak indirilen exe (on yukleme dahil) — surum etiketi farkli yazilsa da yeniden indirilmez
+    if ($script:NpiVerifiedExe -and (Test-Path -LiteralPath $script:NpiVerifiedExe)) { return $script:NpiVerifiedExe }
+
     # CACHE HIT: yalniz sabitlenen surumse (eski / farkli surum yeniden indirilir)
     if (Test-Path $cacheExe) {
         if ((Get-Item $cacheExe).Length -gt 100KB -and "$((Get-Item $cacheExe).VersionInfo.FileVersion)" -eq $npiVer) { return $cacheExe }
@@ -13046,9 +13254,25 @@ function Get-NvidiaInspectorPath {
     try {
         WpfLog "[NPI] Resmi kaynaktan indiriliyor (Orbmu2k GitHub Releases)..."
         $zipPath = Join-Path $env:TEMP "npi_$([Guid]::NewGuid().ToString('N')).zip"
-        $wc = New-Object System.Net.WebClient
-        $wc.Headers.Add("User-Agent", "MrClean-App")
-        $wc.DownloadFile($npiUrl, $zipPath)
+        # §167: ag karti yeniden baslatildiktan hemen sonra DNS bir sure cozulmuyor ("Uzak ad cozulemedi: github.com").
+        # Ilk deneme basarisizsa ag geri gelene kadar (en fazla ~25 sn) beklenir ve yeniden denenir.
+        for ($try = 1; $try -le 3; $try++) {
+            try {
+                $wc = New-Object System.Net.WebClient
+                $wc.Headers.Add("User-Agent", "MrClean-App")
+                $wc.DownloadFile($npiUrl, $zipPath)
+                break
+            } catch {
+                Remove-Item $zipPath -Force -ErrorAction SilentlyContinue
+                if ($try -ge 3) { throw }
+                WpfLog "[NPI] Indirme basarisiz ($try. deneme): $($_.Exception.InnerException.Message) — ag bekleniyor..."
+                $sw = [Diagnostics.Stopwatch]::StartNew()
+                while ($sw.Elapsed.TotalSeconds -lt 25) {
+                    try { if (@([Net.Dns]::GetHostAddresses("github.com")).Count) { break } } catch {}
+                    for ($i = 0; $i -lt 10; $i++) { Start-Sleep -Milliseconds 100; try { Do-Events } catch {} }
+                }
+            }
+        }
         if (-not (Test-Path $zipPath) -or (Get-Item $zipPath).Length -le 0) { throw "ZIP indirilemedi." }
         $got = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash
         if ($got -ne $npiSha) {
@@ -13068,6 +13292,7 @@ function Get-NvidiaInspectorPath {
         Get-ChildItem -Path $dir -Recurse -File -ErrorAction SilentlyContinue | Unblock-File -ErrorAction SilentlyContinue
         $kb = [Math]::Round($exe.Length / 1KB, 1)
         WpfLog "[NPI] OK: v$npiVer ($kb KB, ozet dogrulandi)."
+        $script:NpiVerifiedExe = $exe.FullName
         return $exe.FullName
     } catch {
         WpfLog "[NPI] Resmi kaynak basarisiz: $($_.Exception.Message)"
@@ -15250,6 +15475,8 @@ $script:PlanBoundPowerTweaks = [ordered]@{
     'Disklerin Kapanmasını Engelle (Prizde: Asla)'                  = @('0012ee47-9041-4b5d-9b77-535fba8b1442|6738e2c4-e8a5-4a42-b16a-e040e769756e|AC|0')
     'NVMe / SATA Bağlantı Güç Tasarrufunu Kapat (Uzman, Prizde)'   = @('0012ee47-9041-4b5d-9b77-535fba8b1442|0b2d69d7-a2a1-449c-9680-f91c70521c60|AC|0|A', '0012ee47-9041-4b5d-9b77-535fba8b1442|d639518a-e56d-4345-8af2-b9f32fb26109|AC|0|A', '0012ee47-9041-4b5d-9b77-535fba8b1442|fc7372b6-ab2d-43ee-8797-15e9841f2cca|AC|0|A')
     'Çekirdek Park Etmeyi Kapat (Core Parking — Tüm Çekirdekler Aktif)'          = @('54533251-82be-4824-96c1-47b60b740d00|0cc5b647-c1df-4637-891a-dec35c318583|ACDC|100|A')
+    'Uykuyu ve Hazırda Beklemeyi Kapat (Prizde: Asla)'             = @('238c9fa8-0aad-41ed-83f4-97be242c8f20|29f6c1db-86da-48c5-9fdb-f2b67b1f44da|AC|0', '238c9fa8-0aad-41ed-83f4-97be242c8f20|9d7815a6-7ee4-497e-8888-515a05f02364|AC|0')
+    'Ekranın Kapanmasını Engelle (Prizde: Asla)'                   = @('7516b95f-f776-4464-8c53-06167f40cc99|3c0bc021-c8a8-4e07-a973-6b14cbcb2b7e|AC|0')
 }
 
 # v1.3.0 (§93): bir tweak'in uygulanmasi / geri alinmasi baska tweak'lerin durumunu da degistirir mi
@@ -15268,6 +15495,8 @@ $script:PlanBoundBackupIds = @{
     'Disklerin Kapanmasını Engelle (Prizde: Asla)'                  = @('DiskIdle')
     'NVMe / SATA Bağlantı Güç Tasarrufunu Kapat (Uzman, Prizde)'   = @('SataLpm', 'NvmeIdle', 'NvmeNoppme')
     'Çekirdek Park Etmeyi Kapat (Core Parking — Tüm Çekirdekler Aktif)'          = @('CoreParkingMinCores')
+    'Uykuyu ve Hazırda Beklemeyi Kapat (Prizde: Asla)'             = @('SleepIdle', 'HibernateIdle')
+    'Ekranın Kapanmasını Engelle (Prizde: Asla)'                   = @('DisplayIdle')
 }
 
 # MrClean ile uygulanmis plana bagli tweak'ler: uygulama listesinde (HKCU AppliedTweaks) ya da guc yedegi alinmis
@@ -16280,6 +16509,18 @@ function Apply-System-Tweaks {
 
     # v1.3.0 (§93): once guc plani (plan degisirse acik guc ayarlari yeni plana tasinir), sonra digerleri.
     # Eskiden agac sirasi: guc ayarlari eski plana yaziliyor, ardindan plan degisip kayboluyordu.
+    # §167: indirme gerektiren araclar (NVIDIA Profile Inspector) tweakler baslamadan ONCE indirilir. Test: ag adaptoru
+    # yeniden baslatan tweak (Offload profili) hemen once calisinca DNS cozulmedi, NVIDIA profili atlandi.
+    $needNpi = $false
+    foreach ($t in @(@($toEnable) + @($toDisable))) {
+        if (-not $t) { continue }
+        foreach ($s in $(if ($t.Batch) { @($t.Batch) } else { @($t) })) { if ("$($s.Command) $($s.UndoCommand)" -match 'Get-NvidiaInspectorPath') { $needNpi = $true } }
+    }
+    if ($needNpi) {
+        try { if (-not (Get-NvidiaInspectorPath)) { WpfLog "[NPI] On indirme basarisiz — NVIDIA adiminda yeniden denenecek." } }
+        catch { WpfLog "[NPI] On indirme hatasi: $($_.Exception.Message)" }
+    }
+
     Invoke-MrCleanPowerPlanFirst $toDisable $toEnable { param($tw, $undo) Process-TweakItem $tw $undo }
     foreach ($t in $toDisable) { if ("$($t.Group)" -ne 'PowerPlan') { Process-TweakItem $t $true } }
     foreach ($t in $toEnable)  { if ("$($t.Group)" -ne 'PowerPlan') { Process-TweakItem $t $false } }
@@ -18210,6 +18451,11 @@ function Get-BenchSnapshot {
 
     $i = 0
     $totalSteps = $steps.Count * $Runs
+    # §171: oyun ajani kuruluysa olcum, ajanin oyunda kurdugu kosulda yapilir (islemci minimum %100 + EPP 0); sonunda geri alinir
+    $gc = $null
+    try { $gc = Enter-MrCleanBenchGameCondition } catch { $gc = $null }
+    $result.gameCondition = [bool]$gc
+    try {
     foreach ($s in $steps) {
         $i++
         $runResults = New-Object System.Collections.Generic.List[hashtable]
@@ -18231,6 +18477,7 @@ function Get-BenchSnapshot {
         $merged = Merge-BenchRuns -Runs @($runResults)
         $result.metrics[$s.Key] = $merged
     }
+    } finally { try { Exit-MrCleanBenchGameCondition $gc } catch {} }
     if ($ProgressCallback) { & $ProgressCallback $totalSteps $totalSteps "Tamamlandi" }
 
     return $result
@@ -23994,8 +24241,9 @@ $($global:SubTheme)
 
         $w.FindName('lblALabel').Text = if ($SnapA.label) { $SnapA.label } else { "(etiketsiz)" }
         $w.FindName('lblBLabel').Text = if ($SnapB.label) { $SnapB.label } else { "(etiketsiz)" }
-        $w.FindName('lblATime').Text  = Format-BenchTime $SnapA.timestamp
-        $w.FindName('lblBTime').Text  = Format-BenchTime $SnapB.timestamp
+        # §171: oyun kosulunda (min %100 + EPP 0) alinan olcum isaretlenir — eski olcumlerle karsilastirirken kosul farki gorunsun
+        $w.FindName('lblATime').Text  = (Format-BenchTime $SnapA.timestamp) + $(if ($SnapA.gameCondition) { "  ·  oyun koşulu" } else { "" })
+        $w.FindName('lblBTime').Text  = (Format-BenchTime $SnapB.timestamp) + $(if ($SnapB.gameCondition) { "  ·  oyun koşulu" } else { "" })
 
         $lv = $w.FindName('lvDiff')
         $win = 0; $loss = 0; $neutral = 0; $na = 0
